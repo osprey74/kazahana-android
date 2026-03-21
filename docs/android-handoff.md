@@ -1,21 +1,22 @@
 # kazahana Android 版 開発ハンドオフ資料
 
 > iOS 版 kazahana の実装をもとに、Android 版開発者向けに機能仕様・技術的判断・既知の落とし穴をまとめたドキュメント。
-> 最終更新: 2026-03-21（iOS 版 プロフィール・スレッド遷移改善、スワイプバック対応 完了時点）
+> 最終更新: 2026-03-21（Android 版 Phase 2 コア機能 完了時点）
 
 ---
 
 ## 目次
 
 1. [アプリ概要](#1-アプリ概要)
-2. [実装済み機能一覧](#2-実装済み機能一覧)
-3. [AT Protocol 実装詳細](#3-at-protocol-実装詳細)
-4. [アーキテクチャ方針](#4-アーキテクチャ方針)
-5. [機能別実装ノート](#5-機能別実装ノート)
-6. [BSAF 対応](#6-bsaf-対応)
-7. [多言語対応](#7-多言語対応)
-8. [既知の課題・未実装](#8-既知の課題未実装)
-9. [Android 版固有の検討事項](#9-android-版固有の検討事項)
+2. [Android 版実装状況](#2-android-版実装状況)
+3. [iOS 版実装済み機能一覧（参考）](#3-ios-版実装済み機能一覧参考)
+4. [AT Protocol 実装詳細](#4-at-protocol-実装詳細)
+5. [アーキテクチャ方針](#5-アーキテクチャ方針)
+6. [機能別実装ノート](#6-機能別実装ノート)
+7. [BSAF 対応](#7-bsaf-対応)
+8. [多言語対応](#8-多言語対応)
+9. [既知の課題・未実装](#9-既知の課題未実装)
+10. [Android 版固有の検討事項](#10-android-版固有の検討事項)
 
 ---
 
@@ -34,7 +35,75 @@
 
 ---
 
-## 2. 実装済み機能一覧
+## 2. Android 版実装状況
+
+### Phase 1: 基盤構築 ✅ 完了
+
+| 機能 | 状態 | 実装ファイル |
+|---|---|---|
+| プロジェクト初期化 | ✅ | Jetpack Compose, API 29+, Hilt DI |
+| AT Protocol HTTP クライアント | ✅ | `ATProtoClient.kt` — Ktor + OkHttp, JSON/Blob 分離 |
+| 認証機能 | ✅ | `AuthViewModel.kt`, `SessionStore.kt` — PDS 解決, トークンリフレッシュ |
+| ホームタイムライン | ✅ | `TimelineScreen.kt`, `TimelineViewModel.kt` — cursor ページネーション |
+| Pull-to-Refresh + 無限スクロール | ✅ | Material3 PullToRefreshBox |
+
+### Phase 2: コア機能 ✅ 完了
+
+| 機能 | 状態 | 実装ファイル |
+|---|---|---|
+| 投稿作成（テキスト + 画像 + ALT） | ✅ | `ComposeScreen.kt`, `ComposeViewModel.kt`, `PostRepository.kt` |
+| リッチテキスト（ファセット生成） | ✅ | `RichTextParser.kt` — メンション/URL/ハッシュタグ, UTF-8 バイトオフセット変換 |
+| いいね / リポスト / ブックマーク | ✅ | `InteractionRepository.kt` — 楽観的 UI 更新 |
+| リプライ / 引用リポスト | ✅ | `ReplyRoute`/`QuoteRoute`, `embed.record`/`embed.recordWithMedia` |
+| 画像フルスクリーン表示 | ✅ | `FullscreenImageViewer.kt` — HorizontalPager, ピンチズーム, ダブルタップ |
+| 動画再生 | ✅ | `VideoPlayer.kt` — Media3 ExoPlayer + HLS |
+| リンクカード | ✅ | `LinkCard.kt` — OGP サムネイル表示, タップでブラウザ起動 |
+| スレッド表示 | ✅ | `ThreadScreen.kt`, `ThreadViewModel.kt` — 親チェーン全件表示, メイン投稿ハイライト, 自動スクロール |
+
+### Phase 3〜5: 未着手
+
+| Phase | 内容 | 状態 |
+|---|---|---|
+| Phase 3 | 通知・プロフィール・検索 | 未着手 |
+| Phase 4 | DM・モデレーション・設定 | 未着手 |
+| Phase 5 | BSAF・高度な機能 | 未着手 |
+
+### Android 版アーキテクチャ
+
+```
+Composable Screen ──hiltViewModel()──> ViewModel (@HiltViewModel)
+                                            │
+                                            ▼
+                                       Repository Layer
+                                            │
+                                            ▼
+                                       ATProtoClient (Ktor + OkHttp)
+                                       ├── client (JSON ContentNegotiation)
+                                       └── rawClient (Blob upload 専用)
+```
+
+| レイヤー | 技術 |
+|---|---|
+| UI | Jetpack Compose + Material3 |
+| 状態管理 | ViewModel + StateFlow |
+| DI | Hilt (Dagger) |
+| HTTP | Ktor Client + OkHttp engine |
+| シリアライズ | kotlinx.serialization |
+| 画像 | Coil 3 |
+| 動画 | Media3 ExoPlayer (HLS) |
+| セッション永続化 | EncryptedSharedPreferences (AES256-GCM) |
+| ナビゲーション | Compose Navigation (type-safe routes) |
+
+### 実装上の注意点（Phase 2 で判明）
+
+- **ATProtoClient の body 型**: `post()` の引数は `JsonElement` 型に統一。`Any` 型だと Ktor の ContentNegotiation がシリアライザを解決できない
+- **Blob upload**: ContentNegotiation なしの `rawClient` を使用。レスポンスは `bodyAsText()` + 手動 JSON パース
+- **スレッドパース**: `getPostThread` のレスポンスは `JsonElement` で受け取り手動パース。`ThreadViewPost` の再帰構造を `@Serializable data class` でデシリアライズすると壊れるケースがある
+- **PostCard の clickable**: アクションバー（いいね等）は PostCard の `clickable` 領域の外に配置しないとタップイベントが奪われる
+
+---
+
+## 3. iOS 版実装済み機能一覧（参考）
 
 ### コア機能
 | 機能 | 状態 | 備考 |
@@ -115,7 +184,7 @@
 
 ---
 
-## 3. AT Protocol 実装詳細
+## 4. AT Protocol 実装詳細
 
 ### 認証フロー
 
@@ -173,7 +242,7 @@ Bluesky の Facet は UTF-8 バイトオフセットで範囲を指定する（S
 
 ---
 
-## 4. アーキテクチャ方針
+## 5. アーキテクチャ方針
 
 ### iOS 版のアーキテクチャ
 
@@ -207,7 +276,7 @@ View ──@Environment──> ViewModel (@Observable)
 
 ---
 
-## 5. 機能別実装ノート
+## 6. 機能別実装ノート
 
 ### タイムライン
 
@@ -273,7 +342,7 @@ Android では `Intent` / `IntentFilter` で同等の機能を実装できる。
 
 ---
 
-## 6. BSAF 対応
+## 7. BSAF 対応
 
 BSAF（Bluesky Structured Alert Feed）は kazahana 独自の機能拡張。詳細仕様: `../bsaf-protocol/docs/bsaf-spec-ja.md`
 
@@ -349,7 +418,7 @@ data class BsafRegisteredBot(
 
 ---
 
-## 7. 多言語対応
+## 8. 多言語対応
 
 ### 対応言語
 
@@ -395,7 +464,7 @@ common.cancel          → キャンセル
 
 ---
 
-## 8. 既知の課題・未実装
+## 9. 既知の課題・未実装
 
 ### コードベースの課題
 
@@ -415,7 +484,7 @@ common.cancel          → キャンセル
 
 ---
 
-## 9. Android 版固有の検討事項
+## 10. Android 版固有の検討事項
 
 ### ディープリンク
 

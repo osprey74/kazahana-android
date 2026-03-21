@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">kazahana</string>
+
+    <!-- Tabs -->
+    <string name="tab_home">Home</string>
+    <string name="tab_search">Search</string>
+    <string name="tab_notifications">Notifications</string>
+    <string name="tab_messages">Messages</string>
+    <string name="tab_profile">Profile</string>
+
+    <!-- Auth -->
+    <string name="auth_handle_label">Handle or DID</string>
+    <string name="auth_handle_placeholder">user.bsky.social</string>
+    <string name="auth_password_label">App Password</string>
+    <string name="auth_login">Log in</string>
+    <string name="auth_logging_in">Logging in…</string>
+    <string name="auth_error_invalid">Invalid handle or password</string>
+    <string name="auth_error_network">Network error. Please try again.</string>
+    <string name="auth_error_rate_limit">Too many attempts. Please wait.</string>
+
+    <!-- Compose -->
+    <string name="compose_title">New Post</string>
+    <string name="compose_post">Post</string>
+    <string name="compose_placeholder">What\'s up?</string>
+    <string name="compose_add_image">Add image</string>
+    <string name="compose_alt_title">Alt text</string>
+    <string name="compose_alt_hint">Describe this image</string>
+    <string name="compose_reply_title">Reply</string>
+    <string name="compose_quote_title">Quote</string>
+    <string name="compose_replying_to">Replying to</string>
+    <string name="compose_quoting">Quoting</string>
+
+    <!-- Post -->
+    <string name="post_reply">Reply</string>
+
+    <!-- Thread -->
+    <string name="thread_title">Thread</string>
+
+    <!-- Common -->
+    <string name="common_retry">Retry</string>
+    <string name="common_cancel">Cancel</string>
+    <string name="common_ok">OK</string>
+    <string name="common_delete">Delete</string>
+    <string name="common_loading">Loading…</string>
+    <string name="common_error">An error occurred</string>
+</resources>
