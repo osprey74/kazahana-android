@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find /mnt/g/dev/kazahana-android -type f -name *.gradle.kts -o -name *.gradle -o -name settings.gradle.kts -o -name gradle.properties -o -name AndroidManifest.xml -o -name libs.versions.toml)",
+      "Bash(find /mnt/g/dev/kazahana-android -type f ! -path \"*/\\\\.git/*\" ! -path \"*/.idea/*\" ! -path \"*/.claude/*\" -exec ls -lh {})",
+      "Bash(ls -1 /mnt/g/dev/kazahana-ios/kazahana-ios/*.swift)",
+      "Bash(gh repo:*)",
+      "Bash(java -version)",
+      "Bash(ls /mnt/g/dev/kazahana-android/app/src/main/res/mipmap*/ic_launcher*)",
+      "Bash(find /mnt/g/dev/kazahana-android/app/src/main/res/mipmap* -type f)",
+      "Bash(chmod:*)",
+      "Bash(./gradlew assembleDebug)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git config:*)",
+      "Bash(git push:*)"
+    ]
+  }
+}
