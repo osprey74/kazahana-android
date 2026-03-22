@@ -1,7 +1,6 @@
 package com.kazahana.app.ui.compose
 
 import android.content.Context
-import android.graphics.BitmapFactory
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -11,6 +10,7 @@ import com.kazahana.app.data.model.ImageEmbedItem
 import com.kazahana.app.data.model.PostRef
 import com.kazahana.app.data.model.PostReplyRef
 import com.kazahana.app.data.remote.ATProtoClient
+import com.kazahana.app.data.util.ImageHelper
 import com.kazahana.app.data.richtext.RichTextParser
 import com.kazahana.app.data.repository.PostRepository
 import io.ktor.client.call.body
@@ -85,6 +85,7 @@ private fun String.graphemeCount(): Int {
 class ComposeViewModel @Inject constructor(
     private val postRepository: PostRepository,
     private val atProtoClient: ATProtoClient,
+    private val imageHelper: ImageHelper,
     @ApplicationContext private val context: Context,
 ) : ViewModel() {
 
@@ -149,10 +150,10 @@ class ComposeViewModel @Inject constructor(
                 // Upload images first
                 val imageEmbeds = mutableListOf<ImageEmbedItem>()
                 for (image in state.images) {
-                    val bytes = readImageBytes(image.uri) ?: continue
+                    val bytes = imageHelper.readBytes(image.uri) ?: continue
                     val uploadResult = postRepository.uploadBlob(bytes, image.mimeType)
                     uploadResult.onSuccess { blob ->
-                        val aspectRatio = getImageAspectRatio(image.uri)
+                        val aspectRatio = imageHelper.getAspectRatio(image.uri)
                         imageEmbeds.add(
                             ImageEmbedItem(
                                 blobRef = BlobRef(
@@ -251,25 +252,4 @@ class ComposeViewModel @Inject constructor(
         }
     }
 
-    private fun readImageBytes(uri: Uri): ByteArray? {
-        return try {
-            context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
-        } catch (_: Exception) {
-            null
-        }
-    }
-
-    private fun getImageAspectRatio(uri: Uri): AspectRatio? {
-        return try {
-            val options = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-            context.contentResolver.openInputStream(uri)?.use {
-                BitmapFactory.decodeStream(it, null, options)
-            }
-            if (options.outWidth > 0 && options.outHeight > 0) {
-                AspectRatio(width = options.outWidth, height = options.outHeight)
-            } else null
-        } catch (_: Exception) {
-            null
-        }
-    }
 }

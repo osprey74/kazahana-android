@@ -42,14 +42,12 @@ import com.kazahana.app.data.model.PostView
 import com.kazahana.app.ui.common.LocalModerationSettings
 import com.kazahana.app.ui.common.checkModeration
 import com.kazahana.app.ui.timeline.PostCard
-import kotlinx.serialization.json.Json
+import com.kazahana.app.data.AppJson
 import kotlinx.serialization.json.decodeFromJsonElement
-
-private val json = Json { ignoreUnknownKeys = true }
 
 private fun parsePostText(post: PostView): String {
     return try {
-        json.decodeFromJsonElement<PostRecord>(post.record).text
+        AppJson.decodeFromJsonElement<PostRecord>(post.record).text
     } catch (_: Exception) {
         ""
     }
@@ -59,6 +57,8 @@ private fun parsePostText(post: PostView): String {
 @Composable
 fun ThreadScreen(
     onNavigateBack: () -> Unit,
+    onPostClick: (postUri: String) -> Unit = {},
+    onProfileClick: (did: String) -> Unit = {},
     onReply: (postUri: String, postCid: String, rootUri: String, rootCid: String, authorHandle: String, authorDisplayName: String, postText: String) -> Unit = { _, _, _, _, _, _, _ -> },
     viewModel: ThreadViewModel = hiltViewModel(),
 ) {
@@ -141,6 +141,8 @@ fun ThreadScreen(
                                 showThreadLine = index > 0, // No line above the first (root) post
                                 rootUri = rootUri,
                                 rootCid = rootCid,
+                                onClick = { onPostClick(post.uri) },
+                                onAuthorClick = { did -> onProfileClick(did) },
                                 onReply = onReply,
                                 onLike = { uri, cid, likeUri -> viewModel.toggleLike(uri, cid, likeUri) },
                                 onRepost = { uri, cid, repostUri -> viewModel.toggleRepost(uri, cid, repostUri) },
@@ -154,9 +156,11 @@ fun ThreadScreen(
                                 ThreadPostItem(
                                     post = mainPost,
                                     isMainPost = true,
-                                    showThreadLine = uiState.parentPosts.isNotEmpty(), // Line above main post if parents exist
+                                    showThreadLine = uiState.parentPosts.isNotEmpty(),
                                     rootUri = rootUri,
                                     rootCid = rootCid,
+                                    onClick = null, // Main post is already focused — no navigation
+                                    onAuthorClick = { did -> onProfileClick(did) },
                                     onReply = onReply,
                                     onLike = { uri, cid, likeUri -> viewModel.toggleLike(uri, cid, likeUri) },
                                     onRepost = { uri, cid, repostUri -> viewModel.toggleRepost(uri, cid, repostUri) },
@@ -181,6 +185,8 @@ fun ThreadScreen(
                                 }
                                 PostCard(
                                     feedPost = FeedViewPost(post = reply),
+                                    onClick = { onPostClick(reply.uri) },
+                                    onAuthorClick = { did -> onProfileClick(did) },
                                     onReply = { uri, cid ->
                                         onReply(
                                             uri, cid, rootUri, rootCid,
@@ -215,6 +221,8 @@ private fun ThreadPostItem(
     showThreadLine: Boolean,
     rootUri: String,
     rootCid: String,
+    onClick: (() -> Unit)?,
+    onAuthorClick: (did: String) -> Unit,
     onReply: (String, String, String, String, String, String, String) -> Unit,
     onLike: (String, String, String?) -> Unit,
     onRepost: (String, String, String?) -> Unit,
@@ -244,6 +252,8 @@ private fun ThreadPostItem(
         }
         PostCard(
             feedPost = FeedViewPost(post = post),
+            onClick = if (onClick != null) { { _ -> onClick() } } else { {} },
+            onAuthorClick = onAuthorClick,
             onReply = { uri, cid ->
                 onReply(
                     uri, cid, rootUri, rootCid,

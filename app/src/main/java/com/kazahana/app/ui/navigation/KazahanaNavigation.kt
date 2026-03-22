@@ -188,7 +188,11 @@ private fun MainScreen(
         || currentDestination?.hasRoute(ReplyRoute::class) == true
         || currentDestination?.hasRoute(QuoteRoute::class) == true
 
+    val isOnSettings = currentDestination?.hasRoute(SettingsRoute::class) == true
+        || currentDestination?.hasRoute(FeedManagementRoute::class) == true
+
     val hideChrome = isOnCompose
+    val hideFab = hideChrome || isOnSettings
 
     Scaffold(
         bottomBar = {
@@ -253,7 +257,7 @@ private fun MainScreen(
             }
         },
         floatingActionButton = {
-            if (!hideChrome) {
+            if (!hideFab) {
                 FloatingActionButton(
                     onClick = {
                         navController.navigate(ComposeRoute) {
@@ -424,6 +428,12 @@ private fun MainScreen(
                 val route = backStackEntry.toRoute<ThreadRoute>()
                 ThreadScreen(
                     onNavigateBack = { navController.popBackStack() },
+                    onPostClick = { postUri ->
+                        navController.navigate(ThreadRoute(postUri = postUri))
+                    },
+                    onProfileClick = { did ->
+                        navController.navigate(ProfileDetailRoute(actorDid = did))
+                    },
                     onReply = { postUri, postCid, rootUri, rootCid, authorHandle, authorDisplayName, postText ->
                         navController.navigate(
                             ReplyRoute(

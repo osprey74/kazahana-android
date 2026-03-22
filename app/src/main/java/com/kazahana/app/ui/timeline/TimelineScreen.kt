@@ -174,7 +174,7 @@ fun TimelineScreen(
                         ) { _, feedPost ->
                             val record = remember(feedPost.post.record) {
                                 try {
-                                    kotlinx.serialization.json.Json { ignoreUnknownKeys = true }
+                                    com.kazahana.app.data.AppJson
                                         .decodeFromJsonElement<com.kazahana.app.data.model.PostRecord>(feedPost.post.record)
                                 } catch (_: Exception) { null }
                             }

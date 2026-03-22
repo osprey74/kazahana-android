@@ -103,6 +103,9 @@
     <!-- Language names -->
     <string name="lang_system">跟隨系統</string>
     <string name="settings_account">帳號</string>
+    <string name="settings_support">支持</string>
+    <string name="settings_support_message">如果您喜歡 kazahana，請考慮支持開發 ☕</string>
+    <string name="settings_support_kofi">在 Ko-fi 上支持</string>
     <string name="settings_app_info">應用程式資訊</string>
     <string name="settings_version">版本</string>
     <string name="lang_ja">日本語</string>

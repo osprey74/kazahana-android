@@ -1,5 +1,10 @@
 package com.kazahana.app.ui.profile
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -26,6 +31,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -110,99 +116,214 @@ fun ProfileScreen(
         else -> {
             val profile = uiState.profile ?: return
 
-            LazyColumn(
-                state = listState,
-                modifier = Modifier.fillMaxSize(),
-            ) {
-                // Banner + Avatar + Profile info
-                item {
-                    ProfileHeader(
+            // Show compact header when tabs have scrolled off screen
+            // Item 0 = ProfileHeader, Item 1 = Tabs, so when firstVisibleItemIndex >= 2
+            val showCompactHeader by remember {
+                derivedStateOf {
+                    listState.firstVisibleItemIndex >= 2
+                }
+            }
+
+            Box(modifier = Modifier.fillMaxSize()) {
+                LazyColumn(
+                    state = listState,
+                    modifier = Modifier.fillMaxSize(),
+                ) {
+                    // Banner + Avatar + Profile info
+                    item {
+                        ProfileHeader(
+                            profile = profile,
+                            isSelf = viewModel.isSelf,
+                            isFollowLoading = uiState.isFollowLoading,
+                            onFollowToggle = { viewModel.toggleFollow() },
+                            onNavigateBack = onNavigateBack,
+                            onSettingsClick = if (viewModel.isSelf) onSettingsClick else null,
+                        )
+                    }
+
+                    // Tabs
+                    item {
+                        ScrollableTabRow(
+                            selectedTabIndex = ProfileTab.entries.indexOf(uiState.selectedTab),
+                            edgePadding = 0.dp,
+                        ) {
+                            ProfileTab.entries.forEach { tab ->
+                                Tab(
+                                    selected = uiState.selectedTab == tab,
+                                    onClick = { viewModel.selectTab(tab) },
+                                    text = { Text(stringResource(tab.labelRes)) },
+                                )
+                            }
+                        }
+                    }
+
+                    // Loading posts
+                    if (uiState.isLoadingPosts && uiState.posts.isEmpty()) {
+                        item {
+                            Box(
+                                modifier = Modifier.fillMaxWidth().padding(32.dp),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                CircularProgressIndicator()
+                            }
+                        }
+                    }
+
+                    // Posts
+                    itemsIndexed(
+                        items = uiState.posts,
+                        key = { index, feedPost -> "${feedPost.post.uri}#$index" },
+                    ) { _, feedPost ->
+                        val record = remember(feedPost.post.record) {
+                            try {
+                                com.kazahana.app.data.AppJson
+                                    .decodeFromJsonElement<PostRecord>(feedPost.post.record)
+                            } catch (_: Exception) { null }
+                        }
+                        val modSettings = LocalModerationSettings.current
+                        val modDecision = remember(feedPost.post.labels, modSettings) {
+                            checkModeration(feedPost.post.labels, modSettings)
+                        }
+                        PostCard(
+                            feedPost = feedPost,
+                            onClick = { uri -> onPostClick(uri) },
+                            onAuthorClick = { did -> onProfileClick(did) },
+                            onReply = { uri, cid ->
+                                val replyRoot = feedPost.reply?.root
+                                val rootUri = replyRoot?.uri ?: uri
+                                val rootCid = replyRoot?.cid ?: cid
+                                onReply(
+                                    uri, cid, rootUri, rootCid,
+                                    feedPost.post.author.handle,
+                                    feedPost.post.author.displayName ?: "",
+                                    record?.text ?: "",
+                                )
+                            },
+                            onLike = { uri, cid, likeUri -> viewModel.toggleLike(uri, cid, likeUri) },
+                            onRepost = { uri, cid, repostUri -> viewModel.toggleRepost(uri, cid, repostUri) },
+                            onBookmark = { uri, cid, bookmarkUri -> viewModel.toggleBookmark(uri, cid, bookmarkUri) },
+                            moderationDecision = modDecision,
+                        )
+                    }
+
+                    if (uiState.isLoadingMore) {
+                        item {
+                            Box(
+                                modifier = Modifier.fillMaxWidth().padding(16.dp),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                CircularProgressIndicator()
+                            }
+                        }
+                    }
+                }
+
+                // Compact sticky header overlay
+                AnimatedVisibility(
+                    visible = showCompactHeader,
+                    enter = fadeIn() + slideInVertically { -it },
+                    exit = fadeOut() + slideOutVertically { -it },
+                    modifier = Modifier.align(Alignment.TopCenter),
+                ) {
+                    CompactProfileHeader(
                         profile = profile,
+                        selectedTab = uiState.selectedTab,
                         isSelf = viewModel.isSelf,
-                        isFollowLoading = uiState.isFollowLoading,
-                        onFollowToggle = { viewModel.toggleFollow() },
                         onNavigateBack = onNavigateBack,
                         onSettingsClick = if (viewModel.isSelf) onSettingsClick else null,
+                        onTabSelect = { viewModel.selectTab(it) },
                     )
-                }
-
-                // Tabs
-                item {
-                    ScrollableTabRow(
-                        selectedTabIndex = ProfileTab.entries.indexOf(uiState.selectedTab),
-                        edgePadding = 0.dp,
-                    ) {
-                        ProfileTab.entries.forEach { tab ->
-                            Tab(
-                                selected = uiState.selectedTab == tab,
-                                onClick = { viewModel.selectTab(tab) },
-                                text = { Text(stringResource(tab.labelRes)) },
-                            )
-                        }
-                    }
-                }
-
-                // Loading posts
-                if (uiState.isLoadingPosts && uiState.posts.isEmpty()) {
-                    item {
-                        Box(
-                            modifier = Modifier.fillMaxWidth().padding(32.dp),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            CircularProgressIndicator()
-                        }
-                    }
-                }
-
-                // Posts
-                itemsIndexed(
-                    items = uiState.posts,
-                    key = { index, feedPost -> "${feedPost.post.uri}#$index" },
-                ) { _, feedPost ->
-                    val record = remember(feedPost.post.record) {
-                        try {
-                            Json { ignoreUnknownKeys = true }
-                                .decodeFromJsonElement<PostRecord>(feedPost.post.record)
-                        } catch (_: Exception) { null }
-                    }
-                    val modSettings = LocalModerationSettings.current
-                    val modDecision = remember(feedPost.post.labels, modSettings) {
-                        checkModeration(feedPost.post.labels, modSettings)
-                    }
-                    PostCard(
-                        feedPost = feedPost,
-                        onClick = { uri -> onPostClick(uri) },
-                        onAuthorClick = { did -> onProfileClick(did) },
-                        onReply = { uri, cid ->
-                            val replyRoot = feedPost.reply?.root
-                            val rootUri = replyRoot?.uri ?: uri
-                            val rootCid = replyRoot?.cid ?: cid
-                            onReply(
-                                uri, cid, rootUri, rootCid,
-                                feedPost.post.author.handle,
-                                feedPost.post.author.displayName ?: "",
-                                record?.text ?: "",
-                            )
-                        },
-                        onLike = { uri, cid, likeUri -> viewModel.toggleLike(uri, cid, likeUri) },
-                        onRepost = { uri, cid, repostUri -> viewModel.toggleRepost(uri, cid, repostUri) },
-                        onBookmark = { uri, cid, bookmarkUri -> viewModel.toggleBookmark(uri, cid, bookmarkUri) },
-                        moderationDecision = modDecision,
-                    )
-                }
-
-                if (uiState.isLoadingMore) {
-                    item {
-                        Box(
-                            modifier = Modifier.fillMaxWidth().padding(16.dp),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            CircularProgressIndicator()
-                        }
-                    }
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun CompactProfileHeader(
+    profile: com.kazahana.app.data.model.ProfileViewDetailed,
+    selectedTab: ProfileTab,
+    isSelf: Boolean,
+    onNavigateBack: (() -> Unit)?,
+    onSettingsClick: (() -> Unit)?,
+    onTabSelect: (ProfileTab) -> Unit,
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.surface),
+    ) {
+        // Avatar + Name + Settings row
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 8.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            if (onNavigateBack != null) {
+                IconButton(onClick = onNavigateBack) {
+                    Icon(
+                        Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = stringResource(R.string.common_back),
+                    )
+                }
+            }
+
+            AvatarImage(
+                url = profile.avatar,
+                size = 36.dp,
+                modifier = Modifier
+                    .padding(start = if (onNavigateBack != null) 0.dp else 8.dp),
+            )
+
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(horizontal = 8.dp),
+            ) {
+                Text(
+                    text = profile.displayName ?: profile.handle,
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Text(
+                    text = "@${profile.handle}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+
+            if (onSettingsClick != null) {
+                IconButton(onClick = onSettingsClick) {
+                    Icon(
+                        Icons.Outlined.Settings,
+                        contentDescription = stringResource(R.string.common_settings),
+                    )
+                }
+            }
+        }
+
+        HorizontalDivider()
+
+        // Tab bar
+        ScrollableTabRow(
+            selectedTabIndex = ProfileTab.entries.indexOf(selectedTab),
+            edgePadding = 0.dp,
+        ) {
+            ProfileTab.entries.forEach { tab ->
+                Tab(
+                    selected = selectedTab == tab,
+                    onClick = { onTabSelect(tab) },
+                    text = { Text(stringResource(tab.labelRes)) },
+                )
+            }
+        }
+
+        HorizontalDivider()
     }
 }
 

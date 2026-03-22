@@ -54,10 +54,8 @@ import com.kazahana.app.ui.common.checkModeration
 import com.kazahana.app.ui.common.relativeTime
 import com.kazahana.app.ui.timeline.PostCard
 import kotlinx.coroutines.flow.SharedFlow
-import kotlinx.serialization.json.Json
+import com.kazahana.app.data.AppJson
 import kotlinx.serialization.json.decodeFromJsonElement
-
-private val json = Json { ignoreUnknownKeys = true }
 private val RepostGreen = Color(0xFF00BA7C)
 private val LikeRed = Color(0xFFE0245E)
 private val FollowBlue = Color(0xFF1DA1F2)
@@ -254,7 +252,7 @@ private fun NotificationRow(
                 if (subjectPost == null && notification.reason in listOf("reply", "mention", "quote")) {
                     val recordText = remember(notification.record) {
                         try {
-                            json.decodeFromJsonElement<PostRecord>(notification.record).text
+                            AppJson.decodeFromJsonElement<PostRecord>(notification.record).text
                         } catch (_: Exception) { null }
                     }
                     if (recordText != null) {

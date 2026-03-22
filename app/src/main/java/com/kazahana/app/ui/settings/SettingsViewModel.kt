@@ -9,10 +9,10 @@ import com.kazahana.app.data.local.ModerationPref
 import com.kazahana.app.data.local.SettingsStore
 import com.kazahana.app.data.local.ThemeMode
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -32,51 +32,27 @@ class SettingsViewModel @Inject constructor(
     private val settingsStore: SettingsStore,
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(SettingsUiState())
-    val uiState: StateFlow<SettingsUiState> = _uiState.asStateFlow()
-
-    init {
-        viewModelScope.launch {
-            settingsStore.themeMode.collect { mode ->
-                _uiState.update { it.copy(themeMode = mode) }
-            }
-        }
-        viewModelScope.launch {
-            settingsStore.appLocaleEnum.collect { locale ->
-                _uiState.update { it.copy(appLocale = locale) }
-            }
-        }
-        viewModelScope.launch {
-            settingsStore.adultContentEnabled.collect { enabled ->
-                _uiState.update { it.copy(adultContentEnabled = enabled) }
-            }
-        }
-        viewModelScope.launch {
-            settingsStore.nudityPref.collect { pref ->
-                _uiState.update { it.copy(nudityPref = pref) }
-            }
-        }
-        viewModelScope.launch {
-            settingsStore.sexualPref.collect { pref ->
-                _uiState.update { it.copy(sexualPref = pref) }
-            }
-        }
-        viewModelScope.launch {
-            settingsStore.pornPref.collect { pref ->
-                _uiState.update { it.copy(pornPref = pref) }
-            }
-        }
-        viewModelScope.launch {
-            settingsStore.graphicMediaPref.collect { pref ->
-                _uiState.update { it.copy(graphicMediaPref = pref) }
-            }
-        }
-        viewModelScope.launch {
-            settingsStore.pollIntervalSeconds.collect { seconds ->
-                _uiState.update { it.copy(pollIntervalSeconds = seconds) }
-            }
-        }
-    }
+    val uiState: StateFlow<SettingsUiState> = combine(
+        settingsStore.themeMode,
+        settingsStore.appLocaleEnum,
+        settingsStore.adultContentEnabled,
+        settingsStore.nudityPref,
+        settingsStore.sexualPref,
+        settingsStore.pornPref,
+        settingsStore.graphicMediaPref,
+        settingsStore.pollIntervalSeconds,
+    ) { values ->
+        SettingsUiState(
+            themeMode = values[0] as ThemeMode,
+            appLocale = values[1] as AppLocale,
+            adultContentEnabled = values[2] as Boolean,
+            nudityPref = values[3] as ModerationPref,
+            sexualPref = values[4] as ModerationPref,
+            pornPref = values[5] as ModerationPref,
+            graphicMediaPref = values[6] as ModerationPref,
+            pollIntervalSeconds = values[7] as Int,
+        )
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), SettingsUiState())
 
     fun setTheme(mode: ThemeMode) {
         viewModelScope.launch { settingsStore.setTheme(mode) }

@@ -103,6 +103,9 @@
     <!-- Language names -->
     <string name="lang_system">Sistem</string>
     <string name="settings_account">Akun</string>
+    <string name="settings_support">Dukungan</string>
+    <string name="settings_support_message">Jika Anda menyukai kazahana, mohon dukung pengembangannya ☕</string>
+    <string name="settings_support_kofi">Dukung di Ko-fi</string>
     <string name="settings_app_info">Info Aplikasi</string>
     <string name="settings_version">Versi</string>
     <string name="lang_ja">日本語</string>

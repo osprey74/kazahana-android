@@ -34,9 +34,16 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import android.annotation.SuppressLint
+import android.net.Uri
+import android.webkit.WebResourceRequest
+import android.webkit.WebView
+import android.webkit.WebViewClient
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -194,7 +201,19 @@ fun SettingsScreen(
                     .padding(horizontal = 16.dp, vertical = 12.dp),
             )
 
-            // ── Section 5: App Info ──
+            // ── Section 5: Support ──
+            HorizontalDivider()
+            SectionHeader(stringResource(R.string.settings_support))
+            Text(
+                text = stringResource(R.string.settings_support_message),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                modifier = Modifier.padding(horizontal = 16.dp),
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            KofiWidget(modifier = Modifier.padding(horizontal = 16.dp))
+
+            // ── Section 6: App Info ──
             HorizontalDivider()
             SectionHeader(stringResource(R.string.settings_app_info))
             Row(
@@ -365,4 +384,51 @@ private fun ModerationRow(
             )
         }
     }
+}
+
+@SuppressLint("SetJavaScriptEnabled")
+@Composable
+private fun KofiWidget(modifier: Modifier = Modifier) {
+    val context = LocalContext.current
+    AndroidView(
+        factory = {
+            WebView(it).apply {
+                settings.javaScriptEnabled = true
+                settings.domStorageEnabled = true
+                setBackgroundColor(android.graphics.Color.TRANSPARENT)
+                webViewClient = object : WebViewClient() {
+                    override fun shouldOverrideUrlLoading(
+                        view: WebView?,
+                        request: WebResourceRequest?,
+                    ): Boolean {
+                        request?.url?.let { uri ->
+                            context.startActivity(
+                                android.content.Intent(android.content.Intent.ACTION_VIEW, uri)
+                            )
+                        }
+                        return true
+                    }
+                }
+                loadDataWithBaseURL(
+                    "https://ko-fi.com",
+                    """
+                    <!DOCTYPE html>
+                    <html><head>
+                    <meta name="viewport" content="width=device-width,initial-scale=1">
+                    <style>body{margin:0;background:transparent;text-align:right;}</style>
+                    </head><body>
+                    <script type='text/javascript' src='https://storage.ko-fi.com/cdn/widget/Widget_2.js'></script>
+                    <script type='text/javascript'>kofiwidget2.init('Support me on Ko-fi', '#72a4f2', 'A0A71UNW9H');kofiwidget2.draw();</script>
+                    </body></html>
+                    """.trimIndent(),
+                    "text/html",
+                    "UTF-8",
+                    null,
+                )
+            }
+        },
+        modifier = modifier
+            .fillMaxWidth()
+            .height(60.dp),
+    )
 }

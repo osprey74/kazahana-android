@@ -36,10 +36,8 @@ import com.kazahana.app.data.model.PostRecord
 import com.kazahana.app.ui.common.AvatarImage
 import com.kazahana.app.ui.common.ModerationDecision
 import com.kazahana.app.ui.common.relativeTime
-import kotlinx.serialization.json.Json
+import com.kazahana.app.data.AppJson
 import kotlinx.serialization.json.decodeFromJsonElement
-
-private val json = Json { ignoreUnknownKeys = true }
 private val RepostGreen = androidx.compose.ui.graphics.Color(0xFF00BA7C)
 
 @Composable
@@ -57,7 +55,7 @@ fun PostCard(
     val post = feedPost.post
     val record = remember(post.record) {
         try {
-            json.decodeFromJsonElement<PostRecord>(post.record)
+            AppJson.decodeFromJsonElement<PostRecord>(post.record)
         } catch (_: Exception) {
             null
         }

@@ -103,6 +103,9 @@
     <!-- Language names -->
     <string name="lang_system">Sistema</string>
     <string name="settings_account">Cuenta</string>
+    <string name="settings_support">Apoyo</string>
+    <string name="settings_support_message">Si te gusta kazahana, considera apoyar su desarrollo ☕</string>
+    <string name="settings_support_kofi">Apoyar en Ko-fi</string>
     <string name="settings_app_info">Info de la app</string>
     <string name="settings_version">Versión</string>
     <string name="lang_ja">日本語</string>

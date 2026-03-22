@@ -56,7 +56,7 @@ import com.kazahana.app.ui.common.LocalModerationSettings
 import com.kazahana.app.ui.common.checkModeration
 import com.kazahana.app.ui.timeline.PostCard
 import kotlinx.coroutines.flow.SharedFlow
-import kotlinx.serialization.json.Json
+import com.kazahana.app.data.AppJson
 import kotlinx.serialization.json.decodeFromJsonElement
 
 @Composable
@@ -180,7 +180,7 @@ fun SearchScreen(
                                 }
                                 val record = remember(postView.record) {
                                     try {
-                                        Json { ignoreUnknownKeys = true }
+                                        AppJson
                                             .decodeFromJsonElement<PostRecord>(postView.record)
                                     } catch (_: Exception) { null }
                                 }

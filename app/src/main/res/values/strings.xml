@@ -90,6 +90,9 @@
     <string name="settings_system">System</string>
     <string name="settings_language">Language</string>
     <string name="settings_account">Account</string>
+    <string name="settings_support">Support</string>
+    <string name="settings_support_message">If you enjoy kazahana, please consider supporting its development ☕</string>
+    <string name="settings_support_kofi">Support on Ko-fi</string>
     <string name="settings_app_info">App Info</string>
     <string name="settings_version">Version</string>
     <string name="settings_logout">Logout</string>
