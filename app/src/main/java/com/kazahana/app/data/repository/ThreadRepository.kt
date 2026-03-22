@@ -2,6 +2,7 @@ package com.kazahana.app.data.repository
 
 import com.kazahana.app.data.model.ThreadResponse
 import com.kazahana.app.data.remote.ATProtoClient
+import com.kazahana.app.data.remote.atprotoError
 import io.ktor.client.call.body
 import io.ktor.http.isSuccess
 
@@ -25,7 +26,7 @@ class ThreadRepository(
             if (response.status.isSuccess()) {
                 Result.success(response.body())
             } else {
-                Result.failure(Exception("HTTP ${response.status.value}"))
+                Result.failure(Exception(response.atprotoError()))
             }
         } catch (e: Exception) {
             Result.failure(e)

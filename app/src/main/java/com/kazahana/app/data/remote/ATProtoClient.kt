@@ -16,6 +16,7 @@ import io.ktor.client.request.parameter
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.HttpResponse
+import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
 import io.ktor.http.isSuccess
@@ -54,6 +55,7 @@ class ATProtoClient(
     }
 
     private val refreshMutex = Mutex()
+    @Volatile private var lastRefreshedAt = 0L
 
     var pdsEndpoint: String = DEFAULT_PDS
         private set
@@ -88,14 +90,32 @@ class ATProtoClient(
         }
     }
 
+    /** Check if response indicates an expired token (401 or 400, which includes ExpiredToken) */
+    private fun shouldRefreshToken(response: HttpResponse): Boolean {
+        val status = response.status.value
+        return status == 401 || status == 400
+    }
+
     /** Authenticated GET with auto token refresh */
     suspend fun get(
         nsid: String,
         params: Map<String, String> = emptyMap(),
     ): HttpResponse {
         val response = executeGet(nsid, params)
-        if (response.status.value == 401 && refreshToken()) {
+        if (shouldRefreshToken(response) && refreshToken()) {
             return executeGet(nsid, params)
+        }
+        return response
+    }
+
+    /** Authenticated GET with multi-value params (e.g. feeds=a&feeds=b) */
+    suspend fun getMultiParam(
+        nsid: String,
+        params: Map<String, List<String>> = emptyMap(),
+    ): HttpResponse {
+        val response = executeGetMulti(nsid, params)
+        if (shouldRefreshToken(response) && refreshToken()) {
+            return executeGetMulti(nsid, params)
         }
         return response
     }
@@ -106,7 +126,7 @@ class ATProtoClient(
         body: JsonElement,
     ): HttpResponse {
         val response = executePost(nsid, body)
-        if (response.status.value == 401 && refreshToken()) {
+        if (shouldRefreshToken(response) && refreshToken()) {
             return executePost(nsid, body)
         }
         return response
@@ -119,7 +139,7 @@ class ATProtoClient(
         proxyHeader: String = CHAT_PROXY,
     ): HttpResponse {
         val response = executeGet(nsid, params, proxyHeader)
-        if (response.status.value == 401 && refreshToken()) {
+        if (shouldRefreshToken(response) && refreshToken()) {
             return executeGet(nsid, params, proxyHeader)
         }
         return response
@@ -132,7 +152,7 @@ class ATProtoClient(
         proxyHeader: String = CHAT_PROXY,
     ): HttpResponse {
         val response = executePost(nsid, body, proxyHeader)
-        if (response.status.value == 401 && refreshToken()) {
+        if (shouldRefreshToken(response) && refreshToken()) {
             return executePost(nsid, body, proxyHeader)
         }
         return response
@@ -151,6 +171,19 @@ class ATProtoClient(
         }
     }
 
+    private suspend fun executeGetMulti(
+        nsid: String,
+        params: Map<String, List<String>>,
+    ): HttpResponse {
+        val token = sessionStore.load()?.accessJwt
+        return client.get("$pdsEndpoint/xrpc/$nsid") {
+            token?.let { header("Authorization", "Bearer $it") }
+            params.forEach { (k, values) ->
+                values.forEach { v -> parameter(k, v) }
+            }
+        }
+    }
+
     private suspend fun executePost(
         nsid: String,
         body: JsonElement,
@@ -166,6 +199,10 @@ class ATProtoClient(
 
     /** Refresh access token using refreshJwt */
     suspend fun refreshToken(): Boolean = refreshMutex.withLock {
+        // If another coroutine already refreshed recently, skip
+        val now = System.currentTimeMillis()
+        if (now - lastRefreshedAt < 5_000) return true
+
         val currentSession = sessionStore.load() ?: return false
         return try {
             val response = client.post("$pdsEndpoint/xrpc/com.atproto.server.refreshSession") {
@@ -179,6 +216,7 @@ class ATProtoClient(
                         refreshJwt = refreshed.refreshJwt,
                     )
                 )
+                lastRefreshedAt = System.currentTimeMillis()
                 true
             } else {
                 sessionStore.clear()
@@ -199,7 +237,7 @@ class ATProtoClient(
         mimeType: String,
     ): HttpResponse {
         val response = executeUpload(data, mimeType)
-        if (response.status.value == 401 && refreshToken()) {
+        if (shouldRefreshToken(response) && refreshToken()) {
             return executeUpload(data, mimeType)
         }
         return response
@@ -228,3 +266,25 @@ class ATProtoClient(
         const val CHAT_PROXY = "did:web:api.bsky.chat#bsky_chat"
     }
 }
+
+/** Parse AT Protocol error response into a readable message */
+suspend fun HttpResponse.atprotoError(): String {
+    return try {
+        val body = bodyAsText()
+        val json = Json { ignoreUnknownKeys = true }
+        val error = json.decodeFromString<AtprotoErrorResponse>(body)
+        if (error.message != null) {
+            "${error.error ?: "Error"}: ${error.message}"
+        } else {
+            error.error ?: "HTTP ${status.value}"
+        }
+    } catch (_: Exception) {
+        "HTTP ${status.value}"
+    }
+}
+
+@kotlinx.serialization.Serializable
+private data class AtprotoErrorResponse(
+    val error: String? = null,
+    val message: String? = null,
+)

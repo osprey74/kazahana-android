@@ -37,6 +37,39 @@
     <!-- Thread -->
     <string name="thread_title">Thread</string>
 
+    <!-- Notification -->
+    <string name="notification_title">Notifications</string>
+    <string name="notification_liked">liked your post</string>
+    <string name="notification_reposted">reposted your post</string>
+    <string name="notification_followed">followed you</string>
+    <string name="notification_mentioned">mentioned you</string>
+    <string name="notification_replied">replied to your post</string>
+    <string name="notification_quoted">quoted your post</string>
+    <string name="notification_empty">No notifications yet</string>
+
+    <!-- Profile -->
+    <string name="profile_following">Following</string>
+    <string name="profile_followers">Followers</string>
+    <string name="profile_posts">Posts</string>
+    <string name="profile_follow">Follow</string>
+    <string name="profile_unfollow">Following</string>
+    <string name="profile_follows_you">Follows you</string>
+    <string name="profile_tab_posts">Posts</string>
+    <string name="profile_tab_replies">Replies</string>
+    <string name="profile_tab_media">Media</string>
+    <string name="profile_tab_likes">Likes</string>
+
+    <!-- Search -->
+    <string name="search_placeholder">Search posts or users</string>
+    <string name="search_posts">Posts</string>
+    <string name="search_users">Users</string>
+    <string name="search_no_posts">No posts found</string>
+    <string name="search_no_users">No users found</string>
+    <string name="search_hint">Search Bluesky</string>
+
+    <!-- Feed -->
+    <string name="feed_following">Following</string>
+
     <!-- Common -->
     <string name="common_retry">Retry</string>
     <string name="common_cancel">Cancel</string>

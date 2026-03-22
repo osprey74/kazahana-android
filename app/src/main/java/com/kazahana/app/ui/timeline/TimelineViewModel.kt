@@ -4,6 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.kazahana.app.data.model.FeedViewPost
 import com.kazahana.app.data.model.PostViewerState
+import com.kazahana.app.data.model.SavedFeedItem
+import com.kazahana.app.data.repository.FeedRepository
 import com.kazahana.app.data.repository.InteractionRepository
 import com.kazahana.app.data.repository.TimelineRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -14,6 +16,13 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+data class FeedInfo(
+    val id: String,
+    val displayName: String,
+    val uri: String?,       // null for "Following" (default timeline)
+    val type: String,       // "timeline", "feed", "list"
+)
+
 data class TimelineUiState(
     val posts: List<FeedViewPost> = emptyList(),
     val isLoading: Boolean = false,
@@ -22,18 +31,90 @@ data class TimelineUiState(
     val error: String? = null,
     val cursor: String? = null,
     val hasMore: Boolean = true,
+    val feeds: List<FeedInfo> = emptyList(),
+    val selectedFeed: FeedInfo? = null,
+    val isFeedsLoading: Boolean = false,
 )
 
 @HiltViewModel
 class TimelineViewModel @Inject constructor(
     private val repository: TimelineRepository,
     private val interactionRepository: InteractionRepository,
+    private val feedRepository: FeedRepository,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(TimelineUiState())
     val uiState: StateFlow<TimelineUiState> = _uiState.asStateFlow()
 
     init {
+        // Load default timeline first, then load feed list in background
+        loadTimeline()
+        loadSavedFeeds()
+    }
+
+    private fun loadSavedFeeds() {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isFeedsLoading = true) }
+            feedRepository.getSavedFeeds()
+                .onSuccess { savedFeeds ->
+                    val feedInfos = mutableListOf(
+                        FeedInfo(
+                            id = "following",
+                            displayName = "Following",
+                            uri = null,
+                            type = "timeline",
+                        )
+                    )
+                    savedFeeds.forEach { item ->
+                        when (item.type) {
+                            "feed" -> feedInfos.add(
+                                FeedInfo(
+                                    id = item.id,
+                                    displayName = item.value.substringAfterLast("/"),
+                                    uri = item.value,
+                                    type = "feed",
+                                )
+                            )
+                            "list" -> feedInfos.add(
+                                FeedInfo(
+                                    id = item.id,
+                                    displayName = item.value.substringAfterLast("/"),
+                                    uri = item.value,
+                                    type = "list",
+                                )
+                            )
+                        }
+                    }
+
+                    // Resolve feed names
+                    val feedUris = feedInfos.filter { it.type == "feed" && it.uri != null }.mapNotNull { it.uri }
+                    if (feedUris.isNotEmpty()) {
+                        feedRepository.getFeedGenerators(feedUris)
+                            .onSuccess { generators ->
+                                val nameMap = generators.associate { it.uri to it.displayName }
+                                val resolved = feedInfos.map { info ->
+                                    if (info.type == "feed" && info.uri != null && nameMap.containsKey(info.uri)) {
+                                        info.copy(displayName = nameMap[info.uri]!!)
+                                    } else info
+                                }
+                                _uiState.update { it.copy(feeds = resolved, selectedFeed = resolved.first(), isFeedsLoading = false) }
+                            }
+                            .onFailure {
+                                _uiState.update { it.copy(feeds = feedInfos, selectedFeed = feedInfos.first(), isFeedsLoading = false) }
+                            }
+                    } else {
+                        _uiState.update { it.copy(feeds = feedInfos, selectedFeed = feedInfos.first(), isFeedsLoading = false) }
+                    }
+                }
+                .onFailure {
+                    _uiState.update { it.copy(isFeedsLoading = false) }
+                }
+        }
+    }
+
+    fun selectFeed(feed: FeedInfo) {
+        if (feed == _uiState.value.selectedFeed) return
+        _uiState.update { it.copy(selectedFeed = feed, posts = emptyList(), cursor = null, hasMore = true) }
         loadTimeline()
     }
 
@@ -41,22 +122,40 @@ class TimelineViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
 
-            repository.getTimeline()
-                .onSuccess { response ->
-                    _uiState.update {
-                        it.copy(
-                            posts = response.feed,
-                            cursor = response.cursor,
-                            hasMore = response.cursor != null,
-                            isLoading = false,
-                        )
+            val feed = _uiState.value.selectedFeed
+            if (feed == null || feed.uri == null) {
+                // Default following timeline
+                repository.getTimeline()
+                    .onSuccess { response ->
+                        _uiState.update {
+                            it.copy(
+                                posts = response.feed,
+                                cursor = response.cursor,
+                                hasMore = response.cursor != null,
+                                isLoading = false,
+                            )
+                        }
                     }
-                }
-                .onFailure { e ->
-                    _uiState.update {
-                        it.copy(isLoading = false, error = e.message)
+                    .onFailure { e ->
+                        _uiState.update { it.copy(isLoading = false, error = e.message) }
                     }
-                }
+            } else {
+                // Custom feed
+                feedRepository.getFeed(feed.uri)
+                    .onSuccess { response ->
+                        _uiState.update {
+                            it.copy(
+                                posts = response.feed,
+                                cursor = response.cursor,
+                                hasMore = response.cursor != null,
+                                isLoading = false,
+                            )
+                        }
+                    }
+                    .onFailure { e ->
+                        _uiState.update { it.copy(isLoading = false, error = e.message) }
+                    }
+            }
         }
     }
 
@@ -64,22 +163,38 @@ class TimelineViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.update { it.copy(isRefreshing = true, error = null) }
 
-            repository.getTimeline()
-                .onSuccess { response ->
-                    _uiState.update {
-                        it.copy(
-                            posts = response.feed,
-                            cursor = response.cursor,
-                            hasMore = response.cursor != null,
-                            isRefreshing = false,
-                        )
+            val feed = _uiState.value.selectedFeed
+            if (feed == null || feed.uri == null) {
+                repository.getTimeline()
+                    .onSuccess { response ->
+                        _uiState.update {
+                            it.copy(
+                                posts = response.feed,
+                                cursor = response.cursor,
+                                hasMore = response.cursor != null,
+                                isRefreshing = false,
+                            )
+                        }
                     }
-                }
-                .onFailure { e ->
-                    _uiState.update {
-                        it.copy(isRefreshing = false, error = e.message)
+                    .onFailure { e ->
+                        _uiState.update { it.copy(isRefreshing = false, error = e.message) }
                     }
-                }
+            } else {
+                feedRepository.getFeed(feed.uri)
+                    .onSuccess { response ->
+                        _uiState.update {
+                            it.copy(
+                                posts = response.feed,
+                                cursor = response.cursor,
+                                hasMore = response.cursor != null,
+                                isRefreshing = false,
+                            )
+                        }
+                    }
+                    .onFailure { e ->
+                        _uiState.update { it.copy(isRefreshing = false, error = e.message) }
+                    }
+            }
         }
     }
 
@@ -90,20 +205,38 @@ class TimelineViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoadingMore = true) }
 
-            repository.getTimeline(cursor = state.cursor)
-                .onSuccess { response ->
-                    _uiState.update {
-                        it.copy(
-                            posts = it.posts + response.feed,
-                            cursor = response.cursor,
-                            hasMore = response.cursor != null,
-                            isLoadingMore = false,
-                        )
+            val feed = state.selectedFeed
+            if (feed == null || feed.uri == null) {
+                repository.getTimeline(cursor = state.cursor)
+                    .onSuccess { response ->
+                        _uiState.update {
+                            it.copy(
+                                posts = it.posts + response.feed,
+                                cursor = response.cursor,
+                                hasMore = response.cursor != null,
+                                isLoadingMore = false,
+                            )
+                        }
                     }
-                }
-                .onFailure {
-                    _uiState.update { it.copy(isLoadingMore = false) }
-                }
+                    .onFailure {
+                        _uiState.update { it.copy(isLoadingMore = false) }
+                    }
+            } else {
+                feedRepository.getFeed(feed.uri, cursor = state.cursor)
+                    .onSuccess { response ->
+                        _uiState.update {
+                            it.copy(
+                                posts = it.posts + response.feed,
+                                cursor = response.cursor,
+                                hasMore = response.cursor != null,
+                                isLoadingMore = false,
+                            )
+                        }
+                    }
+                    .onFailure {
+                        _uiState.update { it.copy(isLoadingMore = false) }
+                    }
+            }
         }
     }
 

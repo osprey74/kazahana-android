@@ -46,6 +46,7 @@ private val RepostGreen = androidx.compose.ui.graphics.Color(0xFF00BA7C)
 fun PostCard(
     feedPost: FeedViewPost,
     onClick: (postUri: String) -> Unit = {},
+    onAuthorClick: (did: String) -> Unit = {},
     onReply: (postUri: String, postCid: String) -> Unit = { _, _ -> },
     onLike: (postUri: String, postCid: String, currentLikeUri: String?) -> Unit = { _, _, _ -> },
     onRepost: (postUri: String, postCid: String, currentRepostUri: String?) -> Unit = { _, _, _ -> },
@@ -79,7 +80,7 @@ fun PostCard(
                 .clickable { onClick(post.uri) }
                 .padding(horizontal = 16.dp, vertical = 10.dp),
         ) {
-            AvatarImage(url = post.author.avatar)
+            AvatarImage(url = post.author.avatar, onClick = { onAuthorClick(post.author.did) })
 
             Spacer(modifier = Modifier.width(10.dp))
 

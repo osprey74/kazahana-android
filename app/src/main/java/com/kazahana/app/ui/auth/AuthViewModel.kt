@@ -28,19 +28,23 @@ class AuthViewModel @Inject constructor(
     private val client: ATProtoClient,
 ) : ViewModel() {
 
-    private val _isLoggedIn = MutableStateFlow(client.session != null)
-    val isLoggedIn: StateFlow<Boolean> = _isLoggedIn.asStateFlow()
+    // null = still resolving PDS, true = logged in, false = not logged in
+    private val _isLoggedIn = MutableStateFlow<Boolean?>(null)
+    val isLoggedIn: StateFlow<Boolean?> = _isLoggedIn.asStateFlow()
 
     private val _uiState = MutableStateFlow(LoginUiState())
     val uiState: StateFlow<LoginUiState> = _uiState.asStateFlow()
 
     init {
-        // Restore PDS endpoint from saved session
+        // Restore PDS endpoint from saved session, then signal ready
         val session = client.session
         if (session != null) {
             viewModelScope.launch {
                 resolvePds(session.did)
+                _isLoggedIn.value = true
             }
+        } else {
+            _isLoggedIn.value = false
         }
     }
 

@@ -1,7 +1,9 @@
 package com.kazahana.app.ui.navigation
 
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.ui.Alignment
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Email
@@ -14,6 +16,8 @@ import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.Search
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
@@ -39,10 +43,11 @@ import com.kazahana.app.R
 import com.kazahana.app.ui.auth.LoginScreen
 import com.kazahana.app.ui.auth.AuthViewModel
 import com.kazahana.app.ui.compose.ComposeScreen
+import com.kazahana.app.ui.notification.NotificationScreen
+import com.kazahana.app.ui.notification.NotificationViewModel
 import com.kazahana.app.ui.thread.ThreadScreen
 import com.kazahana.app.ui.timeline.TimelineScreen
 import com.kazahana.app.ui.search.SearchScreen
-import com.kazahana.app.ui.notification.NotificationScreen
 import com.kazahana.app.ui.messages.MessagesScreen
 import com.kazahana.app.ui.profile.ProfileScreen
 import kotlinx.serialization.Serializable
@@ -54,6 +59,7 @@ import kotlinx.serialization.Serializable
 @Serializable object NotificationsRoute
 @Serializable object MessagesRoute
 @Serializable object ProfileRoute
+@Serializable data class ProfileDetailRoute(val actorDid: String)
 @Serializable object ComposeRoute
 @Serializable data class ReplyRoute(
     val postUri: String,
@@ -96,10 +102,18 @@ fun KazahanaNavHost(
 ) {
     val isLoggedIn by authViewModel.isLoggedIn.collectAsState()
 
-    if (isLoggedIn) {
-        MainScreen()
-    } else {
-        LoginScreen(authViewModel = authViewModel)
+    when (isLoggedIn) {
+        null -> {
+            // PDS resolving — show loading
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center,
+            ) {
+                androidx.compose.material3.CircularProgressIndicator()
+            }
+        }
+        true -> MainScreen()
+        false -> LoginScreen(authViewModel = authViewModel)
     }
 }
 
@@ -109,19 +123,26 @@ private fun MainScreen() {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
 
-    // Hide bottom bar and FAB on compose screens
+    // Shared NotificationViewModel for unread badge
+    val notificationViewModel: NotificationViewModel = hiltViewModel()
+    val unreadCount by notificationViewModel.unreadCount.collectAsState()
+
+    // Hide bottom bar and FAB on compose screens and detail screens
     val isOnCompose = currentDestination?.hasRoute(ComposeRoute::class) == true
         || currentDestination?.hasRoute(ReplyRoute::class) == true
         || currentDestination?.hasRoute(QuoteRoute::class) == true
+    val isOnDetail = currentDestination?.hasRoute(ProfileDetailRoute::class) == true
 
     Scaffold(
         bottomBar = {
-            if (!isOnCompose) {
+            if (!isOnCompose && !isOnDetail) {
                 NavigationBar {
                     bottomNavItems.forEach { item ->
                         val selected = currentDestination?.hierarchy?.any {
                             it.hasRoute(item.route::class)
                         } == true
+
+                        val isNotifications = item.route is NotificationsRoute
 
                         NavigationBarItem(
                             selected = selected,
@@ -135,10 +156,27 @@ private fun MainScreen() {
                                 }
                             },
                             icon = {
-                                Icon(
-                                    imageVector = if (selected) item.selectedIcon else item.unselectedIcon,
-                                    contentDescription = stringResource(item.labelRes),
-                                )
+                                if (isNotifications && unreadCount > 0) {
+                                    BadgedBox(
+                                        badge = {
+                                            Badge {
+                                                Text(
+                                                    if (unreadCount > 99) "99+" else unreadCount.toString()
+                                                )
+                                            }
+                                        }
+                                    ) {
+                                        Icon(
+                                            imageVector = if (selected) item.selectedIcon else item.unselectedIcon,
+                                            contentDescription = stringResource(item.labelRes),
+                                        )
+                                    }
+                                } else {
+                                    Icon(
+                                        imageVector = if (selected) item.selectedIcon else item.unselectedIcon,
+                                        contentDescription = stringResource(item.labelRes),
+                                    )
+                                }
                             },
                             label = { Text(stringResource(item.labelRes)) },
                         )
@@ -147,7 +185,7 @@ private fun MainScreen() {
             }
         },
         floatingActionButton = {
-            if (!isOnCompose) {
+            if (!isOnCompose && !isOnDetail) {
                 FloatingActionButton(
                     onClick = {
                         navController.navigate(ComposeRoute) {
@@ -171,6 +209,11 @@ private fun MainScreen() {
                 TimelineScreen(
                     onPostClick = { postUri ->
                         navController.navigate(ThreadRoute(postUri = postUri)) {
+                            launchSingleTop = true
+                        }
+                    },
+                    onProfileClick = { did ->
+                        navController.navigate(ProfileDetailRoute(actorDid = did)) {
                             launchSingleTop = true
                         }
                     },
@@ -200,10 +243,96 @@ private fun MainScreen() {
                     },
                 )
             }
-            composable<SearchRoute> { SearchScreen() }
-            composable<NotificationsRoute> { NotificationScreen() }
+            composable<SearchRoute> {
+                SearchScreen(
+                    onPostClick = { postUri ->
+                        navController.navigate(ThreadRoute(postUri = postUri)) {
+                            launchSingleTop = true
+                        }
+                    },
+                    onProfileClick = { did ->
+                        navController.navigate(ProfileDetailRoute(actorDid = did)) {
+                            launchSingleTop = true
+                        }
+                    },
+                    onReply = { postUri, postCid, rootUri, rootCid, authorHandle, authorDisplayName, postText ->
+                        navController.navigate(
+                            ReplyRoute(postUri = postUri, postCid = postCid, rootUri = rootUri, rootCid = rootCid, authorHandle = authorHandle, authorDisplayName = authorDisplayName, postText = postText)
+                        ) { launchSingleTop = true }
+                    },
+                    onQuote = { postUri, postCid, authorHandle, authorDisplayName, postText ->
+                        navController.navigate(
+                            QuoteRoute(postUri = postUri, postCid = postCid, authorHandle = authorHandle, authorDisplayName = authorDisplayName, postText = postText)
+                        ) { launchSingleTop = true }
+                    },
+                )
+            }
+            composable<NotificationsRoute> {
+                NotificationScreen(
+                    viewModel = notificationViewModel,
+                    onPostClick = { postUri ->
+                        navController.navigate(ThreadRoute(postUri = postUri)) {
+                            launchSingleTop = true
+                        }
+                    },
+                    onProfileClick = { did ->
+                        navController.navigate(ProfileDetailRoute(actorDid = did)) {
+                            launchSingleTop = true
+                        }
+                    },
+                )
+            }
             composable<MessagesRoute> { MessagesScreen() }
-            composable<ProfileRoute> { ProfileScreen() }
+            composable<ProfileRoute> {
+                ProfileScreen(
+                    onPostClick = { postUri ->
+                        navController.navigate(ThreadRoute(postUri = postUri)) {
+                            launchSingleTop = true
+                        }
+                    },
+                    onProfileClick = { did ->
+                        navController.navigate(ProfileDetailRoute(actorDid = did)) {
+                            launchSingleTop = true
+                        }
+                    },
+                    onReply = { postUri, postCid, rootUri, rootCid, authorHandle, authorDisplayName, postText ->
+                        navController.navigate(
+                            ReplyRoute(postUri = postUri, postCid = postCid, rootUri = rootUri, rootCid = rootCid, authorHandle = authorHandle, authorDisplayName = authorDisplayName, postText = postText)
+                        ) { launchSingleTop = true }
+                    },
+                    onQuote = { postUri, postCid, authorHandle, authorDisplayName, postText ->
+                        navController.navigate(
+                            QuoteRoute(postUri = postUri, postCid = postCid, authorHandle = authorHandle, authorDisplayName = authorDisplayName, postText = postText)
+                        ) { launchSingleTop = true }
+                    },
+                )
+            }
+            composable<ProfileDetailRoute> { backStackEntry ->
+                val route = backStackEntry.toRoute<ProfileDetailRoute>()
+                ProfileScreen(
+                    onNavigateBack = { navController.popBackStack() },
+                    onPostClick = { postUri ->
+                        navController.navigate(ThreadRoute(postUri = postUri)) {
+                            launchSingleTop = true
+                        }
+                    },
+                    onProfileClick = { did ->
+                        navController.navigate(ProfileDetailRoute(actorDid = did)) {
+                            launchSingleTop = true
+                        }
+                    },
+                    onReply = { postUri, postCid, rootUri, rootCid, authorHandle, authorDisplayName, postText ->
+                        navController.navigate(
+                            ReplyRoute(postUri = postUri, postCid = postCid, rootUri = rootUri, rootCid = rootCid, authorHandle = authorHandle, authorDisplayName = authorDisplayName, postText = postText)
+                        ) { launchSingleTop = true }
+                    },
+                    onQuote = { postUri, postCid, authorHandle, authorDisplayName, postText ->
+                        navController.navigate(
+                            QuoteRoute(postUri = postUri, postCid = postCid, authorHandle = authorHandle, authorDisplayName = authorDisplayName, postText = postText)
+                        ) { launchSingleTop = true }
+                    },
+                )
+            }
             composable<ThreadRoute> { backStackEntry ->
                 val route = backStackEntry.toRoute<ThreadRoute>()
                 ThreadScreen(

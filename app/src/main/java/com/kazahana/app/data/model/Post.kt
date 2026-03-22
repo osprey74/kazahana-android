@@ -16,6 +16,11 @@ data class TimelineResponse(
 )
 
 @Serializable
+data class GetPostsResponse(
+    val posts: List<PostView> = emptyList(),
+)
+
+@Serializable
 data class FeedViewPost(
     val post: PostView,
     val reply: ReplyRef? = null,
@@ -48,6 +53,22 @@ data class PostRecord(
     val langs: List<String> = emptyList(),
     val tags: List<String> = emptyList(),
     @SerialName("\$via") val via: String? = null,
+)
+
+/** Response from com.atproto.repo.getRecord */
+@Serializable
+data class GetRecordResponse(
+    val uri: String = "",
+    val cid: String? = null,
+    val value: RecordValue? = null,
+)
+
+/** Generic record value — covers repost records which have a subject ref */
+@Serializable
+data class RecordValue(
+    @SerialName("\$type") val type: String? = null,
+    val subject: PostRef? = null,
+    val createdAt: String? = null,
 )
 
 @Serializable
