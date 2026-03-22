@@ -27,7 +27,9 @@
     <string name="thread_title">Hilo</string>
     <string name="notification_title">Notificaciones</string>
     <string name="notification_liked">le gustó tu publicación</string>
+    <string name="notification_liked_repost">le gustó tu repost</string>
     <string name="notification_reposted">reposteó tu publicación</string>
+    <string name="notification_reposted_repost">reposteó tu repost</string>
     <string name="notification_followed">te siguió</string>
     <string name="notification_mentioned">te mencionó</string>
     <string name="notification_replied">respondió a tu publicación</string>
@@ -49,6 +51,8 @@
     <string name="search_no_posts">No se encontraron publicaciones</string>
     <string name="search_no_users">No se encontraron usuarios</string>
     <string name="search_hint">Buscar en Bluesky</string>
+    <string name="search_history">Búsquedas recientes</string>
+    <string name="search_history_clear">Borrar todo</string>
     <string name="feed_following">Siguiendo</string>
     <string name="messages_empty">Sin conversaciones</string>
     <string name="messages_placeholder">Enviar un mensaje…</string>
@@ -72,6 +76,12 @@
     <string name="settings_pref_hide">Ocultar</string>
     <string name="settings_pref_warn">Advertir</string>
     <string name="settings_pref_show">Mostrar</string>
+    <string name="settings_feed_management">Gestión de feeds del inicio</string>
+    <string name="settings_visible_feeds">Feeds visibles</string>
+    <string name="settings_hidden_feeds">Feeds ocultos</string>
+    <string name="settings_no_feeds">Sin feeds ni listas</string>
+    <string name="settings_show_all_in_selector">Mostrar todos los feeds en el selector</string>
+    <string name="settings_show_all_in_selector_hint">Cuando está activado, el menú de selección de feeds en la pantalla de inicio muestra todos los feeds, incluidos los ocultos.</string>
     <string name="moderation_post_hidden">Publicación oculta por moderación</string>
     <string name="moderation_content_warning">Advertencia de contenido — toca para revelar</string>
     <string name="moderation_show">Mostrar</string>
@@ -112,4 +122,11 @@
     <string name="common_delete">Eliminar</string>
     <string name="common_loading">Cargando…</string>
     <string name="common_error">Ocurrió un error</string>
+    <string name="common_clear">Borrar</string>
+    <string name="common_back">Volver</string>
+    <string name="common_settings">Configuración</string>
+    <string name="common_move_up">Subir</string>
+    <string name="common_move_down">Bajar</string>
+    <string name="feed_type_feed">Feed</string>
+    <string name="feed_type_list">Lista</string>
 </resources>

@@ -28,7 +28,9 @@
     <string name="thread_title">スレッド</string>
     <string name="notification_title">通知</string>
     <string name="notification_liked">がいいねしました</string>
+    <string name="notification_liked_repost">がリポストにいいねしました</string>
     <string name="notification_reposted">がリポストしました</string>
+    <string name="notification_reposted_repost">があなたのリポストをリポストしました</string>
     <string name="notification_followed">にフォローされました</string>
     <string name="notification_mentioned">があなたをメンションしました</string>
     <string name="notification_replied">が返信しました</string>
@@ -50,6 +52,8 @@
     <string name="search_no_posts">投稿が見つかりません</string>
     <string name="search_no_users">ユーザーが見つかりません</string>
     <string name="search_hint">Blueskyを検索</string>
+    <string name="search_history">最近の検索</string>
+    <string name="search_history_clear">すべて削除</string>
     <string name="feed_following">フォロー中</string>
     <string name="messages_empty">会話はありません</string>
     <string name="messages_placeholder">メッセージを送信…</string>
@@ -73,6 +77,12 @@
     <string name="settings_pref_hide">非表示</string>
     <string name="settings_pref_warn">警告</string>
     <string name="settings_pref_show">表示</string>
+    <string name="settings_feed_management">ホームフィード管理</string>
+    <string name="settings_visible_feeds">表示中のフィード</string>
+    <string name="settings_hidden_feeds">非表示のフィード</string>
+    <string name="settings_no_feeds">フィード・リストがありません</string>
+    <string name="settings_show_all_in_selector">フィード選択メニューに全てのフィードを表示</string>
+    <string name="settings_show_all_in_selector_hint">有効にすると、ホーム画面のフィード選択ドロップダウンメニューに非表示のフィードを含む全てのフィードが表示されます。</string>
     <string name="moderation_post_hidden">モデレーションにより非表示</string>
     <string name="moderation_content_warning">コンテンツ警告 — タップして表示</string>
     <string name="moderation_show">表示する</string>
@@ -113,4 +123,11 @@
     <string name="common_delete">削除</string>
     <string name="common_loading">読み込み中…</string>
     <string name="common_error">エラーが発生しました</string>
+    <string name="common_clear">クリア</string>
+    <string name="common_back">戻る</string>
+    <string name="common_settings">設定</string>
+    <string name="common_move_up">上に移動</string>
+    <string name="common_move_down">下に移動</string>
+    <string name="feed_type_feed">フィード</string>
+    <string name="feed_type_list">リスト</string>
 </resources>

@@ -50,6 +50,10 @@ class SettingsStore(private val context: Context) {
         val PORN_PREF = stringPreferencesKey("moderation_porn")
         val GRAPHIC_MEDIA_PREF = stringPreferencesKey("moderation_graphic_media")
         val POLL_INTERVAL = intPreferencesKey("poll_interval_seconds")
+        val PINNED_FEED_URIS = stringPreferencesKey("pinned_feed_uris")
+        val HIDDEN_FEED_URIS = stringPreferencesKey("hidden_feed_uris")
+        val SHOW_ALL_FEEDS_IN_SELECTOR = booleanPreferencesKey("show_all_feeds_in_selector")
+        val SEARCH_HISTORY = stringPreferencesKey("search_history")
     }
 
     val themeMode: Flow<ThemeMode> = context.dataStore.data.map { prefs ->
@@ -91,6 +95,20 @@ class SettingsStore(private val context: Context) {
 
     val pollIntervalSeconds: Flow<Int> = context.dataStore.data.map { prefs ->
         prefs[Keys.POLL_INTERVAL] ?: 60
+    }
+
+    /** JSON-encoded list of feed URIs in display order */
+    val pinnedFeedURIs: Flow<List<String>> = context.dataStore.data.map { prefs ->
+        parseStringList(prefs[Keys.PINNED_FEED_URIS])
+    }
+
+    /** JSON-encoded list of hidden feed URIs */
+    val hiddenFeedURIs: Flow<List<String>> = context.dataStore.data.map { prefs ->
+        parseStringList(prefs[Keys.HIDDEN_FEED_URIS])
+    }
+
+    val showAllFeedsInSelector: Flow<Boolean> = context.dataStore.data.map { prefs ->
+        prefs[Keys.SHOW_ALL_FEEDS_IN_SELECTOR] ?: true
     }
 
     suspend fun setTheme(mode: ThemeMode) {
@@ -136,6 +154,75 @@ class SettingsStore(private val context: Context) {
         context.dataStore.edit { prefs ->
             prefs[Keys.POLL_INTERVAL] = seconds
         }
+    }
+
+    suspend fun setPinnedFeedURIs(uris: List<String>) {
+        context.dataStore.edit { prefs ->
+            prefs[Keys.PINNED_FEED_URIS] = encodeStringList(uris)
+        }
+    }
+
+    suspend fun setShowAllFeedsInSelector(enabled: Boolean) {
+        context.dataStore.edit { prefs ->
+            prefs[Keys.SHOW_ALL_FEEDS_IN_SELECTOR] = enabled
+        }
+    }
+
+    companion object {
+        private const val MAX_SEARCH_HISTORY = 20
+    }
+
+    val searchHistory: Flow<List<String>> = context.dataStore.data.map { prefs ->
+        parseStringList(prefs[Keys.SEARCH_HISTORY])
+    }
+
+    suspend fun addSearchHistory(query: String) {
+        context.dataStore.edit { prefs ->
+            val current = parseStringList(prefs[Keys.SEARCH_HISTORY]).toMutableList()
+            current.remove(query) // remove duplicate
+            current.add(0, query) // add to front
+            if (current.size > MAX_SEARCH_HISTORY) {
+                current.subList(MAX_SEARCH_HISTORY, current.size).clear()
+            }
+            prefs[Keys.SEARCH_HISTORY] = encodeStringList(current)
+        }
+    }
+
+    suspend fun removeSearchHistory(query: String) {
+        context.dataStore.edit { prefs ->
+            val current = parseStringList(prefs[Keys.SEARCH_HISTORY]).toMutableList()
+            current.remove(query)
+            prefs[Keys.SEARCH_HISTORY] = encodeStringList(current)
+        }
+    }
+
+    suspend fun clearSearchHistory() {
+        context.dataStore.edit { prefs ->
+            prefs.remove(Keys.SEARCH_HISTORY)
+        }
+    }
+
+    suspend fun setHiddenFeedURIs(uris: List<String>) {
+        context.dataStore.edit { prefs ->
+            prefs[Keys.HIDDEN_FEED_URIS] = encodeStringList(uris)
+        }
+    }
+
+    private fun parseStringList(json: String?): List<String> {
+        if (json.isNullOrEmpty()) return emptyList()
+        return try {
+            kotlinx.serialization.json.Json.decodeFromString<List<String>>(json)
+        } catch (_: Exception) {
+            emptyList()
+        }
+    }
+
+    private fun encodeStringList(list: List<String>): String {
+        val json = kotlinx.serialization.json.Json
+        return json.encodeToString(
+            kotlinx.serialization.builtins.ListSerializer(kotlinx.serialization.serializer<String>()),
+            list,
+        )
     }
 
     private fun parseModerationPref(value: String?): ModerationPref {

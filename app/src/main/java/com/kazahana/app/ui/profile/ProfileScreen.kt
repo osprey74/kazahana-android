@@ -47,9 +47,11 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.kazahana.app.R
 import coil3.compose.AsyncImage
 import com.kazahana.app.data.model.PostRecord
 import com.kazahana.app.ui.common.AvatarImage
@@ -134,7 +136,7 @@ fun ProfileScreen(
                             Tab(
                                 selected = uiState.selectedTab == tab,
                                 onClick = { viewModel.selectTab(tab) },
-                                text = { Text(tab.label) },
+                                text = { Text(stringResource(tab.labelRes)) },
                             )
                         }
                     }
@@ -224,7 +226,7 @@ private fun ProfileHeader(
             if (profile.banner != null) {
                 AsyncImage(
                     model = profile.banner,
-                    contentDescription = "Banner",
+                    contentDescription = null,
                     contentScale = ContentScale.Crop,
                     modifier = Modifier.fillMaxSize(),
                 )
@@ -236,7 +238,7 @@ private fun ProfileHeader(
                 ) {
                     Icon(
                         Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Back",
+                        contentDescription = stringResource(R.string.common_back),
                         tint = Color.White,
                     )
                 }
@@ -266,7 +268,7 @@ private fun ProfileHeader(
                 ) {
                     Icon(
                         Icons.Outlined.Settings,
-                        contentDescription = "Settings",
+                        contentDescription = stringResource(R.string.common_settings),
                     )
                 }
             }
@@ -279,7 +281,7 @@ private fun ProfileHeader(
                         enabled = !isFollowLoading,
                         modifier = Modifier.padding(top = 8.dp),
                     ) {
-                        Text("Following")
+                        Text(stringResource(R.string.profile_unfollow))
                     }
                 } else {
                     Button(
@@ -287,7 +289,7 @@ private fun ProfileHeader(
                         enabled = !isFollowLoading,
                         modifier = Modifier.padding(top = 8.dp),
                     ) {
-                        Text("Follow")
+                        Text(stringResource(R.string.profile_follow))
                     }
                 }
             }
@@ -325,16 +327,16 @@ private fun ProfileHeader(
             // Stats
             Spacer(modifier = Modifier.height(8.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                StatItem(count = profile.followsCount ?: 0, label = "Following")
-                StatItem(count = profile.followersCount ?: 0, label = "Followers")
-                StatItem(count = profile.postsCount ?: 0, label = "Posts")
+                StatItem(count = profile.followsCount ?: 0, label = stringResource(R.string.profile_following))
+                StatItem(count = profile.followersCount ?: 0, label = stringResource(R.string.profile_followers))
+                StatItem(count = profile.postsCount ?: 0, label = stringResource(R.string.profile_posts))
             }
 
             // Followed by indicator
             if (profile.viewer?.followedBy != null) {
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = "Follows you",
+                    text = stringResource(R.string.profile_follows_you),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                 )

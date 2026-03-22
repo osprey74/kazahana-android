@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -18,6 +19,8 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
@@ -28,6 +31,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -38,9 +42,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.kazahana.app.R
 import com.kazahana.app.data.model.FeedViewPost
 import com.kazahana.app.data.model.PostRecord
 import com.kazahana.app.data.model.ProfileViewDetailed
@@ -88,12 +95,12 @@ fun SearchScreen(
         OutlinedTextField(
             value = uiState.query,
             onValueChange = { viewModel.updateQuery(it) },
-            placeholder = { Text("Search posts or users") },
+            placeholder = { Text(stringResource(R.string.search_placeholder)) },
             leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
             trailingIcon = {
                 if (uiState.query.isNotEmpty()) {
                     IconButton(onClick = { viewModel.updateQuery("") }) {
-                        Icon(Icons.Default.Clear, contentDescription = "Clear")
+                        Icon(Icons.Default.Clear, contentDescription = stringResource(R.string.common_clear))
                     }
                 }
             },
@@ -101,7 +108,7 @@ fun SearchScreen(
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
             keyboardActions = KeyboardActions(
                 onSearch = {
-                    viewModel.search()
+                    viewModel.search(saveToHistory = true)
                     keyboardController?.hide()
                 },
             ),
@@ -117,7 +124,7 @@ fun SearchScreen(
                     Tab(
                         selected = uiState.selectedTab == tab,
                         onClick = { viewModel.selectTab(tab) },
-                        text = { Text(tab.label) },
+                        text = { Text(stringResource(tab.labelRes)) },
                     )
                 }
             }
@@ -131,11 +138,20 @@ fun SearchScreen(
                 }
             }
             !uiState.hasSearched -> {
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text(
-                        "Search Bluesky",
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
+                if (uiState.searchHistory.isNotEmpty()) {
+                    SearchHistoryList(
+                        history = uiState.searchHistory,
+                        onSelect = { viewModel.searchFromHistory(it) },
+                        onRemove = { viewModel.removeHistory(it) },
+                        onClearAll = { viewModel.clearHistory() },
                     )
+                } else {
+                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Text(
+                            stringResource(R.string.search_hint),
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
+                        )
+                    }
                 }
             }
             else -> {
@@ -151,7 +167,7 @@ fun SearchScreen(
                                         modifier = Modifier.fillMaxWidth().padding(32.dp),
                                         contentAlignment = Alignment.Center,
                                     ) {
-                                        Text("No posts found")
+                                        Text(stringResource(R.string.search_no_posts))
                                     }
                                 }
                             }
@@ -198,7 +214,7 @@ fun SearchScreen(
                                         modifier = Modifier.fillMaxWidth().padding(32.dp),
                                         contentAlignment = Alignment.Center,
                                     ) {
-                                        Text("No users found")
+                                        Text(stringResource(R.string.search_no_users))
                                     }
                                 }
                             }
@@ -268,6 +284,70 @@ private fun UserRow(
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                 )
+            }
+        }
+    }
+}
+
+@Composable
+private fun SearchHistoryList(
+    history: List<String>,
+    onSelect: (String) -> Unit,
+    onRemove: (String) -> Unit,
+    onClearAll: () -> Unit,
+) {
+    LazyColumn(modifier = Modifier.fillMaxSize()) {
+        item {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = stringResource(R.string.search_history),
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold,
+                )
+                TextButton(onClick = onClearAll) {
+                    Text(
+                        text = stringResource(R.string.search_history_clear),
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                }
+            }
+        }
+        items(items = history, key = { it }) { query ->
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onSelect(query) }
+                    .padding(horizontal = 16.dp, vertical = 10.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Icon(
+                    Icons.Default.History,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
+                    modifier = Modifier.size(20.dp),
+                )
+                Spacer(modifier = Modifier.width(12.dp))
+                Text(
+                    text = query,
+                    style = MaterialTheme.typography.bodyLarge,
+                    modifier = Modifier.weight(1f),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                IconButton(onClick = { onRemove(query) }) {
+                    Icon(
+                        Icons.Default.Close,
+                        contentDescription = stringResource(R.string.common_delete),
+                        tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
+                        modifier = Modifier.size(18.dp),
+                    )
+                }
             }
         }
     }

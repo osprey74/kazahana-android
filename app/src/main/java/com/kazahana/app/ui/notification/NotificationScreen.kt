@@ -40,8 +40,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.kazahana.app.R
 import com.kazahana.app.data.model.FeedViewPost
 import com.kazahana.app.data.model.NotificationItem
 import com.kazahana.app.data.model.PostRecord
@@ -112,7 +114,7 @@ fun NotificationScreen(
             }
             uiState.notifications.isEmpty() -> {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("No notifications yet", color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f))
+                    Text(stringResource(R.string.notification_empty), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f))
                 }
             }
             else -> {
@@ -183,18 +185,27 @@ private fun NotificationRow(
     onRepost: (postUri: String, postCid: String, currentRepostUri: String?) -> Unit = { _, _, _ -> },
     onBookmark: (postUri: String, postCid: String, currentBookmarkUri: String?) -> Unit = { _, _, _ -> },
 ) {
-    val (icon, iconColor, label) = remember(notification.reason) {
+    val (icon, iconColor) = remember(notification.reason) {
         when (notification.reason) {
-            "like" -> Triple(Icons.Filled.Favorite, LikeRed, "liked your post")
-            "like-via-repost" -> Triple(Icons.Filled.Favorite, LikeRed, "liked your repost")
-            "repost" -> Triple(Icons.Filled.Repeat, RepostGreen, "reposted your post")
-            "repost-via-repost" -> Triple(Icons.Filled.Repeat, RepostGreen, "reposted your repost")
-            "follow" -> Triple(Icons.Filled.PersonAdd, FollowBlue, "followed you")
-            "mention" -> Triple(Icons.Outlined.AlternateEmail, FollowBlue, "mentioned you")
-            "reply" -> Triple(Icons.Filled.Reply, Color.Gray, "replied to your post")
-            "quote" -> Triple(Icons.Filled.FormatQuote, Color.Gray, "quoted your post")
-            else -> Triple(Icons.Filled.Favorite, Color.Gray, notification.reason)
+            "like", "like-via-repost" -> Pair(Icons.Filled.Favorite, LikeRed)
+            "repost", "repost-via-repost" -> Pair(Icons.Filled.Repeat, RepostGreen)
+            "follow" -> Pair(Icons.Filled.PersonAdd, FollowBlue)
+            "mention" -> Pair(Icons.Outlined.AlternateEmail, FollowBlue)
+            "reply" -> Pair(Icons.Filled.Reply, Color.Gray)
+            "quote" -> Pair(Icons.Filled.FormatQuote, Color.Gray)
+            else -> Pair(Icons.Filled.Favorite, Color.Gray)
         }
+    }
+    val label = when (notification.reason) {
+        "like" -> stringResource(R.string.notification_liked)
+        "like-via-repost" -> stringResource(R.string.notification_liked_repost)
+        "repost" -> stringResource(R.string.notification_reposted)
+        "repost-via-repost" -> stringResource(R.string.notification_reposted_repost)
+        "follow" -> stringResource(R.string.notification_followed)
+        "mention" -> stringResource(R.string.notification_mentioned)
+        "reply" -> stringResource(R.string.notification_replied)
+        "quote" -> stringResource(R.string.notification_quoted)
+        else -> notification.reason
     }
 
     Column(modifier = Modifier.fillMaxWidth()) {

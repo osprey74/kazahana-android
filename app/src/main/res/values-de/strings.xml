@@ -27,7 +27,9 @@
     <string name="thread_title">Thread</string>
     <string name="notification_title">Benachrichtigungen</string>
     <string name="notification_liked">hat deinen Beitrag geliked</string>
+    <string name="notification_liked_repost">hat deinen Repost geliked</string>
     <string name="notification_reposted">hat deinen Beitrag repostet</string>
+    <string name="notification_reposted_repost">hat deinen Repost repostet</string>
     <string name="notification_followed">folgt dir</string>
     <string name="notification_mentioned">hat dich erwähnt</string>
     <string name="notification_replied">hat auf deinen Beitrag geantwortet</string>
@@ -49,6 +51,8 @@
     <string name="search_no_posts">Keine Beiträge gefunden</string>
     <string name="search_no_users">Keine Nutzer gefunden</string>
     <string name="search_hint">Bluesky durchsuchen</string>
+    <string name="search_history">Letzte Suchen</string>
+    <string name="search_history_clear">Alle löschen</string>
     <string name="feed_following">Folge ich</string>
     <string name="messages_empty">Keine Unterhaltungen</string>
     <string name="messages_placeholder">Nachricht senden…</string>
@@ -72,6 +76,12 @@
     <string name="settings_pref_hide">Verbergen</string>
     <string name="settings_pref_warn">Warnen</string>
     <string name="settings_pref_show">Anzeigen</string>
+    <string name="settings_feed_management">Home-Feed-Verwaltung</string>
+    <string name="settings_visible_feeds">Sichtbare Feeds</string>
+    <string name="settings_hidden_feeds">Ausgeblendete Feeds</string>
+    <string name="settings_no_feeds">Keine Feeds oder Listen</string>
+    <string name="settings_show_all_in_selector">Alle Feeds im Auswahlmenü anzeigen</string>
+    <string name="settings_show_all_in_selector_hint">Wenn aktiviert, zeigt das Feed-Auswahlmenü auf der Startseite alle Feeds einschließlich ausgeblendeter an.</string>
     <string name="moderation_post_hidden">Beitrag durch Moderation ausgeblendet</string>
     <string name="moderation_content_warning">Inhaltswarnung — tippen zum Anzeigen</string>
     <string name="moderation_show">Anzeigen</string>
@@ -112,4 +122,11 @@
     <string name="common_delete">Löschen</string>
     <string name="common_loading">Laden…</string>
     <string name="common_error">Ein Fehler ist aufgetreten</string>
+    <string name="common_clear">Löschen</string>
+    <string name="common_back">Zurück</string>
+    <string name="common_settings">Einstellungen</string>
+    <string name="common_move_up">Nach oben</string>
+    <string name="common_move_down">Nach unten</string>
+    <string name="feed_type_feed">Feed</string>
+    <string name="feed_type_list">Liste</string>
 </resources>

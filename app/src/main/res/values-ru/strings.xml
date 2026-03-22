@@ -27,7 +27,9 @@
     <string name="thread_title">Тред</string>
     <string name="notification_title">Уведомления</string>
     <string name="notification_liked">понравился ваш пост</string>
+    <string name="notification_liked_repost">понравился ваш репост</string>
     <string name="notification_reposted">репостнул ваш пост</string>
+    <string name="notification_reposted_repost">сделал репост вашего репоста</string>
     <string name="notification_followed">подписался на вас</string>
     <string name="notification_mentioned">упомянул вас</string>
     <string name="notification_replied">ответил на ваш пост</string>
@@ -49,6 +51,8 @@
     <string name="search_no_posts">Посты не найдены</string>
     <string name="search_no_users">Пользователи не найдены</string>
     <string name="search_hint">Поиск в Bluesky</string>
+    <string name="search_history">Недавние поиски</string>
+    <string name="search_history_clear">Очистить все</string>
     <string name="feed_following">Подписки</string>
     <string name="messages_empty">Нет диалогов</string>
     <string name="messages_placeholder">Написать сообщение…</string>
@@ -72,6 +76,12 @@
     <string name="settings_pref_hide">Скрыть</string>
     <string name="settings_pref_warn">Предупредить</string>
     <string name="settings_pref_show">Показать</string>
+    <string name="settings_feed_management">Управление лентами главной</string>
+    <string name="settings_visible_feeds">Видимые ленты</string>
+    <string name="settings_hidden_feeds">Скрытые ленты</string>
+    <string name="settings_no_feeds">Нет лент или списков</string>
+    <string name="settings_show_all_in_selector">Показать все ленты в меню выбора</string>
+    <string name="settings_show_all_in_selector_hint">При включении выпадающее меню выбора лент на главном экране показывает все ленты, включая скрытые.</string>
     <string name="moderation_post_hidden">Пост скрыт модерацией</string>
     <string name="moderation_content_warning">Предупреждение о контенте — нажмите для просмотра</string>
     <string name="moderation_show">Показать</string>
@@ -112,4 +122,11 @@
     <string name="common_delete">Удалить</string>
     <string name="common_loading">Загрузка…</string>
     <string name="common_error">Произошла ошибка</string>
+    <string name="common_clear">Очистить</string>
+    <string name="common_back">Назад</string>
+    <string name="common_settings">Настройки</string>
+    <string name="common_move_up">Вверх</string>
+    <string name="common_move_down">Вниз</string>
+    <string name="feed_type_feed">Лента</string>
+    <string name="feed_type_list">Список</string>
 </resources>

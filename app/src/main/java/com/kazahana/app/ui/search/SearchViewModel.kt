@@ -2,6 +2,7 @@ package com.kazahana.app.ui.search
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.kazahana.app.data.local.SettingsStore
 import com.kazahana.app.data.model.PostView
 import com.kazahana.app.data.model.PostViewerState
 import com.kazahana.app.data.model.ProfileViewDetailed
@@ -15,11 +16,13 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import androidx.annotation.StringRes
+import com.kazahana.app.R
 import javax.inject.Inject
 
-enum class SearchTab(val label: String) {
-    POSTS("Posts"),
-    USERS("Users"),
+enum class SearchTab(@StringRes val labelRes: Int) {
+    POSTS(R.string.search_posts),
+    USERS(R.string.search_users),
 }
 
 data class SearchUiState(
@@ -34,18 +37,28 @@ data class SearchUiState(
     val hasMorePosts: Boolean = false,
     val hasMoreUsers: Boolean = false,
     val hasSearched: Boolean = false,
+    val searchHistory: List<String> = emptyList(),
 )
 
 @HiltViewModel
 class SearchViewModel @Inject constructor(
     private val searchRepository: SearchRepository,
     private val interactionRepository: InteractionRepository,
+    private val settingsStore: SettingsStore,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SearchUiState())
     val uiState: StateFlow<SearchUiState> = _uiState.asStateFlow()
 
     private var searchJob: Job? = null
+
+    init {
+        viewModelScope.launch {
+            settingsStore.searchHistory.collect { history ->
+                _uiState.update { it.copy(searchHistory = history) }
+            }
+        }
+    }
 
     fun updateQuery(query: String) {
         _uiState.update { it.copy(query = query) }
@@ -73,9 +86,13 @@ class SearchViewModel @Inject constructor(
         }
     }
 
-    fun search() {
+    fun search(saveToHistory: Boolean = false) {
         val query = _uiState.value.query.trim()
         if (query.isBlank()) return
+
+        if (saveToHistory) {
+            viewModelScope.launch { settingsStore.addSearchHistory(query) }
+        }
 
         _uiState.update {
             it.copy(
@@ -89,6 +106,20 @@ class SearchViewModel @Inject constructor(
         }
         searchPosts()
         searchUsers()
+    }
+
+    fun searchFromHistory(query: String) {
+        searchJob?.cancel()
+        _uiState.update { it.copy(query = query) }
+        search(saveToHistory = true)
+    }
+
+    fun removeHistory(query: String) {
+        viewModelScope.launch { settingsStore.removeSearchHistory(query) }
+    }
+
+    fun clearHistory() {
+        viewModelScope.launch { settingsStore.clearSearchHistory() }
     }
 
     private fun searchPosts() {

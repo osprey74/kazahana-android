@@ -27,7 +27,9 @@
     <string name="thread_title">Fil de discussion</string>
     <string name="notification_title">Notifications</string>
     <string name="notification_liked">a aimé votre publication</string>
+    <string name="notification_liked_repost">a aimé votre repost</string>
     <string name="notification_reposted">a republié votre publication</string>
+    <string name="notification_reposted_repost">a reposté votre repost</string>
     <string name="notification_followed">vous suit</string>
     <string name="notification_mentioned">vous a mentionné</string>
     <string name="notification_replied">a répondu à votre publication</string>
@@ -49,6 +51,8 @@
     <string name="search_no_posts">Aucune publication trouvée</string>
     <string name="search_no_users">Aucun utilisateur trouvé</string>
     <string name="search_hint">Rechercher sur Bluesky</string>
+    <string name="search_history">Recherches récentes</string>
+    <string name="search_history_clear">Tout effacer</string>
     <string name="feed_following">Abonnements</string>
     <string name="messages_empty">Aucune conversation</string>
     <string name="messages_placeholder">Envoyer un message…</string>
@@ -72,6 +76,12 @@
     <string name="settings_pref_hide">Masquer</string>
     <string name="settings_pref_warn">Avertir</string>
     <string name="settings_pref_show">Afficher</string>
+    <string name="settings_feed_management">Gestion des flux d\'accueil</string>
+    <string name="settings_visible_feeds">Flux visibles</string>
+    <string name="settings_hidden_feeds">Flux masqués</string>
+    <string name="settings_no_feeds">Aucun flux ni liste</string>
+    <string name="settings_show_all_in_selector">Afficher tous les flux dans le sélecteur</string>
+    <string name="settings_show_all_in_selector_hint">Lorsqu\'activé, le menu de sélection des flux sur l\'écran d\'accueil affiche tous les flux, y compris ceux masqués.</string>
     <string name="moderation_post_hidden">Publication masquée par la modération</string>
     <string name="moderation_content_warning">Avertissement de contenu — appuyez pour révéler</string>
     <string name="moderation_show">Afficher</string>
@@ -112,4 +122,11 @@
     <string name="common_delete">Supprimer</string>
     <string name="common_loading">Chargement…</string>
     <string name="common_error">Une erreur est survenue</string>
+    <string name="common_clear">Effacer</string>
+    <string name="common_back">Retour</string>
+    <string name="common_settings">Paramètres</string>
+    <string name="common_move_up">Monter</string>
+    <string name="common_move_down">Descendre</string>
+    <string name="feed_type_feed">Flux</string>
+    <string name="feed_type_list">Liste</string>
 </resources>

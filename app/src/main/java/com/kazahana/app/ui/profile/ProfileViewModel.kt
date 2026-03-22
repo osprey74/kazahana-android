@@ -16,13 +16,15 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import androidx.annotation.StringRes
+import com.kazahana.app.R
 import javax.inject.Inject
 
-enum class ProfileTab(val label: String, val filter: String) {
-    POSTS("Posts", "posts_no_replies"),
-    REPLIES("Replies", "posts_with_replies"),
-    MEDIA("Media", "posts_with_media"),
-    LIKES("Likes", "likes"),
+enum class ProfileTab(@StringRes val labelRes: Int, val filter: String) {
+    POSTS(R.string.profile_tab_posts, "posts_no_replies"),
+    REPLIES(R.string.profile_tab_replies, "posts_with_replies"),
+    MEDIA(R.string.profile_tab_media, "posts_with_media"),
+    LIKES(R.string.profile_tab_likes, "likes"),
 }
 
 data class ProfileUiState(

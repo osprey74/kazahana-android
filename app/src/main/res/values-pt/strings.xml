@@ -27,7 +27,9 @@
     <string name="thread_title">Thread</string>
     <string name="notification_title">Notificações</string>
     <string name="notification_liked">curtiu sua publicação</string>
+    <string name="notification_liked_repost">curtiu seu repost</string>
     <string name="notification_reposted">repostou sua publicação</string>
+    <string name="notification_reposted_repost">repostou seu repost</string>
     <string name="notification_followed">seguiu você</string>
     <string name="notification_mentioned">mencionou você</string>
     <string name="notification_replied">respondeu à sua publicação</string>
@@ -49,6 +51,8 @@
     <string name="search_no_posts">Nenhuma publicação encontrada</string>
     <string name="search_no_users">Nenhum usuário encontrado</string>
     <string name="search_hint">Pesquisar no Bluesky</string>
+    <string name="search_history">Pesquisas recentes</string>
+    <string name="search_history_clear">Limpar tudo</string>
     <string name="feed_following">Seguindo</string>
     <string name="messages_empty">Sem conversas</string>
     <string name="messages_placeholder">Enviar uma mensagem…</string>
@@ -72,6 +76,12 @@
     <string name="settings_pref_hide">Ocultar</string>
     <string name="settings_pref_warn">Avisar</string>
     <string name="settings_pref_show">Mostrar</string>
+    <string name="settings_feed_management">Gerenciar feeds da tela inicial</string>
+    <string name="settings_visible_feeds">Feeds visíveis</string>
+    <string name="settings_hidden_feeds">Feeds ocultos</string>
+    <string name="settings_no_feeds">Sem feeds ou listas</string>
+    <string name="settings_show_all_in_selector">Mostrar todos os feeds no seletor</string>
+    <string name="settings_show_all_in_selector_hint">Quando ativado, o menu de seleção de feeds na tela inicial mostra todos os feeds, incluindo os ocultos.</string>
     <string name="moderation_post_hidden">Publicação oculta pela moderação</string>
     <string name="moderation_content_warning">Aviso de conteúdo — toque para revelar</string>
     <string name="moderation_show">Mostrar</string>
@@ -112,4 +122,11 @@
     <string name="common_delete">Excluir</string>
     <string name="common_loading">Carregando…</string>
     <string name="common_error">Ocorreu um erro</string>
+    <string name="common_clear">Limpar</string>
+    <string name="common_back">Voltar</string>
+    <string name="common_settings">Configurações</string>
+    <string name="common_move_up">Mover para cima</string>
+    <string name="common_move_down">Mover para baixo</string>
+    <string name="feed_type_feed">Feed</string>
+    <string name="feed_type_list">Lista</string>
 </resources>

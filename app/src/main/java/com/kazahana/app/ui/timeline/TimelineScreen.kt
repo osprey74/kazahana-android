@@ -1,19 +1,33 @@
 package com.kazahana.app.ui.timeline
 
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ScrollableTabRow
 import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRowDefaults
+import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
@@ -21,11 +35,16 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.kazahana.app.R
 import com.kazahana.app.ui.common.LocalModerationSettings
 import com.kazahana.app.ui.common.checkModeration
 import kotlinx.coroutines.flow.SharedFlow
@@ -44,9 +63,10 @@ fun TimelineScreen(
     val uiState by viewModel.uiState.collectAsState()
     val listState = rememberLazyListState()
 
-    // Tab re-tap: refresh + scroll to top
+    // Tab re-tap: reload feeds + refresh + scroll to top
     LaunchedEffect(retapFlow) {
         retapFlow?.collect {
+            viewModel.loadSavedFeeds()
             viewModel.refresh()
             listState.animateScrollToItem(0)
         }
@@ -68,19 +88,49 @@ fun TimelineScreen(
     }
 
     Column(modifier = Modifier.fillMaxSize()) {
-        // Feed selector tabs
-        if (uiState.feeds.size > 1) {
-            val selectedIndex = uiState.feeds.indexOf(uiState.selectedFeed).coerceAtLeast(0)
-            ScrollableTabRow(
-                selectedTabIndex = selectedIndex,
-                edgePadding = 0.dp,
-            ) {
-                uiState.feeds.forEach { feed ->
-                    Tab(
-                        selected = feed == uiState.selectedFeed,
-                        onClick = { viewModel.selectFeed(feed) },
-                        text = { Text(feed.displayName, maxLines = 1) },
-                    )
+        // Top bar: Feed selector dropdown + tab bar
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            // Feed dropdown selector (left side)
+            if (uiState.showAllInSelector || uiState.feeds.size <= 1) {
+                FeedDropdown(
+                    feeds = if (uiState.showAllInSelector) uiState.allFeeds else uiState.feeds,
+                    selectedFeed = uiState.selectedFeed,
+                    onSelect = { viewModel.selectFeed(it) },
+                )
+            }
+
+            // Feed tab bar (fills remaining space)
+            if (uiState.feeds.size > 1) {
+                val rawIndex = uiState.feeds.indexOf(uiState.selectedFeed)
+                val isInTabs = rawIndex >= 0
+                ScrollableTabRow(
+                    selectedTabIndex = if (isInTabs) rawIndex else 0,
+                    edgePadding = 0.dp,
+                    modifier = Modifier.weight(1f),
+                    // Hide indicator when selected feed is not in the visible tabs
+                    indicator = @Composable { tabPositions ->
+                        if (isInTabs) {
+                            TabRowDefaults.SecondaryIndicator(
+                                modifier = Modifier.tabIndicatorOffset(tabPositions[rawIndex]),
+                            )
+                        }
+                    },
+                ) {
+                    uiState.feeds.forEach { feed ->
+                        Tab(
+                            selected = isInTabs && feed == uiState.selectedFeed,
+                            onClick = { viewModel.selectFeed(feed) },
+                            text = {
+                                Text(
+                                    text = feed.labelRes?.let { stringResource(it) } ?: feed.displayName,
+                                    maxLines = 1,
+                                )
+                            },
+                        )
+                    }
                 }
             }
         }
@@ -171,4 +221,111 @@ fun TimelineScreen(
             }
         }
     }
+}
+
+@Composable
+private fun FeedDropdown(
+    feeds: List<FeedInfo>,
+    selectedFeed: FeedInfo?,
+    onSelect: (FeedInfo) -> Unit,
+) {
+    var expanded by remember { mutableStateOf(false) }
+
+    Box {
+        Row(
+            modifier = Modifier
+                .clickable { expanded = true }
+                .padding(horizontal = 12.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(
+                Icons.Default.KeyboardArrowDown,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(20.dp),
+            )
+        }
+
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+        ) {
+            // Group by type
+            val following = feeds.filter { it.type == "timeline" }
+            val customFeeds = feeds.filter { it.type == "feed" }
+            val lists = feeds.filter { it.type == "list" }
+
+            following.forEach { feed ->
+                FeedDropdownItem(
+                    feed = feed,
+                    isSelected = feed == selectedFeed,
+                    onClick = {
+                        onSelect(feed)
+                        expanded = false
+                    },
+                )
+            }
+
+            if (customFeeds.isNotEmpty()) {
+                HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+                customFeeds.forEach { feed ->
+                    FeedDropdownItem(
+                        feed = feed,
+                        isSelected = feed == selectedFeed,
+                        onClick = {
+                            onSelect(feed)
+                            expanded = false
+                        },
+                    )
+                }
+            }
+
+            if (lists.isNotEmpty()) {
+                HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+                lists.forEach { feed ->
+                    FeedDropdownItem(
+                        feed = feed,
+                        isSelected = feed == selectedFeed,
+                        onClick = {
+                            onSelect(feed)
+                            expanded = false
+                        },
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun FeedDropdownItem(
+    feed: FeedInfo,
+    isSelected: Boolean,
+    onClick: () -> Unit,
+) {
+    DropdownMenuItem(
+        text = {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text(
+                    text = feed.labelRes?.let { stringResource(it) } ?: feed.displayName,
+                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                    color = if (isSelected) MaterialTheme.colorScheme.primary
+                    else MaterialTheme.colorScheme.onSurface,
+                )
+                if (isSelected) {
+                    Icon(
+                        Icons.Default.Check,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(18.dp),
+                    )
+                }
+            }
+        },
+        onClick = onClick,
+    )
 }

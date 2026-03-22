@@ -27,7 +27,9 @@
     <string name="thread_title">討論串</string>
     <string name="notification_title">通知</string>
     <string name="notification_liked">喜歡了你的貼文</string>
+    <string name="notification_liked_repost">喜歡了你的轉帖</string>
     <string name="notification_reposted">轉發了你的貼文</string>
+    <string name="notification_reposted_repost">轉發了你的轉帖</string>
     <string name="notification_followed">追蹤了你</string>
     <string name="notification_mentioned">提到了你</string>
     <string name="notification_replied">回覆了你的貼文</string>
@@ -49,6 +51,8 @@
     <string name="search_no_posts">找不到貼文</string>
     <string name="search_no_users">找不到使用者</string>
     <string name="search_hint">搜尋Bluesky</string>
+    <string name="search_history">最近搜尋</string>
+    <string name="search_history_clear">全部清除</string>
     <string name="feed_following">追蹤中</string>
     <string name="messages_empty">沒有對話</string>
     <string name="messages_placeholder">傳送訊息…</string>
@@ -72,6 +76,12 @@
     <string name="settings_pref_hide">隱藏</string>
     <string name="settings_pref_warn">警告</string>
     <string name="settings_pref_show">顯示</string>
+    <string name="settings_feed_management">首頁資訊流管理</string>
+    <string name="settings_visible_feeds">顯示的資訊流</string>
+    <string name="settings_hidden_feeds">隱藏的資訊流</string>
+    <string name="settings_no_feeds">沒有資訊流或列表</string>
+    <string name="settings_show_all_in_selector">在選擇器中顯示所有資訊流</string>
+    <string name="settings_show_all_in_selector_hint">啟用後，首頁的資訊流選擇下拉選單將顯示所有資訊流，包括隱藏的資訊流。</string>
     <string name="moderation_post_hidden">貼文被審核隱藏</string>
     <string name="moderation_content_warning">內容警告 — 點擊查看</string>
     <string name="moderation_show">顯示</string>
@@ -112,4 +122,11 @@
     <string name="common_delete">刪除</string>
     <string name="common_loading">載入中…</string>
     <string name="common_error">發生錯誤</string>
+    <string name="common_clear">清除</string>
+    <string name="common_back">返回</string>
+    <string name="common_settings">設定</string>
+    <string name="common_move_up">上移</string>
+    <string name="common_move_down">下移</string>
+    <string name="feed_type_feed">動態</string>
+    <string name="feed_type_list">列表</string>
 </resources>

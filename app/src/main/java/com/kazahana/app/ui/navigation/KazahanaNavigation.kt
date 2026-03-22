@@ -58,6 +58,7 @@ import com.kazahana.app.ui.notification.NotificationScreen
 import com.kazahana.app.ui.notification.NotificationViewModel
 import com.kazahana.app.ui.profile.ProfileScreen
 import com.kazahana.app.ui.search.SearchScreen
+import com.kazahana.app.ui.settings.FeedManagementScreen
 import com.kazahana.app.ui.settings.SettingsScreen
 import com.kazahana.app.ui.thread.ThreadScreen
 import com.kazahana.app.ui.timeline.TimelineScreen
@@ -93,6 +94,7 @@ import kotlinx.serialization.Serializable
     val postText: String = "",
 )
 @Serializable object SettingsRoute
+@Serializable object FeedManagementRoute
 @Serializable data class ChatRoute(val convoId: String)
 
 data class BottomNavItem(
@@ -472,6 +474,16 @@ private fun MainScreen(
                     onLogout = {
                         authViewModel.logout()
                     },
+                    onFeedManagement = {
+                        navController.navigate(FeedManagementRoute) {
+                            launchSingleTop = true
+                        }
+                    },
+                )
+            }
+            composable<FeedManagementRoute> {
+                FeedManagementScreen(
+                    onNavigateBack = { navController.popBackStack() },
                 )
             }
             composable<ChatRoute> { backStackEntry ->

@@ -27,7 +27,9 @@
     <string name="thread_title">话题</string>
     <string name="notification_title">通知</string>
     <string name="notification_liked">赞了你的帖子</string>
+    <string name="notification_liked_repost">赞了你的转帖</string>
     <string name="notification_reposted">转发了你的帖子</string>
+    <string name="notification_reposted_repost">转发了你的转帖</string>
     <string name="notification_followed">关注了你</string>
     <string name="notification_mentioned">提到了你</string>
     <string name="notification_replied">回复了你的帖子</string>
@@ -49,6 +51,8 @@
     <string name="search_no_posts">未找到帖子</string>
     <string name="search_no_users">未找到用户</string>
     <string name="search_hint">搜索Bluesky</string>
+    <string name="search_history">最近搜索</string>
+    <string name="search_history_clear">全部清除</string>
     <string name="feed_following">正在关注</string>
     <string name="messages_empty">没有对话</string>
     <string name="messages_placeholder">发送消息…</string>
@@ -72,6 +76,12 @@
     <string name="settings_pref_hide">隐藏</string>
     <string name="settings_pref_warn">警告</string>
     <string name="settings_pref_show">显示</string>
+    <string name="settings_feed_management">首页信息流管理</string>
+    <string name="settings_visible_feeds">显示的信息流</string>
+    <string name="settings_hidden_feeds">隐藏的信息流</string>
+    <string name="settings_no_feeds">没有信息流或列表</string>
+    <string name="settings_show_all_in_selector">在选择器中显示所有信息流</string>
+    <string name="settings_show_all_in_selector_hint">启用后，首页的信息流选择下拉菜单将显示所有信息流，包括隐藏的信息流。</string>
     <string name="moderation_post_hidden">帖子被审核隐藏</string>
     <string name="moderation_content_warning">内容警告 — 点击查看</string>
     <string name="moderation_show">显示</string>
@@ -112,4 +122,11 @@
     <string name="common_delete">删除</string>
     <string name="common_loading">加载中…</string>
     <string name="common_error">发生错误</string>
+    <string name="common_clear">清除</string>
+    <string name="common_back">返回</string>
+    <string name="common_settings">设置</string>
+    <string name="common_move_up">上移</string>
+    <string name="common_move_down">下移</string>
+    <string name="feed_type_feed">信息流</string>
+    <string name="feed_type_list">列表</string>
 </resources>

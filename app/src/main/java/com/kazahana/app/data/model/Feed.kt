@@ -47,3 +47,35 @@ data class FeedResponse(
     val feed: List<FeedViewPost> = emptyList(),
     val cursor: String? = null,
 )
+
+@Serializable
+data class GetListResponse(
+    val list: ListView,
+    val cursor: String? = null,
+)
+
+@Serializable
+data class GetListsResponse(
+    val lists: List<ListView> = emptyList(),
+    val cursor: String? = null,
+)
+
+@Serializable
+data class ListView(
+    val uri: String = "",
+    val cid: String = "",
+    val name: String = "",
+    val purpose: String? = null,
+    val description: String? = null,
+    val avatar: String? = null,
+    val indexedAt: String? = null,
+)
+
+/**
+ * Result of fetching all saved feed items (feeds + lists).
+ * Equivalent to iOS getAllSavedFeedItems.
+ */
+data class AllSavedFeedItems(
+    val feeds: List<FeedGeneratorView>,
+    val lists: List<ListView>,
+)

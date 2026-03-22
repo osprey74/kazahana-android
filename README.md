@@ -17,7 +17,7 @@ It brings the same lightweight, fast, and simple experience as the [desktop vers
 
 Kazahana is designed as a **lightweight companion app** — not a full-featured standalone replacement for the official Bluesky web client.
 
-- **Daily essentials in Kazahana** — Timeline browsing, posting, notifications, search, DMs, and other frequently used operations.
+- **Daily essentials in Kazahana** — Timeline browsing, posting, notifications, search (with history), feed management, DMs, and other frequently used operations.
 - **Configuration via Bluesky web** — Account management, block/mute list management, and other administrative tasks are left to [bsky.app](https://bsky.app/).
 
 ## Tech Stack

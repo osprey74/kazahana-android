@@ -27,7 +27,9 @@
     <string name="thread_title">Utas</string>
     <string name="notification_title">Notifikasi</string>
     <string name="notification_liked">menyukai postingan Anda</string>
+    <string name="notification_liked_repost">menyukai repost Anda</string>
     <string name="notification_reposted">memposting ulang postingan Anda</string>
+    <string name="notification_reposted_repost">me-repost repost Anda</string>
     <string name="notification_followed">mengikuti Anda</string>
     <string name="notification_mentioned">menyebut Anda</string>
     <string name="notification_replied">membalas postingan Anda</string>
@@ -49,6 +51,8 @@
     <string name="search_no_posts">Postingan tidak ditemukan</string>
     <string name="search_no_users">Pengguna tidak ditemukan</string>
     <string name="search_hint">Cari di Bluesky</string>
+    <string name="search_history">Pencarian terbaru</string>
+    <string name="search_history_clear">Hapus semua</string>
     <string name="feed_following">Mengikuti</string>
     <string name="messages_empty">Tidak ada percakapan</string>
     <string name="messages_placeholder">Kirim pesan…</string>
@@ -72,6 +76,12 @@
     <string name="settings_pref_hide">Sembunyikan</string>
     <string name="settings_pref_warn">Peringatkan</string>
     <string name="settings_pref_show">Tampilkan</string>
+    <string name="settings_feed_management">Kelola Feed Beranda</string>
+    <string name="settings_visible_feeds">Feed Terlihat</string>
+    <string name="settings_hidden_feeds">Feed Tersembunyi</string>
+    <string name="settings_no_feeds">Tidak ada feed atau daftar</string>
+    <string name="settings_show_all_in_selector">Tampilkan semua feed di pemilih</string>
+    <string name="settings_show_all_in_selector_hint">Jika diaktifkan, menu pemilih feed di beranda menampilkan semua feed termasuk yang tersembunyi.</string>
     <string name="moderation_post_hidden">Postingan disembunyikan oleh moderasi</string>
     <string name="moderation_content_warning">Peringatan konten — ketuk untuk menampilkan</string>
     <string name="moderation_show">Tampilkan</string>
@@ -112,4 +122,11 @@
     <string name="common_delete">Hapus</string>
     <string name="common_loading">Memuat…</string>
     <string name="common_error">Terjadi kesalahan</string>
+    <string name="common_clear">Hapus</string>
+    <string name="common_back">Kembali</string>
+    <string name="common_settings">Pengaturan</string>
+    <string name="common_move_up">Pindah ke atas</string>
+    <string name="common_move_down">Pindah ke bawah</string>
+    <string name="feed_type_feed">Feed</string>
+    <string name="feed_type_list">Daftar</string>
 </resources>
