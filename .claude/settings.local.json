@@ -13,7 +13,15 @@
       "Bash(git add:*)",
       "Bash(git commit:*)",
       "Bash(git config:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Read(//usr/lib/**)",
+      "Read(//usr/local/lib/**)",
+      "Bash(/tmp/check_imports.txt:*)",
+      "Read(//tmp/**)",
+      "Bash(grep -r \"data class\\\\|^class\" /mnt/g/dev/kazahana-android/app/src/main/java/com/kazahana/app/data/model/*.kt)",
+      "Bash(ls gradlew*)",
+      "Bash(./gradlew :app:compileDebugKotlin)",
+      "Bash(git status:*)"
     ]
   }
 }
