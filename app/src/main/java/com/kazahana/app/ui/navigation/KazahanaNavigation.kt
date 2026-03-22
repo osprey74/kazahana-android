@@ -204,19 +204,23 @@ private fun MainScreen(
                         NavigationBarItem(
                             selected = selected,
                             onClick = {
-                                // Pop back to the graph root, then navigate to the tab
-                                navController.popBackStack(
-                                    navController.graph.findStartDestination().id,
-                                    inclusive = false,
-                                )
-                                if (!selected) {
+                                if (selected) {
+                                    // Re-tap on tab root: refresh + scroll to top
+                                    scope.launch {
+                                        tabRetapMap[item.labelRes]?.emit(Unit)
+                                    }
+                                } else {
+                                    // Navigate to tab: pop everything back to start, then go to tab root
                                     navController.navigate(item.route) {
+                                        popUpTo(navController.graph.findStartDestination().id) {
+                                            inclusive = false
+                                        }
                                         launchSingleTop = true
                                     }
-                                }
-                                // Trigger refresh + scroll to top
-                                scope.launch {
-                                    tabRetapMap[item.labelRes]?.emit(Unit)
+                                    // Also trigger refresh when returning from a detail screen
+                                    scope.launch {
+                                        tabRetapMap[item.labelRes]?.emit(Unit)
+                                    }
                                 }
                             },
                             icon = {
