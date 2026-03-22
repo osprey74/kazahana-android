@@ -26,12 +26,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.kazahana.app.ui.common.LocalModerationSettings
+import com.kazahana.app.ui.common.checkModeration
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.serialization.json.decodeFromJsonElement
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TimelineScreen(
     viewModel: TimelineViewModel = hiltViewModel(),
+    retapFlow: SharedFlow<Unit>? = null,
     onPostClick: (postUri: String) -> Unit = {},
     onProfileClick: (did: String) -> Unit = {},
     onReply: (postUri: String, postCid: String, rootUri: String, rootCid: String, authorHandle: String, authorDisplayName: String, postText: String) -> Unit = { _, _, _, _, _, _, _ -> },
@@ -39,6 +43,14 @@ fun TimelineScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val listState = rememberLazyListState()
+
+    // Tab re-tap: refresh + scroll to top
+    LaunchedEffect(retapFlow) {
+        retapFlow?.collect {
+            viewModel.refresh()
+            listState.animateScrollToItem(0)
+        }
+    }
 
     // Trigger load more when near the end
     val shouldLoadMore by remember {
@@ -101,6 +113,7 @@ fun TimelineScreen(
                 }
 
                 else -> {
+                    val modSettings = LocalModerationSettings.current
                     LazyColumn(
                         state = listState,
                         modifier = Modifier.fillMaxSize(),
@@ -115,12 +128,14 @@ fun TimelineScreen(
                                         .decodeFromJsonElement<com.kazahana.app.data.model.PostRecord>(feedPost.post.record)
                                 } catch (_: Exception) { null }
                             }
+                            val modDecision = remember(feedPost.post.labels, modSettings) {
+                                checkModeration(feedPost.post.labels, modSettings)
+                            }
                             PostCard(
                                 feedPost = feedPost,
                                 onClick = { uri -> onPostClick(uri) },
                                 onAuthorClick = { did -> onProfileClick(did) },
                                 onReply = { uri, cid ->
-                                    // For replies, root = original thread root or the post itself
                                     val replyRoot = feedPost.reply?.root
                                     val rootUri = replyRoot?.uri ?: uri
                                     val rootCid = replyRoot?.cid ?: cid
@@ -134,6 +149,7 @@ fun TimelineScreen(
                                 onLike = { uri, cid, likeUri -> viewModel.toggleLike(uri, cid, likeUri) },
                                 onRepost = { uri, cid, repostUri -> viewModel.toggleRepost(uri, cid, repostUri) },
                                 onBookmark = { uri, cid, bookmarkUri -> viewModel.toggleBookmark(uri, cid, bookmarkUri) },
+                                moderationDecision = modDecision,
                             )
                         }
 

@@ -25,12 +25,21 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.kazahana.app.data.local.ModerationPref
+import com.kazahana.app.data.local.SettingsStore
+import com.kazahana.app.ui.common.LocalModerationSettings
+import com.kazahana.app.ui.common.ModerationSettings
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
@@ -43,13 +52,16 @@ import com.kazahana.app.R
 import com.kazahana.app.ui.auth.LoginScreen
 import com.kazahana.app.ui.auth.AuthViewModel
 import com.kazahana.app.ui.compose.ComposeScreen
+import com.kazahana.app.ui.messages.ChatScreen
+import com.kazahana.app.ui.messages.MessagesScreen
 import com.kazahana.app.ui.notification.NotificationScreen
 import com.kazahana.app.ui.notification.NotificationViewModel
+import com.kazahana.app.ui.profile.ProfileScreen
+import com.kazahana.app.ui.search.SearchScreen
+import com.kazahana.app.ui.settings.SettingsScreen
 import com.kazahana.app.ui.thread.ThreadScreen
 import com.kazahana.app.ui.timeline.TimelineScreen
-import com.kazahana.app.ui.search.SearchScreen
-import com.kazahana.app.ui.messages.MessagesScreen
-import com.kazahana.app.ui.profile.ProfileScreen
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.serialization.Serializable
 
 // Routes
@@ -80,6 +92,8 @@ import kotlinx.serialization.Serializable
     val authorDisplayName: String = "",
     val postText: String = "",
 )
+@Serializable object SettingsRoute
+@Serializable data class ChatRoute(val convoId: String)
 
 data class BottomNavItem(
     val route: Any,
@@ -99,43 +113,84 @@ val bottomNavItems = listOf(
 @Composable
 fun KazahanaNavHost(
     authViewModel: AuthViewModel = hiltViewModel(),
+    settingsStore: SettingsStore? = null,
 ) {
     val isLoggedIn by authViewModel.isLoggedIn.collectAsState()
 
-    when (isLoggedIn) {
-        null -> {
-            // PDS resolving — show loading
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center,
-            ) {
-                androidx.compose.material3.CircularProgressIndicator()
+    // Collect moderation settings
+    val adultEnabled by settingsStore?.adultContentEnabled?.collectAsState(initial = false) ?: remember { mutableStateOf(false) }
+    val nudityPref by settingsStore?.nudityPref?.collectAsState(initial = ModerationPref.WARN) ?: remember { mutableStateOf(ModerationPref.WARN) }
+    val sexualPref by settingsStore?.sexualPref?.collectAsState(initial = ModerationPref.WARN) ?: remember { mutableStateOf(ModerationPref.WARN) }
+    val pornPref by settingsStore?.pornPref?.collectAsState(initial = ModerationPref.WARN) ?: remember { mutableStateOf(ModerationPref.WARN) }
+    val graphicMediaPref by settingsStore?.graphicMediaPref?.collectAsState(initial = ModerationPref.WARN) ?: remember { mutableStateOf(ModerationPref.WARN) }
+
+    val moderationSettings = ModerationSettings(
+        adultContentEnabled = adultEnabled,
+        nudityPref = nudityPref,
+        sexualPref = sexualPref,
+        pornPref = pornPref,
+        graphicMediaPref = graphicMediaPref,
+    )
+
+    CompositionLocalProvider(LocalModerationSettings provides moderationSettings) {
+        when (isLoggedIn) {
+            null -> {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    androidx.compose.material3.CircularProgressIndicator()
+                }
             }
+            true -> MainScreen(authViewModel = authViewModel)
+            false -> LoginScreen(authViewModel = authViewModel)
         }
-        true -> MainScreen()
-        false -> LoginScreen(authViewModel = authViewModel)
     }
 }
 
 @Composable
-private fun MainScreen() {
+private fun MainScreen(
+    authViewModel: AuthViewModel,
+) {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
+    val scope = rememberCoroutineScope()
 
     // Shared NotificationViewModel for unread badge
     val notificationViewModel: NotificationViewModel = hiltViewModel()
     val unreadCount by notificationViewModel.unreadCount.collectAsState()
 
-    // Hide bottom bar and FAB on compose screens and detail screens
+    // Current user DID for messages
+    val myDid = authViewModel.currentDid
+
+    // Tab re-tap events for refresh + scroll to top (keyed by route label)
+    val homeRetap = remember { MutableSharedFlow<Unit>() }
+    val searchRetap = remember { MutableSharedFlow<Unit>() }
+    val notificationsRetap = remember { MutableSharedFlow<Unit>() }
+    val messagesRetap = remember { MutableSharedFlow<Unit>() }
+    val profileRetap = remember { MutableSharedFlow<Unit>() }
+
+    val tabRetapMap = remember {
+        mapOf<Int, MutableSharedFlow<Unit>>(
+            R.string.tab_home to homeRetap,
+            R.string.tab_search to searchRetap,
+            R.string.tab_notifications to notificationsRetap,
+            R.string.tab_messages to messagesRetap,
+            R.string.tab_profile to profileRetap,
+        )
+    }
+
+    // Hide bottom bar and FAB only on compose screens
     val isOnCompose = currentDestination?.hasRoute(ComposeRoute::class) == true
         || currentDestination?.hasRoute(ReplyRoute::class) == true
         || currentDestination?.hasRoute(QuoteRoute::class) == true
-    val isOnDetail = currentDestination?.hasRoute(ProfileDetailRoute::class) == true
+
+    val hideChrome = isOnCompose
 
     Scaffold(
         bottomBar = {
-            if (!isOnCompose && !isOnDetail) {
+            if (!hideChrome) {
                 NavigationBar {
                     bottomNavItems.forEach { item ->
                         val selected = currentDestination?.hierarchy?.any {
@@ -147,12 +202,19 @@ private fun MainScreen() {
                         NavigationBarItem(
                             selected = selected,
                             onClick = {
-                                navController.navigate(item.route) {
-                                    popUpTo(navController.graph.findStartDestination().id) {
-                                        saveState = true
+                                // Pop back to the graph root, then navigate to the tab
+                                navController.popBackStack(
+                                    navController.graph.findStartDestination().id,
+                                    inclusive = false,
+                                )
+                                if (!selected) {
+                                    navController.navigate(item.route) {
+                                        launchSingleTop = true
                                     }
-                                    launchSingleTop = true
-                                    restoreState = true
+                                }
+                                // Trigger refresh + scroll to top
+                                scope.launch {
+                                    tabRetapMap[item.labelRes]?.emit(Unit)
                                 }
                             },
                             icon = {
@@ -185,7 +247,7 @@ private fun MainScreen() {
             }
         },
         floatingActionButton = {
-            if (!isOnCompose && !isOnDetail) {
+            if (!hideChrome) {
                 FloatingActionButton(
                     onClick = {
                         navController.navigate(ComposeRoute) {
@@ -207,6 +269,7 @@ private fun MainScreen() {
         ) {
             composable<HomeRoute> {
                 TimelineScreen(
+                    retapFlow = homeRetap,
                     onPostClick = { postUri ->
                         navController.navigate(ThreadRoute(postUri = postUri)) {
                             launchSingleTop = true
@@ -245,6 +308,7 @@ private fun MainScreen() {
             }
             composable<SearchRoute> {
                 SearchScreen(
+                    retapFlow = searchRetap,
                     onPostClick = { postUri ->
                         navController.navigate(ThreadRoute(postUri = postUri)) {
                             launchSingleTop = true
@@ -269,6 +333,7 @@ private fun MainScreen() {
             }
             composable<NotificationsRoute> {
                 NotificationScreen(
+                    retapFlow = notificationsRetap,
                     viewModel = notificationViewModel,
                     onPostClick = { postUri ->
                         navController.navigate(ThreadRoute(postUri = postUri)) {
@@ -282,9 +347,20 @@ private fun MainScreen() {
                     },
                 )
             }
-            composable<MessagesRoute> { MessagesScreen() }
+            composable<MessagesRoute> {
+                MessagesScreen(
+                    retapFlow = messagesRetap,
+                    myDid = myDid,
+                    onConvoClick = { convoId ->
+                        navController.navigate(ChatRoute(convoId = convoId)) {
+                            launchSingleTop = true
+                        }
+                    },
+                )
+            }
             composable<ProfileRoute> {
                 ProfileScreen(
+                    retapFlow = profileRetap,
                     onPostClick = { postUri ->
                         navController.navigate(ThreadRoute(postUri = postUri)) {
                             launchSingleTop = true
@@ -304,6 +380,11 @@ private fun MainScreen() {
                         navController.navigate(
                             QuoteRoute(postUri = postUri, postCid = postCid, authorHandle = authorHandle, authorDisplayName = authorDisplayName, postText = postText)
                         ) { launchSingleTop = true }
+                    },
+                    onSettingsClick = {
+                        navController.navigate(SettingsRoute) {
+                            launchSingleTop = true
+                        }
                     },
                 )
             }
@@ -383,6 +464,21 @@ private fun MainScreen() {
                         authorDisplayName = route.authorDisplayName.ifEmpty { null },
                         text = route.postText,
                     ),
+                )
+            }
+            composable<SettingsRoute> {
+                SettingsScreen(
+                    onNavigateBack = { navController.popBackStack() },
+                    onLogout = {
+                        authViewModel.logout()
+                    },
+                )
+            }
+            composable<ChatRoute> { backStackEntry ->
+                val route = backStackEntry.toRoute<ChatRoute>()
+                ChatScreen(
+                    myDid = myDid,
+                    onNavigateBack = { navController.popBackStack() },
                 )
             }
         }

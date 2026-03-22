@@ -47,8 +47,11 @@ import com.kazahana.app.data.model.NotificationItem
 import com.kazahana.app.data.model.PostRecord
 import com.kazahana.app.data.model.PostView
 import com.kazahana.app.ui.common.AvatarImage
+import com.kazahana.app.ui.common.LocalModerationSettings
+import com.kazahana.app.ui.common.checkModeration
 import com.kazahana.app.ui.common.relativeTime
 import com.kazahana.app.ui.timeline.PostCard
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.decodeFromJsonElement
 
@@ -60,6 +63,7 @@ private val FollowBlue = Color(0xFF1DA1F2)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NotificationScreen(
+    retapFlow: SharedFlow<Unit>? = null,
     viewModel: NotificationViewModel = hiltViewModel(),
     onPostClick: (postUri: String) -> Unit = {},
     onProfileClick: (did: String) -> Unit = {},
@@ -69,6 +73,13 @@ fun NotificationScreen(
 
     LaunchedEffect(Unit) {
         viewModel.ensureLoaded()
+    }
+
+    LaunchedEffect(retapFlow) {
+        retapFlow?.collect {
+            viewModel.refresh()
+            listState.animateScrollToItem(0)
+        }
     }
 
     val shouldLoadMore by remember {
@@ -252,6 +263,10 @@ private fun NotificationRow(
         // Subject post card (for like/repost: the liked/reposted post; for reply/mention/quote: the notification post itself)
         if (subjectPost != null && notification.reason != "follow") {
             val feedPost = remember(subjectPost) { FeedViewPost(post = subjectPost) }
+            val modSettings = LocalModerationSettings.current
+            val modDecision = remember(subjectPost.labels, modSettings) {
+                checkModeration(subjectPost.labels, modSettings)
+            }
             PostCard(
                 feedPost = feedPost,
                 onClick = { uri -> onPostClick(uri) },
@@ -261,6 +276,7 @@ private fun NotificationRow(
                 onRepost = onRepost,
                 onBookmark = onBookmark,
                 modifier = Modifier.padding(start = 32.dp),
+                moderationDecision = modDecision,
             )
         }
     }

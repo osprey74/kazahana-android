@@ -70,6 +70,71 @@
     <!-- Feed -->
     <string name="feed_following">Following</string>
 
+    <!-- Messages -->
+    <string name="messages_empty">No conversations</string>
+    <string name="messages_placeholder">Send a message…</string>
+    <string name="messages_no_messages">No messages yet</string>
+    <string name="messages_deleted">Message deleted</string>
+    <string name="messages_unknown">Unknown user</string>
+    <string name="messages_load_failed">Failed to load messages</string>
+
+    <!-- Settings -->
+    <string name="settings_title">Settings</string>
+    <string name="settings_theme">Theme</string>
+    <string name="settings_light">Light</string>
+    <string name="settings_dark">Dark</string>
+    <string name="settings_system">System</string>
+    <string name="settings_language">Language</string>
+    <string name="settings_account">Account</string>
+    <string name="settings_app_info">App Info</string>
+    <string name="settings_version">Version</string>
+    <string name="settings_logout">Logout</string>
+    <string name="settings_moderation">Content Moderation</string>
+    <string name="settings_adult_content">Enable adult content</string>
+    <string name="settings_label_nudity">Nudity</string>
+    <string name="settings_label_sexual">Sexually Suggestive</string>
+    <string name="settings_label_porn">Pornography</string>
+    <string name="settings_label_graphic_media">Graphic Media</string>
+    <string name="settings_pref_hide">Hide</string>
+    <string name="settings_pref_warn">Warn</string>
+    <string name="settings_pref_show">Show</string>
+
+    <!-- Moderation -->
+    <string name="moderation_post_hidden">Post hidden by moderation</string>
+    <string name="moderation_content_warning">Content warning — tap to reveal</string>
+    <string name="moderation_show">Show</string>
+    <string name="moderation_hide">Hide</string>
+
+    <!-- Report -->
+    <string name="report_post">Report this post</string>
+    <string name="report_user">Report this user</string>
+    <string name="report_reason">Reason</string>
+    <string name="report_reason_spam">Spam</string>
+    <string name="report_reason_violation">Rule violation</string>
+    <string name="report_reason_misleading">Misleading content</string>
+    <string name="report_reason_sexual">Unwanted sexual content</string>
+    <string name="report_reason_rude">Harassment or abuse</string>
+    <string name="report_reason_other">Other</string>
+    <string name="report_details_placeholder">Provide additional details (optional)…</string>
+    <string name="report_submit">Report</string>
+    <string name="report_submitting">Reporting…</string>
+    <string name="report_success">Report submitted</string>
+    <string name="report_error">Failed to submit report</string>
+
+    <!-- Language names (native, not translated) -->
+    <string name="lang_system">System</string>
+    <string name="lang_ja">日本語</string>
+    <string name="lang_en">English</string>
+    <string name="lang_pt">Português</string>
+    <string name="lang_de">Deutsch</string>
+    <string name="lang_zh_tw">繁體中文</string>
+    <string name="lang_zh_cn">简体中文</string>
+    <string name="lang_fr">Français</string>
+    <string name="lang_ko">한국어</string>
+    <string name="lang_es">Español</string>
+    <string name="lang_ru">Русский</string>
+    <string name="lang_id">Bahasa Indonesia</string>
+
     <!-- Common -->
     <string name="common_retry">Retry</string>
     <string name="common_cancel">Cancel</string>

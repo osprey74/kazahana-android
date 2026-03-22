@@ -39,6 +39,8 @@ import com.kazahana.app.R
 import com.kazahana.app.data.model.FeedViewPost
 import com.kazahana.app.data.model.PostRecord
 import com.kazahana.app.data.model.PostView
+import com.kazahana.app.ui.common.LocalModerationSettings
+import com.kazahana.app.ui.common.checkModeration
 import com.kazahana.app.ui.timeline.PostCard
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.decodeFromJsonElement
@@ -173,6 +175,10 @@ fun ThreadScreen(
                             }
 
                             items(uiState.replies) { reply ->
+                                val modSettings = LocalModerationSettings.current
+                                val modDecision = remember(reply.labels, modSettings) {
+                                    checkModeration(reply.labels, modSettings)
+                                }
                                 PostCard(
                                     feedPost = FeedViewPost(post = reply),
                                     onReply = { uri, cid ->
@@ -186,6 +192,7 @@ fun ThreadScreen(
                                     onLike = { uri, cid, likeUri -> viewModel.toggleLike(uri, cid, likeUri) },
                                     onRepost = { uri, cid, repostUri -> viewModel.toggleRepost(uri, cid, repostUri) },
                                     onBookmark = { uri, cid, bookmarkUri -> viewModel.toggleBookmark(uri, cid, bookmarkUri) },
+                                    moderationDecision = modDecision,
                                 )
                             }
                         }
@@ -231,6 +238,10 @@ private fun ThreadPostItem(
                     .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)),
             )
         }
+        val modSettings = LocalModerationSettings.current
+        val modDecision = remember(post.labels, modSettings) {
+            checkModeration(post.labels, modSettings)
+        }
         PostCard(
             feedPost = FeedViewPost(post = post),
             onReply = { uri, cid ->
@@ -244,6 +255,7 @@ private fun ThreadPostItem(
             onLike = onLike,
             onRepost = onRepost,
             onBookmark = onBookmark,
+            moderationDecision = modDecision,
         )
     }
 }

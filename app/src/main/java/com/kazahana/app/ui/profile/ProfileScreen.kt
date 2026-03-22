@@ -21,6 +21,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -52,19 +53,24 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import coil3.compose.AsyncImage
 import com.kazahana.app.data.model.PostRecord
 import com.kazahana.app.ui.common.AvatarImage
+import com.kazahana.app.ui.common.LocalModerationSettings
+import com.kazahana.app.ui.common.checkModeration
 import com.kazahana.app.ui.timeline.PostCard
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.decodeFromJsonElement
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileScreen(
+    retapFlow: SharedFlow<Unit>? = null,
     viewModel: ProfileViewModel = hiltViewModel(),
     onNavigateBack: (() -> Unit)? = null,
     onPostClick: (postUri: String) -> Unit = {},
     onProfileClick: (did: String) -> Unit = {},
     onReply: (postUri: String, postCid: String, rootUri: String, rootCid: String, authorHandle: String, authorDisplayName: String, postText: String) -> Unit = { _, _, _, _, _, _, _ -> },
     onQuote: (postUri: String, postCid: String, authorHandle: String, authorDisplayName: String, postText: String) -> Unit = { _, _, _, _, _ -> },
+    onSettingsClick: (() -> Unit)? = null,
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val listState = rememberLazyListState()
@@ -79,6 +85,13 @@ fun ProfileScreen(
 
     LaunchedEffect(shouldLoadMore) {
         if (shouldLoadMore) viewModel.loadMore()
+    }
+
+    LaunchedEffect(retapFlow) {
+        retapFlow?.collect {
+            viewModel.loadProfile()
+            listState.animateScrollToItem(0)
+        }
     }
 
     when {
@@ -107,6 +120,7 @@ fun ProfileScreen(
                         isFollowLoading = uiState.isFollowLoading,
                         onFollowToggle = { viewModel.toggleFollow() },
                         onNavigateBack = onNavigateBack,
+                        onSettingsClick = if (viewModel.isSelf) onSettingsClick else null,
                     )
                 }
 
@@ -149,6 +163,10 @@ fun ProfileScreen(
                                 .decodeFromJsonElement<PostRecord>(feedPost.post.record)
                         } catch (_: Exception) { null }
                     }
+                    val modSettings = LocalModerationSettings.current
+                    val modDecision = remember(feedPost.post.labels, modSettings) {
+                        checkModeration(feedPost.post.labels, modSettings)
+                    }
                     PostCard(
                         feedPost = feedPost,
                         onClick = { uri -> onPostClick(uri) },
@@ -167,6 +185,7 @@ fun ProfileScreen(
                         onLike = { uri, cid, likeUri -> viewModel.toggleLike(uri, cid, likeUri) },
                         onRepost = { uri, cid, repostUri -> viewModel.toggleRepost(uri, cid, repostUri) },
                         onBookmark = { uri, cid, bookmarkUri -> viewModel.toggleBookmark(uri, cid, bookmarkUri) },
+                        moderationDecision = modDecision,
                     )
                 }
 
@@ -192,6 +211,7 @@ private fun ProfileHeader(
     isFollowLoading: Boolean,
     onFollowToggle: () -> Unit,
     onNavigateBack: (() -> Unit)?,
+    onSettingsClick: (() -> Unit)? = null,
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
         // Banner
@@ -223,7 +243,7 @@ private fun ProfileHeader(
             }
         }
 
-        // Avatar + Follow button row
+        // Avatar + Follow/Settings button row
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -238,6 +258,18 @@ private fun ProfileHeader(
                     .offset(y = (-36).dp)
                     .clip(CircleShape),
             )
+
+            if (onSettingsClick != null) {
+                IconButton(
+                    onClick = onSettingsClick,
+                    modifier = Modifier.padding(top = 8.dp),
+                ) {
+                    Icon(
+                        Icons.Outlined.Settings,
+                        contentDescription = "Settings",
+                    )
+                }
+            }
 
             if (!isSelf) {
                 val isFollowing = profile.viewer?.following != null

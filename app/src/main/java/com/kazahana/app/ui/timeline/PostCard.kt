@@ -21,7 +21,6 @@ import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.Repeat
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -35,6 +34,7 @@ import androidx.compose.ui.unit.dp
 import com.kazahana.app.data.model.FeedViewPost
 import com.kazahana.app.data.model.PostRecord
 import com.kazahana.app.ui.common.AvatarImage
+import com.kazahana.app.ui.common.ModerationDecision
 import com.kazahana.app.ui.common.relativeTime
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.decodeFromJsonElement
@@ -51,6 +51,7 @@ fun PostCard(
     onLike: (postUri: String, postCid: String, currentLikeUri: String?) -> Unit = { _, _, _ -> },
     onRepost: (postUri: String, postCid: String, currentRepostUri: String?) -> Unit = { _, _, _ -> },
     onBookmark: (postUri: String, postCid: String, currentBookmarkUri: String?) -> Unit = { _, _, _ -> },
+    moderationDecision: ModerationDecision = ModerationDecision(),
     modifier: Modifier = Modifier,
 ) {
     val post = feedPost.post
@@ -73,7 +74,7 @@ fun PostCard(
             )
         }
 
-        // Clickable content area (navigates to thread) — excludes action bar
+        // Clickable content area — text is always visible, moderation applies to media only
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -134,7 +135,7 @@ fun PostCard(
                     }
                 }
 
-                // Post text
+                // Post text (always visible)
                 if (record != null && record.text.isNotEmpty()) {
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
@@ -143,25 +144,43 @@ fun PostCard(
                     )
                 }
 
-                // Image grid (thumbnails)
+                // Image grid — moderation applied here
                 val images = post.embed?.images
                 if (!images.isNullOrEmpty()) {
                     Spacer(modifier = Modifier.height(8.dp))
-                    ImageGrid(images = images)
+                    if (!moderationDecision.shouldHide) {
+                        ImageGrid(
+                            images = images,
+                            moderationDecision = moderationDecision,
+                        )
+                    }
+                    // shouldHide → images completely hidden
                 }
 
-                // Video player
+                // Video player — moderation applied here too
                 val videoUrl = post.embed?.playlist
-                if (videoUrl != null) {
+                if (videoUrl != null && !moderationDecision.shouldHide) {
                     Spacer(modifier = Modifier.height(8.dp))
-                    com.kazahana.app.ui.common.VideoPlayer(
-                        hlsUrl = videoUrl,
-                        thumbnailUrl = post.embed.thumbnail,
-                        aspectRatio = post.embed.aspectRatio,
-                    )
+                    if (!moderationDecision.shouldWarn) {
+                        com.kazahana.app.ui.common.VideoPlayer(
+                            hlsUrl = videoUrl,
+                            thumbnailUrl = post.embed.thumbnail,
+                            aspectRatio = post.embed.aspectRatio,
+                        )
+                    } else {
+                        com.kazahana.app.ui.common.ModerationWarnOverlay(
+                            decision = moderationDecision,
+                        ) {
+                            com.kazahana.app.ui.common.VideoPlayer(
+                                hlsUrl = videoUrl,
+                                thumbnailUrl = post.embed.thumbnail,
+                                aspectRatio = post.embed.aspectRatio,
+                            )
+                        }
+                    }
                 }
 
-                // Link card
+                // Link card (no moderation needed)
                 val external = post.embed?.external
                 if (external != null) {
                     Spacer(modifier = Modifier.height(8.dp))
@@ -170,7 +189,7 @@ fun PostCard(
             }
         }
 
-        // Action bar — outside the clickable area so taps work independently
+        // Action bar
         ActionBar(
             replyCount = post.replyCount ?: 0,
             repostCount = post.repostCount ?: 0,

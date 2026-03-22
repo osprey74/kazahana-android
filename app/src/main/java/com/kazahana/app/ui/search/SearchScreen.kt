@@ -45,12 +45,16 @@ import com.kazahana.app.data.model.FeedViewPost
 import com.kazahana.app.data.model.PostRecord
 import com.kazahana.app.data.model.ProfileViewDetailed
 import com.kazahana.app.ui.common.AvatarImage
+import com.kazahana.app.ui.common.LocalModerationSettings
+import com.kazahana.app.ui.common.checkModeration
 import com.kazahana.app.ui.timeline.PostCard
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.decodeFromJsonElement
 
 @Composable
 fun SearchScreen(
+    retapFlow: SharedFlow<Unit>? = null,
     viewModel: SearchViewModel = hiltViewModel(),
     onPostClick: (postUri: String) -> Unit = {},
     onProfileClick: (did: String) -> Unit = {},
@@ -60,6 +64,12 @@ fun SearchScreen(
     val uiState by viewModel.uiState.collectAsState()
     val keyboardController = LocalSoftwareKeyboardController.current
     val listState = rememberLazyListState()
+
+    LaunchedEffect(retapFlow) {
+        retapFlow?.collect {
+            listState.animateScrollToItem(0)
+        }
+    }
 
     val shouldLoadMore by remember {
         derivedStateOf {
@@ -158,6 +168,10 @@ fun SearchScreen(
                                             .decodeFromJsonElement<PostRecord>(postView.record)
                                     } catch (_: Exception) { null }
                                 }
+                                val modSettings = LocalModerationSettings.current
+                                val modDecision = remember(feedPost.post.labels, modSettings) {
+                                    checkModeration(feedPost.post.labels, modSettings)
+                                }
                                 PostCard(
                                     feedPost = feedPost,
                                     onClick = { uri -> onPostClick(uri) },
@@ -173,6 +187,7 @@ fun SearchScreen(
                                     onLike = { uri, cid, likeUri -> viewModel.toggleLike(uri, cid, likeUri) },
                                     onRepost = { uri, cid, repostUri -> viewModel.toggleRepost(uri, cid, repostUri) },
                                     onBookmark = { uri, cid, bookmarkUri -> viewModel.toggleBookmark(uri, cid, bookmarkUri) },
+                                    moderationDecision = modDecision,
                                 )
                             }
                         }

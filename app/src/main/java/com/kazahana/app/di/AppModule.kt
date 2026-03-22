@@ -2,12 +2,15 @@ package com.kazahana.app.di
 
 import android.content.Context
 import com.kazahana.app.data.local.SessionStore
+import com.kazahana.app.data.local.SettingsStore
 import com.kazahana.app.data.remote.ATProtoClient
+import com.kazahana.app.data.repository.ChatRepository
 import com.kazahana.app.data.repository.FeedRepository
 import com.kazahana.app.data.repository.InteractionRepository
 import com.kazahana.app.data.repository.NotificationRepository
 import com.kazahana.app.data.repository.PostRepository
 import com.kazahana.app.data.repository.ProfileRepository
+import com.kazahana.app.data.repository.ReportRepository
 import com.kazahana.app.data.repository.SearchRepository
 import com.kazahana.app.data.repository.ThreadRepository
 import com.kazahana.app.data.repository.TimelineRepository
@@ -81,4 +84,22 @@ object AppModule {
     fun provideFeedRepository(
         client: ATProtoClient,
     ): FeedRepository = FeedRepository(client)
+
+    @Provides
+    @Singleton
+    fun provideSettingsStore(
+        @ApplicationContext context: Context,
+    ): SettingsStore = SettingsStore(context)
+
+    @Provides
+    @Singleton
+    fun provideChatRepository(
+        client: ATProtoClient,
+    ): ChatRepository = ChatRepository(client)
+
+    @Provides
+    @Singleton
+    fun provideReportRepository(
+        client: ATProtoClient,
+    ): ReportRepository = ReportRepository(client)
 }

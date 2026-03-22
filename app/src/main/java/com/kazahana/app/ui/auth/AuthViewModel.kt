@@ -96,6 +96,9 @@ class AuthViewModel @Inject constructor(
         }
     }
 
+    val currentDid: String
+        get() = client.session?.did ?: ""
+
     fun logout() {
         client.clearSession()
         _isLoggedIn.value = false
