@@ -21,7 +21,8 @@
       "Bash(grep -r \"data class\\\\|^class\" /mnt/g/dev/kazahana-android/app/src/main/java/com/kazahana/app/data/model/*.kt)",
       "Bash(ls gradlew*)",
       "Bash(./gradlew :app:compileDebugKotlin)",
-      "Bash(git status:*)"
+      "Bash(git status:*)",
+      "Bash(grep -E \"\\\\.\\(swift|kt\\)$\")"
     ]
   }
 }
