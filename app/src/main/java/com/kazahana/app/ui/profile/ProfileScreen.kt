@@ -128,7 +128,12 @@ fun ProfileScreen(
             }
 
             Box(modifier = Modifier.fillMaxSize()) {
-                LazyColumn(
+                PullToRefreshBox(
+                    isRefreshing = uiState.isRefreshing,
+                    onRefresh = { viewModel.refresh() },
+                    modifier = Modifier.fillMaxSize(),
+                ) {
+                    LazyColumn(
                     state = listState,
                     modifier = Modifier.fillMaxSize(),
                 ) {
@@ -220,6 +225,7 @@ fun ProfileScreen(
                         }
                     }
                 }
+                } // PullToRefreshBox
 
                 // Compact sticky header overlay
                 AnimatedVisibility(

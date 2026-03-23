@@ -9,16 +9,23 @@ import com.kazahana.app.data.model.BlobRef
 import com.kazahana.app.data.model.ImageEmbedItem
 import com.kazahana.app.data.model.PostRef
 import com.kazahana.app.data.model.PostReplyRef
+import com.kazahana.app.data.ogp.OgpData
+import com.kazahana.app.data.ogp.OgpService
 import com.kazahana.app.data.remote.ATProtoClient
+import com.kazahana.app.data.repository.ExternalEmbedData
 import com.kazahana.app.data.util.ImageHelper
 import com.kazahana.app.data.richtext.RichTextParser
+import com.kazahana.app.data.local.SettingsStore
 import com.kazahana.app.data.repository.PostRepository
 import io.ktor.client.call.body
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -27,6 +34,13 @@ data class AttachedImage(
     val uri: Uri,
     val alt: String = "",
     val mimeType: String = "image/jpeg",
+)
+
+data class AttachedVideo(
+    val uri: Uri,
+    val mimeType: String = "video/mp4",
+    val sizeBytes: Long = 0,
+    val alt: String = "",
 )
 
 /** Info about the post being replied to or quoted. */
@@ -48,20 +62,61 @@ data class QuoteTarget(
     val text: String,
 )
 
+/** Threadgate setting — controls who can reply to a post. */
+enum class ThreadgateSetting {
+    EVERYONE,              // No restriction (default)
+    NO_ONE,                // Block all replies
+    MENTION,               // Only mentioned users
+    FOLLOWER,              // Only followers
+    FOLLOWING,             // Only people you follow
+    MENTION_AND_FOLLOWER,  // Mentioned + followers
+    MENTION_AND_FOLLOWING, // Mentioned + following
+    ;
+
+    /** Returns the allow rules for the AT Protocol threadgate record, or null for EVERYONE. */
+    fun toAllowRules(): List<String>? = when (this) {
+        EVERYONE -> null
+        NO_ONE -> emptyList()
+        MENTION -> listOf("app.bsky.feed.threadgate#mentionRule")
+        FOLLOWER -> listOf("app.bsky.feed.threadgate#followerRule")
+        FOLLOWING -> listOf("app.bsky.feed.threadgate#followingRule")
+        MENTION_AND_FOLLOWER -> listOf(
+            "app.bsky.feed.threadgate#mentionRule",
+            "app.bsky.feed.threadgate#followerRule",
+        )
+        MENTION_AND_FOLLOWING -> listOf(
+            "app.bsky.feed.threadgate#mentionRule",
+            "app.bsky.feed.threadgate#followingRule",
+        )
+    }
+}
+
 data class ComposeUiState(
     val text: String = "",
     val images: List<AttachedImage> = emptyList(),
+    val video: AttachedVideo? = null,
     val isPosting: Boolean = false,
+    val postingStatus: String? = null,
     val error: String? = null,
     val posted: Boolean = false,
     val editingAltIndex: Int? = null,
     val replyTarget: ReplyTarget? = null,
     val quoteTarget: QuoteTarget? = null,
+    val threadgateSetting: ThreadgateSetting = ThreadgateSetting.EVERYONE,
+    val disableEmbedding: Boolean = false,
+    val showThreadgateDialog: Boolean = false,
+    val showPostgateDialog: Boolean = false,
+    val editingVideoAlt: Boolean = false,
+    val linkCard: OgpData? = null,
+    val isFetchingLinkCard: Boolean = false,
+    val linkCardDismissed: Boolean = false,
 ) {
     val canPost: Boolean
-        get() = (text.isNotBlank() || images.isNotEmpty()) && !isPosting
+        get() = (text.isNotBlank() || images.isNotEmpty() || video != null) && !isPosting
     val canAddImage: Boolean
-        get() = images.size < MAX_IMAGES
+        get() = images.size < MAX_IMAGES && video == null
+    val canAddVideo: Boolean
+        get() = images.isEmpty() && video == null
     val charCount: Int
         get() = text.graphemeCount()
     val isOverLimit: Boolean
@@ -86,11 +141,20 @@ class ComposeViewModel @Inject constructor(
     private val postRepository: PostRepository,
     private val atProtoClient: ATProtoClient,
     private val imageHelper: ImageHelper,
+    private val settingsStore: SettingsStore,
     @ApplicationContext private val context: Context,
 ) : ViewModel() {
 
+    companion object {
+        const val MAX_VIDEO_BYTES = 100_000_000L // 100MB (Bluesky server limit)
+        private const val VIA_NAME = "kazahana for Android"
+    }
+
     private val _uiState = MutableStateFlow(ComposeUiState())
     val uiState: StateFlow<ComposeUiState> = _uiState.asStateFlow()
+
+    private var ogpFetchJob: Job? = null
+    private var lastFetchedUrl: String? = null
 
     fun setReply(target: ReplyTarget) {
         _uiState.update { it.copy(replyTarget = target) }
@@ -102,6 +166,43 @@ class ComposeViewModel @Inject constructor(
 
     fun updateText(text: String) {
         _uiState.update { it.copy(text = text, error = null) }
+        // Auto-detect URL and fetch OGP (debounced)
+        scheduleOgpFetch(text)
+    }
+
+    fun addVideo(uri: Uri, mimeType: String, sizeBytes: Long) {
+        if (sizeBytes > MAX_VIDEO_BYTES) {
+            _uiState.update { it.copy(error = "Video too large (${sizeBytes / 1_048_576} MB). Max 100 MB.") }
+            return
+        }
+        _uiState.update { state ->
+            state.copy(
+                video = AttachedVideo(uri = uri, mimeType = mimeType, sizeBytes = sizeBytes),
+                // Clear images and link card when adding video (mutually exclusive)
+                images = emptyList(),
+                linkCard = null,
+                linkCardDismissed = true,
+                error = null,
+            )
+        }
+    }
+
+    fun removeVideo() {
+        _uiState.update { it.copy(video = null, linkCardDismissed = false) }
+    }
+
+    fun startEditVideoAlt() {
+        _uiState.update { it.copy(editingVideoAlt = true) }
+    }
+
+    fun updateVideoAlt(alt: String) {
+        _uiState.update { state ->
+            state.copy(video = state.video?.copy(alt = alt))
+        }
+    }
+
+    fun dismissVideoAltEditor() {
+        _uiState.update { it.copy(editingVideoAlt = false) }
     }
 
     fun addImages(uris: List<Uri>) {
@@ -137,6 +238,64 @@ class ComposeViewModel @Inject constructor(
 
     fun dismissAltEditor() {
         _uiState.update { it.copy(editingAltIndex = null) }
+    }
+
+    fun setThreadgateSetting(setting: ThreadgateSetting) {
+        _uiState.update { it.copy(threadgateSetting = setting) }
+    }
+
+    fun setDisableEmbedding(disable: Boolean) {
+        _uiState.update { it.copy(disableEmbedding = disable) }
+    }
+
+    fun showThreadgateDialog() {
+        _uiState.update { it.copy(showThreadgateDialog = true) }
+    }
+
+    fun dismissThreadgateDialog() {
+        _uiState.update { it.copy(showThreadgateDialog = false) }
+    }
+
+    fun showPostgateDialog() {
+        _uiState.update { it.copy(showPostgateDialog = true) }
+    }
+
+    fun dismissPostgateDialog() {
+        _uiState.update { it.copy(showPostgateDialog = false) }
+    }
+
+    fun dismissLinkCard() {
+        ogpFetchJob?.cancel()
+        lastFetchedUrl = null
+        _uiState.update { it.copy(linkCard = null, isFetchingLinkCard = false, linkCardDismissed = true) }
+    }
+
+    private fun scheduleOgpFetch(text: String) {
+        val state = _uiState.value
+        // Skip if user dismissed the link card, has images, or is posting
+        if (state.linkCardDismissed || state.images.isNotEmpty()) return
+
+        val url = OgpService.extractUrl(text)
+        if (url == null) {
+            // URL removed from text — clear link card
+            if (state.linkCard != null || state.isFetchingLinkCard) {
+                ogpFetchJob?.cancel()
+                lastFetchedUrl = null
+                _uiState.update { it.copy(linkCard = null, isFetchingLinkCard = false) }
+            }
+            return
+        }
+        // Already fetched this URL
+        if (url == lastFetchedUrl) return
+
+        ogpFetchJob?.cancel()
+        ogpFetchJob = viewModelScope.launch {
+            delay(500) // debounce
+            lastFetchedUrl = url
+            _uiState.update { it.copy(isFetchingLinkCard = true) }
+            val ogp = OgpService.fetch(url)
+            _uiState.update { it.copy(linkCard = ogp, isFetchingLinkCard = false) }
+        }
     }
 
     fun post() {
@@ -190,7 +349,53 @@ class ComposeViewModel @Inject constructor(
                 val quoteUri = state.quoteTarget?.uri
                 val quoteCid = state.quoteTarget?.cid
 
+                // Upload video if attached
+                var videoEmbed: com.kazahana.app.data.repository.VideoEmbedData? = null
+                if (state.video != null) {
+                    _uiState.update { it.copy(postingStatus = "Uploading video…") }
+                    val videoBytes = imageHelper.readBytes(state.video.uri)
+                    if (videoBytes != null) {
+                        postRepository.uploadVideo(videoBytes, state.video.mimeType)
+                            .onSuccess { embed ->
+                                videoEmbed = embed.copy(alt = state.video.alt)
+                            }
+                            .onFailure { e ->
+                                _uiState.update {
+                                    it.copy(isPosting = false, postingStatus = null, error = "Video upload failed: ${e.message}")
+                                }
+                                return@launch
+                            }
+                    }
+                    _uiState.update { it.copy(postingStatus = null) }
+                }
+
+                // Build external link card embed (only when no images and no video)
+                val externalEmbed = if (state.linkCard != null && imageEmbeds.isEmpty() && videoEmbed == null) {
+                    val ogp = state.linkCard
+                    var thumbBlob: BlobRef? = null
+                    if (ogp.imageUrl != null) {
+                        val imageBytes = OgpService.downloadImage(ogp.imageUrl)
+                        if (imageBytes != null) {
+                            postRepository.uploadBlob(imageBytes, "image/jpeg")
+                                .onSuccess { blob ->
+                                    thumbBlob = BlobRef(
+                                        link = blob.blob.ref.link,
+                                        mimeType = blob.blob.mimeType,
+                                        size = blob.blob.size,
+                                    )
+                                }
+                        }
+                    }
+                    ExternalEmbedData(
+                        uri = ogp.url,
+                        title = ogp.title,
+                        description = ogp.description,
+                        thumbBlob = thumbBlob,
+                    )
+                } else null
+
                 // Create post
+                val via = if (settingsStore.showVia.first()) VIA_NAME else null
                 postRepository.createPost(
                     text = state.text,
                     facets = facets,
@@ -198,7 +403,21 @@ class ComposeViewModel @Inject constructor(
                     reply = replyRef,
                     quoteUri = quoteUri,
                     quoteCid = quoteCid,
-                ).onSuccess {
+                    externalEmbed = externalEmbed,
+                    videoEmbed = videoEmbed,
+                    via = via,
+                ).onSuccess { response ->
+                    // Threadgate — only for new posts (not replies)
+                    if (state.replyTarget == null) {
+                        val allowRules = state.threadgateSetting.toAllowRules()
+                        if (allowRules != null) {
+                            postRepository.createThreadgate(response.uri, allowRules)
+                        }
+                    }
+                    // Postgate — disable quoting
+                    if (state.disableEmbedding) {
+                        postRepository.createPostgate(response.uri)
+                    }
                     _uiState.update { it.copy(isPosting = false, posted = true) }
                 }.onFailure { e ->
                     _uiState.update {

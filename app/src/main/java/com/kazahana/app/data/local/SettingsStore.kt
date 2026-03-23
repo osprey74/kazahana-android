@@ -54,6 +54,7 @@ class SettingsStore(private val context: Context) {
         val HIDDEN_FEED_URIS = stringPreferencesKey("hidden_feed_uris")
         val SHOW_ALL_FEEDS_IN_SELECTOR = booleanPreferencesKey("show_all_feeds_in_selector")
         val SEARCH_HISTORY = stringPreferencesKey("search_history")
+        val SHOW_VIA = booleanPreferencesKey("show_via")
         val BSAF_ENABLED = booleanPreferencesKey("bsaf_enabled")
         val BSAF_REGISTERED_BOTS = stringPreferencesKey("bsaf_registered_bots")
     }
@@ -201,6 +202,18 @@ class SettingsStore(private val context: Context) {
     suspend fun clearSearchHistory() {
         context.dataStore.edit { prefs ->
             prefs.remove(Keys.SEARCH_HISTORY)
+        }
+    }
+
+    // ── Via ──
+
+    val showVia: Flow<Boolean> = context.dataStore.data.map { prefs ->
+        prefs[Keys.SHOW_VIA] ?: false
+    }
+
+    suspend fun setShowVia(enabled: Boolean) {
+        context.dataStore.edit { prefs ->
+            prefs[Keys.SHOW_VIA] = enabled
         }
     }
 

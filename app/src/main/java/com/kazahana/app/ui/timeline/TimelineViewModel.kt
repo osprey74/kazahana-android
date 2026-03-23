@@ -174,10 +174,15 @@ class TimelineViewModel @Inject constructor(
         }
     }
 
-    fun selectFeed(feed: FeedInfo) {
-        if (feed == _uiState.value.selectedFeed) return
+    /** Returns true when the same feed was re-selected (caller should scroll to top). */
+    fun selectFeed(feed: FeedInfo): Boolean {
+        if (feed == _uiState.value.selectedFeed) {
+            refresh()
+            return true
+        }
         _uiState.update { it.copy(selectedFeed = feed, posts = emptyList(), cursor = null, hasMore = true) }
         loadTimeline()
+        return false
     }
 
     fun loadTimeline() {

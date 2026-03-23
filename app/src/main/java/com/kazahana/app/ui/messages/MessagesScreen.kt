@@ -42,6 +42,7 @@ fun MessagesScreen(
     retapFlow: SharedFlow<Unit>? = null,
     viewModel: MessagesViewModel = hiltViewModel(),
     onConvoClick: (convoId: String) -> Unit = {},
+    onProfileClick: (did: String) -> Unit = {},
     myDid: String = "",
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -89,6 +90,11 @@ fun MessagesScreen(
                             convo = convo,
                             myDid = myDid,
                             onClick = { onConvoClick(convo.id) },
+                            onAvatarClick = {
+                                val otherDid = convo.members.firstOrNull { it.did != myDid }?.did
+                                    ?: convo.members.firstOrNull()?.did
+                                otherDid?.let { onProfileClick(it) }
+                            },
                         )
                         HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
                     }
@@ -103,6 +109,7 @@ private fun ConvoRow(
     convo: ConvoView,
     myDid: String,
     onClick: () -> Unit,
+    onAvatarClick: () -> Unit = {},
 ) {
     val otherMember = convo.members.firstOrNull { it.did != myDid } ?: convo.members.firstOrNull()
 
@@ -113,7 +120,7 @@ private fun ConvoRow(
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        AvatarImage(url = otherMember?.avatar, size = 48.dp)
+        AvatarImage(url = otherMember?.avatar, size = 48.dp, onClick = onAvatarClick)
 
         Spacer(modifier = Modifier.width(12.dp))
 

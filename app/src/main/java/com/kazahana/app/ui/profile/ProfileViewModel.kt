@@ -34,6 +34,7 @@ data class ProfileUiState(
     val isLoading: Boolean = false,
     val isLoadingPosts: Boolean = false,
     val isLoadingMore: Boolean = false,
+    val isRefreshing: Boolean = false,
     val error: String? = null,
     val cursor: String? = null,
     val hasMore: Boolean = true,
@@ -74,6 +75,30 @@ class ProfileViewModel @Inject constructor(
                 }
                 .onFailure { e ->
                     _uiState.update { it.copy(isLoading = false, error = e.message) }
+                }
+        }
+    }
+
+    fun refresh() {
+        if (actorDid.isEmpty()) return
+        viewModelScope.launch {
+            _uiState.update { it.copy(isRefreshing = true, error = null) }
+
+            profileRepository.getProfile(actorDid)
+                .onSuccess { profile ->
+                    _uiState.update {
+                        it.copy(
+                            profile = profile,
+                            isRefreshing = false,
+                            posts = emptyList(),
+                            cursor = null,
+                            hasMore = true,
+                        )
+                    }
+                    loadPosts()
+                }
+                .onFailure { e ->
+                    _uiState.update { it.copy(isRefreshing = false, error = e.message) }
                 }
         }
     }

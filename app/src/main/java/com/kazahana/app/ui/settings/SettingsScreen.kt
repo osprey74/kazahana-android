@@ -140,6 +140,28 @@ fun SettingsScreen(
 
             HorizontalDivider()
 
+            // ── Section: Post ──
+            SectionHeader(stringResource(R.string.settings_post))
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { viewModel.setShowVia(!uiState.showVia) }
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = stringResource(R.string.settings_show_via),
+                    style = MaterialTheme.typography.bodyLarge,
+                )
+                Switch(
+                    checked = uiState.showVia,
+                    onCheckedChange = { viewModel.setShowVia(it) },
+                )
+            }
+
+            HorizontalDivider()
+
             // ── Section: BSAF ──
             SectionHeader("BSAF")
             Row(

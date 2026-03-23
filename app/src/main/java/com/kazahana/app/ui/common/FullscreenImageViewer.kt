@@ -7,14 +7,20 @@ import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.calculatePan
 import androidx.compose.foundation.gestures.calculateZoom
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.VisibilityOff
@@ -31,12 +37,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.positionChanged
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -54,56 +61,108 @@ fun FullscreenImageViewer(
     showHideButton: Boolean = false,
     onHide: (() -> Unit)? = null,
 ) {
-    // Get real physical screen size from DisplayMetrics (works regardless of Dialog constraints)
-    val context = LocalContext.current
-    val dm = context.resources.displayMetrics
-    val screenWidthDp = (dm.widthPixels / dm.density).dp
-    val screenHeightDp = (dm.heightPixels / dm.density).dp
-    val pad = 24.dp
-    val imgW = screenWidthDp - pad * 2
-    val imgH = screenHeightDp - pad * 2
-
     Dialog(
         onDismissRequest = onDismiss,
         properties = DialogProperties(usePlatformDefaultWidth = false),
     ) {
         BackHandler { onDismiss() }
 
+        // Get system bar heights from Android resources (Compose WindowInsets
+        // are unavailable inside Dialog)
+        val context = LocalContext.current
+        val density = LocalDensity.current
+        val statusBarHeight = remember(density) {
+            val id = context.resources.getIdentifier("status_bar_height", "dimen", "android")
+            if (id > 0) with(density) { context.resources.getDimensionPixelSize(id).toDp() } else 24.dp
+        }
+        val navBarHeight = remember(density) {
+            val id = context.resources.getIdentifier("navigation_bar_height", "dimen", "android")
+            if (id > 0) with(density) { context.resources.getDimensionPixelSize(id).toDp() } else 48.dp
+        }
+
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color.Black),
-            contentAlignment = Alignment.Center,
+                .background(Color.Black)
+                .padding(top = statusBarHeight, bottom = navBarHeight),
         ) {
             val pagerState = rememberPagerState(
                 initialPage = initialIndex,
                 pageCount = { images.size },
             )
+            val currentAlt = images.getOrNull(pagerState.currentPage)?.alt
 
-            HorizontalPager(
-                state = pagerState,
-                modifier = Modifier.fillMaxSize(),
-            ) { page ->
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center,
+            // Column splits dialog into: top spacer (5%) / image (80%) / ALT (15%)
+            Column(modifier = Modifier.fillMaxSize()) {
+                // Top spacer (5%)
+                Spacer(modifier = Modifier.weight(0.05f))
+
+                // Image area (80%)
+                BoxWithConstraints(
+                    modifier = Modifier
+                        .weight(0.80f)
+                        .fillMaxWidth()
+                        .padding(horizontal = 12.dp),
                 ) {
-                    ZoomableImage(
-                        imageUrl = images[page].fullsize,
-                        contentDescription = images[page].alt.ifEmpty { null },
-                        onTap = onDismiss,
-                        imageWidth = imgW,
-                        imageHeight = imgH,
-                    )
+                    val imgW = maxWidth
+                    val imgH = maxHeight
+                    HorizontalPager(
+                        state = pagerState,
+                        modifier = Modifier.fillMaxSize(),
+                    ) { page ->
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            ZoomableImage(
+                                imageUrl = images[page].fullsize,
+                                contentDescription = images[page].alt.ifEmpty { null },
+                                onTap = onDismiss,
+                                imageWidth = imgW,
+                                imageHeight = imgH,
+                            )
+                        }
+                    }
+                }
+
+                // ALT text + page indicator (15%)
+                Column(
+                    modifier = Modifier
+                        .weight(0.15f)
+                        .fillMaxWidth()
+                        .clipToBounds()
+                        .verticalScroll(rememberScrollState()),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    if (!currentAlt.isNullOrBlank()) {
+                        Text(
+                            text = currentAlt,
+                            color = Color.White,
+                            style = MaterialTheme.typography.bodySmall,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(Color.Black.copy(alpha = 0.6f))
+                                .padding(horizontal = 16.dp, vertical = 10.dp),
+                        )
+                    }
+
+                    if (images.size > 1) {
+                        Text(
+                            text = "${pagerState.currentPage + 1} / ${images.size}",
+                            color = Color.White,
+                            style = MaterialTheme.typography.bodyMedium,
+                            modifier = Modifier.padding(vertical = 8.dp),
+                        )
+                    }
                 }
             }
 
-            // Close button
+            // Close button (overlaid at top-right)
             IconButton(
                 onClick = onDismiss,
                 modifier = Modifier
                     .align(Alignment.TopEnd)
-                    .padding(pad),
+                    .padding(top = 8.dp, end = 8.dp),
             ) {
                 Icon(
                     Icons.Default.Close,
@@ -113,13 +172,13 @@ fun FullscreenImageViewer(
                 )
             }
 
-            // Hide button
+            // Hide button (overlaid at top-left)
             if (showHideButton && onHide != null) {
                 TextButton(
                     onClick = onHide,
                     modifier = Modifier
                         .align(Alignment.TopStart)
-                        .padding(pad),
+                        .padding(top = 8.dp, start = 8.dp),
                 ) {
                     Icon(
                         Icons.Default.VisibilityOff,
@@ -133,32 +192,6 @@ fun FullscreenImageViewer(
                         color = Color.White,
                     )
                 }
-            }
-
-            // Page indicator
-            if (images.size > 1) {
-                Text(
-                    text = "${pagerState.currentPage + 1} / ${images.size}",
-                    color = Color.White,
-                    style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .padding(pad),
-                )
-            }
-
-            // Alt text
-            val currentAlt = images.getOrNull(pagerState.currentPage)?.alt
-            if (!currentAlt.isNullOrBlank()) {
-                Text(
-                    text = currentAlt,
-                    color = Color.White.copy(alpha = 0.8f),
-                    style = MaterialTheme.typography.bodySmall,
-                    modifier = Modifier
-                        .align(Alignment.BottomStart)
-                        .padding(pad)
-                        .padding(bottom = if (images.size > 1) 32.dp else 0.dp),
-                )
             }
         }
     }

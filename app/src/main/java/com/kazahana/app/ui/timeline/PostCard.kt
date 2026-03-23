@@ -1,6 +1,7 @@
 package com.kazahana.app.ui.timeline
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -35,6 +36,7 @@ import com.kazahana.app.R
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.kazahana.app.data.model.EmbedViewRecord
 import com.kazahana.app.data.model.FeedViewPost
 import com.kazahana.app.data.model.PostRecord
 import com.kazahana.app.ui.common.AvatarImage
@@ -173,6 +175,36 @@ fun PostCard(
                     }
                 }
 
+                // Langs & via row
+                if (record != null && (record.langs.isNotEmpty() || record.via != null)) {
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        if (record.langs.isNotEmpty()) {
+                            Text(
+                                text = record.langs.joinToString(", "),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                                modifier = Modifier
+                                    .background(
+                                        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f),
+                                        RoundedCornerShape(4.dp),
+                                    )
+                                    .padding(horizontal = 4.dp, vertical = 1.dp),
+                            )
+                        }
+                        if (record.via != null) {
+                            Text(
+                                text = "via ${record.via}",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                            )
+                        }
+                    }
+                }
+
                 // Post text (always visible)
                 if (record != null && record.text.isNotEmpty()) {
                     Spacer(modifier = Modifier.height(4.dp))
@@ -183,7 +215,8 @@ fun PostCard(
                 }
 
                 // Image grid — moderation applied here
-                val images = post.embed?.images
+                // Handle both top-level images and recordWithMedia images
+                val images = post.embed?.images ?: post.embed?.media?.images
                 if (!images.isNullOrEmpty()) {
                     Spacer(modifier = Modifier.height(8.dp))
                     if (!moderationDecision.shouldHide) {
@@ -216,13 +249,34 @@ fun PostCard(
                             )
                         }
                     }
+                    val videoAlt = post.embed?.alt
+                    if (!videoAlt.isNullOrBlank()) {
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = if (videoAlt.length > 128) videoAlt.take(128) + "…" else videoAlt,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
                 }
 
                 // Link card (no moderation needed)
-                val external = post.embed?.external
+                val external = post.embed?.external ?: post.embed?.media?.external
                 if (external != null) {
                     Spacer(modifier = Modifier.height(8.dp))
                     LinkCard(external = external)
+                }
+
+                // Quote post (embedded record)
+                val embeddedRecord = post.embed?.record
+                if (embeddedRecord?.record != null) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    QuoteCard(
+                        recordJson = embeddedRecord.record,
+                        onClick = onClick,
+                    )
                 }
 
                 // BSAF tag badges (iOS: monospaced 11pt, secondary, with Divider)
@@ -298,6 +352,86 @@ fun PostCard(
         )
 
         HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
+    }
+}
+
+@Composable
+private fun QuoteCard(
+    recordJson: kotlinx.serialization.json.JsonElement,
+    onClick: (postUri: String) -> Unit,
+) {
+    val viewRecord = remember(recordJson) {
+        try {
+            AppJson.decodeFromJsonElement<EmbedViewRecord>(recordJson)
+        } catch (_: Exception) {
+            null
+        }
+    }
+    val quotedRecord = remember(viewRecord?.value) {
+        viewRecord?.value?.let {
+            try {
+                AppJson.decodeFromJsonElement<PostRecord>(it)
+            } catch (_: Exception) {
+                null
+            }
+        }
+    }
+
+    if (viewRecord == null || viewRecord.author == null) return
+
+    val quotedImages = viewRecord.embeds.firstNotNullOfOrNull { it.images }
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .border(
+                width = 1.dp,
+                color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
+                shape = RoundedCornerShape(12.dp),
+            )
+            .clickable { onClick(viewRecord.uri) }
+            .padding(10.dp),
+    ) {
+        // Author line
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            if (viewRecord.author.avatar != null) {
+                AvatarImage(url = viewRecord.author.avatar, size = 16.dp)
+            }
+            Text(
+                text = viewRecord.author.displayName ?: viewRecord.author.handle,
+                style = MaterialTheme.typography.labelMedium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f, fill = false),
+            )
+            Text(
+                text = "@${viewRecord.author.handle}",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+
+        // Quoted text
+        if (quotedRecord != null && quotedRecord.text.isNotEmpty()) {
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = quotedRecord.text,
+                style = MaterialTheme.typography.bodyMedium,
+                maxLines = 3,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+
+        // Quoted images (compact thumbnails)
+        if (!quotedImages.isNullOrEmpty()) {
+            Spacer(modifier = Modifier.height(6.dp))
+            ImageGrid(images = quotedImages)
+        }
     }
 }
 

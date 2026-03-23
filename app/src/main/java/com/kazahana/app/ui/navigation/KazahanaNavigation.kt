@@ -63,6 +63,7 @@ import com.kazahana.app.ui.settings.FeedManagementScreen
 import com.kazahana.app.ui.settings.SettingsScreen
 import com.kazahana.app.ui.thread.ThreadScreen
 import com.kazahana.app.ui.timeline.TimelineScreen
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.serialization.Serializable
 
@@ -94,6 +95,7 @@ import kotlinx.serialization.Serializable
     val authorDisplayName: String = "",
     val postText: String = "",
 )
+@Serializable data class ShareComposeRoute(val sharedText: String = "")
 @Serializable object SettingsRoute
 @Serializable object FeedManagementRoute
 @Serializable object BsafBotsRoute
@@ -118,6 +120,7 @@ val bottomNavItems = listOf(
 fun KazahanaNavHost(
     authViewModel: AuthViewModel = hiltViewModel(),
     settingsStore: SettingsStore? = null,
+    deepLinkFlow: Flow<DeepLink>? = null,
 ) {
     val isLoggedIn by authViewModel.isLoggedIn.collectAsState()
 
@@ -146,7 +149,7 @@ fun KazahanaNavHost(
                     androidx.compose.material3.CircularProgressIndicator()
                 }
             }
-            true -> MainScreen(authViewModel = authViewModel)
+            true -> MainScreen(authViewModel = authViewModel, deepLinkFlow = deepLinkFlow)
             false -> LoginScreen(authViewModel = authViewModel)
         }
     }
@@ -155,11 +158,32 @@ fun KazahanaNavHost(
 @Composable
 private fun MainScreen(
     authViewModel: AuthViewModel,
+    deepLinkFlow: Flow<DeepLink>? = null,
 ) {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
     val scope = rememberCoroutineScope()
+
+    // Handle deep link / share intent navigation
+    androidx.compose.runtime.LaunchedEffect(deepLinkFlow) {
+        deepLinkFlow?.collect { deepLink ->
+            when (deepLink) {
+                is DeepLink.Profile -> navController.navigate(
+                    ProfileDetailRoute(actorDid = deepLink.actor)
+                ) { launchSingleTop = true }
+                is DeepLink.Post -> navController.navigate(
+                    ThreadRoute(postUri = deepLink.atUri)
+                ) { launchSingleTop = true }
+                is DeepLink.Compose -> navController.navigate(
+                    ShareComposeRoute(sharedText = deepLink.text)
+                ) { launchSingleTop = true }
+                is DeepLink.Search -> navController.navigate(SearchRoute) {
+                    launchSingleTop = true
+                }
+            }
+        }
+    }
 
     // Shared NotificationViewModel for unread badge
     val notificationViewModel: NotificationViewModel = hiltViewModel()
@@ -189,6 +213,7 @@ private fun MainScreen(
     val isOnCompose = currentDestination?.hasRoute(ComposeRoute::class) == true
         || currentDestination?.hasRoute(ReplyRoute::class) == true
         || currentDestination?.hasRoute(QuoteRoute::class) == true
+        || currentDestination?.hasRoute(ShareComposeRoute::class) == true
 
     val isOnSettings = currentDestination?.hasRoute(SettingsRoute::class) == true
         || currentDestination?.hasRoute(FeedManagementRoute::class) == true
@@ -369,6 +394,11 @@ private fun MainScreen(
                             launchSingleTop = true
                         }
                     },
+                    onProfileClick = { did ->
+                        navController.navigate(ProfileDetailRoute(actorDid = did)) {
+                            launchSingleTop = true
+                        }
+                    },
                 )
             }
             composable<ProfileRoute> {
@@ -455,6 +485,13 @@ private fun MainScreen(
             composable<ComposeRoute> {
                 ComposeScreen(
                     onNavigateBack = { navController.popBackStack() },
+                )
+            }
+            composable<ShareComposeRoute> { backStackEntry ->
+                val route = backStackEntry.toRoute<ShareComposeRoute>()
+                ComposeScreen(
+                    onNavigateBack = { navController.popBackStack() },
+                    initialText = route.sharedText,
                 )
             }
             composable<ReplyRoute> { backStackEntry ->

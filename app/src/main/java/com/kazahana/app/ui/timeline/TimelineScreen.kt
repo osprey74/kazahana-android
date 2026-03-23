@@ -38,6 +38,7 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -49,6 +50,7 @@ import com.kazahana.app.R
 import com.kazahana.app.ui.common.LocalModerationSettings
 import com.kazahana.app.ui.common.checkModeration
 import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.launch
 import kotlinx.serialization.json.decodeFromJsonElement
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -63,6 +65,7 @@ fun TimelineScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val listState = rememberLazyListState()
+    val scope = rememberCoroutineScope()
 
     // Tab re-tap: reload feeds + refresh + scroll to top
     LaunchedEffect(retapFlow) {
@@ -99,7 +102,10 @@ fun TimelineScreen(
                 FeedDropdown(
                     feeds = uiState.hiddenFeeds,
                     selectedFeed = uiState.selectedFeed,
-                    onSelect = { viewModel.selectFeed(it) },
+                    onSelect = {
+                        val wasRetap = viewModel.selectFeed(it)
+                        if (wasRetap) scope.launch { listState.animateScrollToItem(0) }
+                    },
                 )
             }
 
@@ -123,7 +129,10 @@ fun TimelineScreen(
                     uiState.feeds.forEach { feed ->
                         Tab(
                             selected = isInTabs && feed == uiState.selectedFeed,
-                            onClick = { viewModel.selectFeed(feed) },
+                            onClick = {
+                                val wasRetap = viewModel.selectFeed(feed)
+                                if (wasRetap) scope.launch { listState.animateScrollToItem(0) }
+                            },
                             text = {
                                 Text(
                                     text = feed.labelRes?.let { stringResource(it) } ?: feed.displayName,

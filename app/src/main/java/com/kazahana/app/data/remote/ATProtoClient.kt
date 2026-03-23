@@ -255,6 +255,62 @@ class ATProtoClient(
         }
     }
 
+    /**
+     * Get a service auth token for video.bsky.app uploads.
+     * Returns the JWT token string, or null on failure.
+     */
+    suspend fun getServiceAuth(aud: String, lxm: String, expSecs: Int = 1800): String? {
+        return try {
+            val exp = (System.currentTimeMillis() / 1000 + expSecs).toString()
+            val response = get(
+                nsid = "com.atproto.server.getServiceAuth",
+                params = mapOf("aud" to aud, "lxm" to lxm, "exp" to exp),
+            )
+            if (response.status.isSuccess()) {
+                val body = response.body<ServiceAuthResponse>()
+                body.token
+            } else null
+        } catch (_: Exception) {
+            null
+        }
+    }
+
+    /**
+     * Upload video to video.bsky.app using a service auth token.
+     */
+    suspend fun uploadVideo(
+        data: ByteArray,
+        mimeType: String,
+        did: String,
+        fileName: String,
+        serviceToken: String,
+    ): HttpResponse {
+        return rawClient.post("$VIDEO_SERVICE/xrpc/app.bsky.video.uploadVideo") {
+            parameter("did", did)
+            parameter("name", fileName)
+            header("Authorization", "Bearer $serviceToken")
+            contentType(ContentType.parse(mimeType))
+            setBody(data)
+        }
+    }
+
+    /**
+     * Poll video processing job status from video.bsky.app.
+     */
+    suspend fun getVideoJobStatus(jobId: String): HttpResponse {
+        val token = sessionStore.load()?.accessJwt
+        return client.get("$VIDEO_SERVICE/xrpc/app.bsky.video.getJobStatus") {
+            token?.let { header("Authorization", "Bearer $it") }
+            parameter("jobId", jobId)
+        }
+    }
+
+    /** Derive the did:web for the PDS from the endpoint URL. */
+    fun pdsDid(): String {
+        val host = pdsEndpoint.removePrefix("https://").removePrefix("http://").trimEnd('/')
+        return "did:web:$host"
+    }
+
     fun clearSession() {
         sessionStore.clear()
         pdsEndpoint = DEFAULT_PDS
@@ -264,6 +320,7 @@ class ATProtoClient(
         const val DEFAULT_PDS = "https://bsky.social"
         const val PUBLIC_API = "https://public.api.bsky.app"
         const val CHAT_PROXY = "did:web:api.bsky.chat#bsky_chat"
+        const val VIDEO_SERVICE = "https://video.bsky.app"
     }
 }
 
@@ -287,4 +344,9 @@ suspend fun HttpResponse.atprotoError(): String {
 private data class AtprotoErrorResponse(
     val error: String? = null,
     val message: String? = null,
+)
+
+@kotlinx.serialization.Serializable
+data class ServiceAuthResponse(
+    val token: String,
 )

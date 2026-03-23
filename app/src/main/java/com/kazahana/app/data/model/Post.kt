@@ -155,6 +155,7 @@ data class PostEmbedView(
     val playlist: String? = null,            // video HLS
     val thumbnail: String? = null,           // video thumbnail
     val aspectRatio: AspectRatio? = null,
+    val alt: String? = null,                 // video alt text
 )
 
 @Serializable
@@ -183,6 +184,18 @@ data class ExternalView(
 data class EmbedRecordView(
     @SerialName("\$type") val type: String? = null,
     val record: JsonElement? = null,  // Flexible — can be PostView, NotFoundPost, etc.
+)
+
+/** Parsed embedded record (app.bsky.embed.record#viewRecord) for quote posts */
+@Serializable
+data class EmbedViewRecord(
+    @SerialName("\$type") val type: String? = null,
+    val uri: String = "",
+    val cid: String = "",
+    val author: ProfileViewBasic? = null,
+    val value: JsonElement? = null,
+    val embeds: List<PostEmbedView> = emptyList(),
+    val indexedAt: String = "",
 )
 
 // Blob upload response
@@ -242,4 +255,20 @@ data class CreateRecordRequest(
 data class CreateRecordResponse(
     val uri: String,
     val cid: String,
+)
+
+// Video upload
+@Serializable
+data class VideoJobStatusWrapper(
+    val jobStatus: VideoJobStatus,
+)
+
+@Serializable
+data class VideoJobStatus(
+    val jobId: String,
+    val did: String? = null,
+    val state: String,
+    val blob: BlobData? = null,
+    val error: String? = null,
+    val message: String? = null,
 )

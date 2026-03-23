@@ -24,15 +24,37 @@
     <string name="compose_post">Post</string>
     <string name="compose_placeholder">What\'s up?</string>
     <string name="compose_add_image">Add image</string>
+    <string name="compose_add_video">Add video</string>
+    <string name="compose_video">Video</string>
     <string name="compose_alt_title">Alt text</string>
     <string name="compose_alt_hint">Describe this image</string>
+    <string name="compose_video_alt_hint">Describe this video</string>
     <string name="compose_reply_title">Reply</string>
     <string name="compose_quote_title">Quote</string>
+    <string name="compose_fetching_link_card">Fetching link card…</string>
     <string name="compose_replying_to">Replying to</string>
     <string name="compose_quoting">Quoting</string>
 
+    <!-- Threadgate -->
+    <string name="threadgate_title">Who can reply?</string>
+    <string name="threadgate_everyone">Everyone</string>
+    <string name="threadgate_no_one">No one</string>
+    <string name="threadgate_mention">Mentioned users</string>
+    <string name="threadgate_follower">Followers</string>
+    <string name="threadgate_following">Following</string>
+    <string name="threadgate_mention_and_follower">Mentioned + Followers</string>
+    <string name="threadgate_mention_and_following">Mentioned + Following</string>
+
+    <!-- Postgate -->
+    <string name="postgate_title">Quote restriction</string>
+    <string name="postgate_allow">Allow quoting</string>
+    <string name="postgate_disable">Disable quoting</string>
+
     <!-- Post -->
     <string name="post_reply">Reply</string>
+
+    <!-- ALT text -->
+    <string name="alt_image_prefix">Image </string>
 
     <!-- Thread -->
     <string name="thread_title">Thread</string>
@@ -105,6 +127,8 @@
     <string name="settings_pref_hide">Hide</string>
     <string name="settings_pref_warn">Warn</string>
     <string name="settings_pref_show">Show</string>
+    <string name="settings_post">Post</string>
+    <string name="settings_show_via">Show posting source (via)</string>
     <string name="settings_feed_management">Home Feed Management</string>
     <string name="settings_visible_feeds">Visible Feeds</string>
     <string name="settings_hidden_feeds">Hidden Feeds</string>

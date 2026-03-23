@@ -18,13 +18,33 @@
     <string name="compose_post">投稿する</string>
     <string name="compose_placeholder">いまどうしてる？</string>
     <string name="compose_add_image">画像を追加</string>
+    <string name="compose_add_video">動画を追加</string>
+    <string name="compose_video">動画</string>
     <string name="compose_alt_title">ALTテキスト</string>
     <string name="compose_alt_hint">この画像を説明してください</string>
+    <string name="compose_video_alt_hint">この動画を説明してください</string>
     <string name="compose_reply_title">返信</string>
     <string name="compose_quote_title">引用</string>
+    <string name="compose_fetching_link_card">リンクカードを取得中…</string>
     <string name="compose_replying_to">に返信</string>
     <string name="compose_quoting">を引用</string>
+
+    <!-- Threadgate -->
+    <string name="threadgate_title">返信できるユーザー</string>
+    <string name="threadgate_everyone">全員</string>
+    <string name="threadgate_no_one">誰も返信できない</string>
+    <string name="threadgate_mention">メンションしたユーザー</string>
+    <string name="threadgate_follower">フォロワー</string>
+    <string name="threadgate_following">フォロー中のユーザー</string>
+    <string name="threadgate_mention_and_follower">メンション + フォロワー</string>
+    <string name="threadgate_mention_and_following">メンション + フォロー中</string>
+
+    <!-- Postgate -->
+    <string name="postgate_title">引用制限</string>
+    <string name="postgate_allow">引用を許可する</string>
+    <string name="postgate_disable">引用を制限する</string>
     <string name="post_reply">返信</string>
+    <string name="alt_image_prefix">画像</string>
     <string name="thread_title">スレッド</string>
     <string name="notification_title">通知</string>
     <string name="notification_liked">がいいねしました</string>
@@ -77,6 +97,8 @@
     <string name="settings_pref_hide">非表示</string>
     <string name="settings_pref_warn">警告</string>
     <string name="settings_pref_show">表示</string>
+    <string name="settings_post">投稿</string>
+    <string name="settings_show_via">投稿元を表示 (via)</string>
     <string name="settings_feed_management">ホームフィード管理</string>
     <string name="settings_visible_feeds">表示中のフィード</string>
     <string name="settings_hidden_feeds">非表示のフィード</string>

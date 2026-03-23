@@ -29,7 +29,15 @@
       "Bash(head -25 /mnt/g/dev/kazahana-android/app/src/main/java/com/kazahana/app/data/repository/*.kt)",
       "Bash(./gradlew compileDebugKotlin)",
       "Read(//mnt/e/Downloads/**)",
-      "Read(//mnt/**)"
+      "Read(//mnt/**)",
+      "Bash(find /mnt/g/dev/bsaf-protocol -name *.md)",
+      "Bash(find /mnt/g/dev/kazahana-android/app/src/main/java/com/kazahana/app/domain -type f -name *.kt)",
+      "Bash(find /mnt/g/dev/kazahana-ios -name *ompose* -o -name *ost*)",
+      "Bash(find /mnt/g/dev -name *.md -type f -exec grep -l \"com.atproto.repo.createRecord\\\\|app.bsky.feed.post\\\\|XRPC\" {})",
+      "Bash(2)",
+      "Bash(xargs ls:*)",
+      "Bash(find /mnt/g/dev/kazahana/design -name *.md)",
+      "Bash(git diff:*)"
     ]
   }
 }

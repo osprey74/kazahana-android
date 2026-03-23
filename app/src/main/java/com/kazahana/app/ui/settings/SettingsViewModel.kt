@@ -25,6 +25,7 @@ data class SettingsUiState(
     val pornPref: ModerationPref = ModerationPref.WARN,
     val graphicMediaPref: ModerationPref = ModerationPref.WARN,
     val pollIntervalSeconds: Int = 60,
+    val showVia: Boolean = false,
     val bsafEnabled: Boolean = false,
 )
 
@@ -42,6 +43,7 @@ class SettingsViewModel @Inject constructor(
         settingsStore.pornPref,
         settingsStore.graphicMediaPref,
         settingsStore.pollIntervalSeconds,
+        settingsStore.showVia,
         settingsStore.bsafEnabled,
     ) { values ->
         SettingsUiState(
@@ -53,7 +55,8 @@ class SettingsViewModel @Inject constructor(
             pornPref = values[5] as ModerationPref,
             graphicMediaPref = values[6] as ModerationPref,
             pollIntervalSeconds = values[7] as Int,
-            bsafEnabled = values[8] as Boolean,
+            showVia = values[8] as Boolean,
+            bsafEnabled = values[9] as Boolean,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), SettingsUiState())
 
@@ -85,6 +88,10 @@ class SettingsViewModel @Inject constructor(
 
     fun setPollInterval(seconds: Int) {
         viewModelScope.launch { settingsStore.setPollInterval(seconds) }
+    }
+
+    fun setShowVia(enabled: Boolean) {
+        viewModelScope.launch { settingsStore.setShowVia(enabled) }
     }
 
     fun setBsafEnabled(enabled: Boolean) {
