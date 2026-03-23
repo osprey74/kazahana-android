@@ -22,7 +22,14 @@
       "Bash(ls gradlew*)",
       "Bash(./gradlew :app:compileDebugKotlin)",
       "Bash(git status:*)",
-      "Bash(grep -E \"\\\\.\\(swift|kt\\)$\")"
+      "Bash(grep -E \"\\\\.\\(swift|kt\\)$\")",
+      "Bash(JAVA_HOME=/usr/lib/jvm/jdk-17.0.5 ./gradlew :app:compileDebugKotlin)",
+      "Bash(xargs cat:*)",
+      "Bash(grep:*)",
+      "Bash(head -25 /mnt/g/dev/kazahana-android/app/src/main/java/com/kazahana/app/data/repository/*.kt)",
+      "Bash(./gradlew compileDebugKotlin)",
+      "Read(//mnt/e/Downloads/**)",
+      "Read(//mnt/**)"
     ]
   }
 }
