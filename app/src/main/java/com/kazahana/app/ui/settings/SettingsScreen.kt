@@ -59,6 +59,7 @@ fun SettingsScreen(
     onNavigateBack: () -> Unit = {},
     onLogout: () -> Unit = {},
     onFeedManagement: () -> Unit = {},
+    onBsafBots: () -> Unit = {},
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
@@ -135,6 +136,48 @@ fun SettingsScreen(
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
                 )
+            }
+
+            HorizontalDivider()
+
+            // ── Section: BSAF ──
+            SectionHeader("BSAF")
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { viewModel.setBsafEnabled(!uiState.bsafEnabled) }
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = stringResource(R.string.bsaf_enable),
+                    style = MaterialTheme.typography.bodyLarge,
+                )
+                Switch(
+                    checked = uiState.bsafEnabled,
+                    onCheckedChange = { viewModel.setBsafEnabled(it) },
+                )
+            }
+            if (uiState.bsafEnabled) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable(onClick = onBsafBots)
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = stringResource(R.string.bsaf_manage_bots),
+                        style = MaterialTheme.typography.bodyLarge,
+                    )
+                    Icon(
+                        Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                    )
+                }
             }
 
             HorizontalDivider()

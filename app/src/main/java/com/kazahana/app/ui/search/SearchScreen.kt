@@ -56,7 +56,10 @@ import com.kazahana.app.ui.common.LocalModerationSettings
 import com.kazahana.app.ui.common.checkModeration
 import com.kazahana.app.ui.timeline.PostCard
 import kotlinx.coroutines.flow.SharedFlow
+import androidx.compose.ui.unit.sp
 import com.kazahana.app.data.AppJson
+import com.kazahana.app.ui.common.BotBadge
+import com.kazahana.app.ui.common.isBotAccount
 import kotlinx.serialization.json.decodeFromJsonElement
 
 @Composable
@@ -262,12 +265,18 @@ private fun UserRow(
         AvatarImage(url = user.avatar, size = 48.dp)
         Spacer(modifier = Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = user.displayName ?: user.handle,
-                style = MaterialTheme.typography.bodyLarge,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = user.displayName ?: user.handle,
+                    style = MaterialTheme.typography.bodyLarge,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                if (isBotAccount(user.did, user.labels)) {
+                    Spacer(modifier = Modifier.width(3.dp))
+                    BotBadge(size = 14.sp)
+                }
+            }
             Text(
                 text = "@${user.handle}",
                 style = MaterialTheme.typography.bodySmall,

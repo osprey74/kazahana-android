@@ -54,6 +54,8 @@ class SettingsStore(private val context: Context) {
         val HIDDEN_FEED_URIS = stringPreferencesKey("hidden_feed_uris")
         val SHOW_ALL_FEEDS_IN_SELECTOR = booleanPreferencesKey("show_all_feeds_in_selector")
         val SEARCH_HISTORY = stringPreferencesKey("search_history")
+        val BSAF_ENABLED = booleanPreferencesKey("bsaf_enabled")
+        val BSAF_REGISTERED_BOTS = stringPreferencesKey("bsaf_registered_bots")
     }
 
     val themeMode: Flow<ThemeMode> = context.dataStore.data.map { prefs ->
@@ -202,6 +204,84 @@ class SettingsStore(private val context: Context) {
         }
     }
 
+    // ── BSAF ──
+
+    val bsafEnabled: Flow<Boolean> = context.dataStore.data.map { prefs ->
+        prefs[Keys.BSAF_ENABLED] ?: false
+    }
+
+    val bsafRegisteredBots: Flow<List<com.kazahana.app.data.model.BsafRegisteredBot>> =
+        context.dataStore.data.map { prefs ->
+            val json = prefs[Keys.BSAF_REGISTERED_BOTS]
+            if (json.isNullOrEmpty()) emptyList()
+            else try {
+                kotlinx.serialization.json.Json.decodeFromString(json)
+            } catch (_: Exception) {
+                emptyList()
+            }
+        }
+
+    suspend fun setBsafEnabled(enabled: Boolean) {
+        context.dataStore.edit { prefs ->
+            prefs[Keys.BSAF_ENABLED] = enabled
+        }
+    }
+
+    suspend fun setBsafRegisteredBots(bots: List<com.kazahana.app.data.model.BsafRegisteredBot>) {
+        context.dataStore.edit { prefs ->
+            prefs[Keys.BSAF_REGISTERED_BOTS] =
+                encodeBsafBots(bots)
+        }
+    }
+
+    suspend fun registerBsafBot(bot: com.kazahana.app.data.model.BsafRegisteredBot) {
+        context.dataStore.edit { prefs ->
+            val current: List<com.kazahana.app.data.model.BsafRegisteredBot> = try {
+                val json = prefs[Keys.BSAF_REGISTERED_BOTS]
+                if (json.isNullOrEmpty()) emptyList()
+                else kotlinx.serialization.json.Json.decodeFromString(json)
+            } catch (_: Exception) { emptyList() }
+            if (current.any { it.did == bot.did }) return@edit
+            prefs[Keys.BSAF_REGISTERED_BOTS] =
+                encodeBsafBots(current + bot)
+        }
+    }
+
+    suspend fun unregisterBsafBot(did: String) {
+        context.dataStore.edit { prefs ->
+            val current: List<com.kazahana.app.data.model.BsafRegisteredBot> = try {
+                val json = prefs[Keys.BSAF_REGISTERED_BOTS]
+                if (json.isNullOrEmpty()) emptyList()
+                else kotlinx.serialization.json.Json.decodeFromString(json)
+            } catch (_: Exception) { emptyList() }
+            prefs[Keys.BSAF_REGISTERED_BOTS] =
+                encodeBsafBots(current.filter { it.did != did })
+        }
+    }
+
+    suspend fun updateBsafBotFilters(
+        did: String,
+        tag: String,
+        enabledValues: List<String>,
+    ) {
+        context.dataStore.edit { prefs ->
+            val current: MutableList<com.kazahana.app.data.model.BsafRegisteredBot> = try {
+                val json = prefs[Keys.BSAF_REGISTERED_BOTS]
+                if (json.isNullOrEmpty()) mutableListOf()
+                else kotlinx.serialization.json.Json.decodeFromString<List<com.kazahana.app.data.model.BsafRegisteredBot>>(json).toMutableList()
+            } catch (_: Exception) { mutableListOf() }
+            val idx = current.indexOfFirst { it.did == did }
+            if (idx < 0) return@edit
+            val bot = current[idx]
+            val updatedFilters = bot.filters.map { f ->
+                if (f.tag == tag) f.copy(enabledValues = enabledValues) else f
+            }
+            current[idx] = bot.copy(filters = updatedFilters)
+            prefs[Keys.BSAF_REGISTERED_BOTS] =
+                encodeBsafBots(current.toList())
+        }
+    }
+
     suspend fun setHiddenFeedURIs(uris: List<String>) {
         context.dataStore.edit { prefs ->
             prefs[Keys.HIDDEN_FEED_URIS] = encodeStringList(uris)
@@ -223,6 +303,14 @@ class SettingsStore(private val context: Context) {
             kotlinx.serialization.builtins.ListSerializer(kotlinx.serialization.serializer<String>()),
             list,
         )
+    }
+
+    private val bsafBotListSerializer = kotlinx.serialization.builtins.ListSerializer(
+        kotlinx.serialization.serializer<com.kazahana.app.data.model.BsafRegisteredBot>()
+    )
+
+    private fun encodeBsafBots(bots: List<com.kazahana.app.data.model.BsafRegisteredBot>): String {
+        return kotlinx.serialization.json.Json.encodeToString(bsafBotListSerializer, bots)
     }
 
     private fun parseModerationPref(value: String?): ModerationPref {

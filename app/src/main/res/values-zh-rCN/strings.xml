@@ -132,4 +132,5 @@
     <string name="common_move_down">下移</string>
     <string name="feed_type_feed">信息流</string>
     <string name="feed_type_list">列表</string>
+    <string name="bot_label">此账户已自动化</string>
 </resources>

@@ -6,8 +6,14 @@ import androidx.work.Configuration
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
+import com.kazahana.app.data.bsaf.BsafService
+import com.kazahana.app.data.local.SettingsStore
 import com.kazahana.app.worker.NotificationWorker
 import dagger.hilt.android.HiltAndroidApp
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 
@@ -17,6 +23,12 @@ class KazahanaApp : Application(), Configuration.Provider {
     @Inject
     lateinit var workerFactory: HiltWorkerFactory
 
+    @Inject
+    lateinit var settingsStore: SettingsStore
+
+    @Inject
+    lateinit var bsafService: BsafService
+
     override val workManagerConfiguration: Configuration
         get() = Configuration.Builder()
             .setWorkerFactory(workerFactory)
@@ -25,6 +37,22 @@ class KazahanaApp : Application(), Configuration.Provider {
     override fun onCreate() {
         super.onCreate()
         scheduleNotificationCheck()
+        checkBsafBotUpdates()
+    }
+
+    private fun checkBsafBotUpdates() {
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                if (!settingsStore.bsafEnabled.first()) return@launch
+                val bots = settingsStore.bsafRegisteredBots.first()
+                val updatedBots = bots.map { bot ->
+                    bsafService.checkBotUpdate(bot) ?: bot
+                }
+                if (updatedBots != bots) {
+                    settingsStore.setBsafRegisteredBots(updatedBots)
+                }
+            } catch (_: Exception) { /* silent failure */ }
+        }
     }
 
     private fun scheduleNotificationCheck() {

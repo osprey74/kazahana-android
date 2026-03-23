@@ -1,8 +1,12 @@
 package com.kazahana.app.ui.common
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.calculatePan
+import androidx.compose.foundation.gestures.calculateZoom
 import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -26,11 +30,15 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.positionChanged
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
@@ -46,17 +54,26 @@ fun FullscreenImageViewer(
     showHideButton: Boolean = false,
     onHide: (() -> Unit)? = null,
 ) {
+    // Get real physical screen size from DisplayMetrics (works regardless of Dialog constraints)
+    val context = LocalContext.current
+    val dm = context.resources.displayMetrics
+    val screenWidthDp = (dm.widthPixels / dm.density).dp
+    val screenHeightDp = (dm.heightPixels / dm.density).dp
+    val pad = 24.dp
+    val imgW = screenWidthDp - pad * 2
+    val imgH = screenHeightDp - pad * 2
+
     Dialog(
         onDismissRequest = onDismiss,
-        properties = DialogProperties(
-            usePlatformDefaultWidth = false,
-            decorFitsSystemWindows = false,
-        ),
+        properties = DialogProperties(usePlatformDefaultWidth = false),
     ) {
+        BackHandler { onDismiss() }
+
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .background(Color.Black),
+            contentAlignment = Alignment.Center,
         ) {
             val pagerState = rememberPagerState(
                 initialPage = initialIndex,
@@ -67,11 +84,18 @@ fun FullscreenImageViewer(
                 state = pagerState,
                 modifier = Modifier.fillMaxSize(),
             ) { page ->
-                ZoomableImage(
-                    imageUrl = images[page].fullsize,
-                    contentDescription = images[page].alt.ifEmpty { null },
-                    onTap = onDismiss,
-                )
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    ZoomableImage(
+                        imageUrl = images[page].fullsize,
+                        contentDescription = images[page].alt.ifEmpty { null },
+                        onTap = onDismiss,
+                        imageWidth = imgW,
+                        imageHeight = imgH,
+                    )
+                }
             }
 
             // Close button
@@ -79,7 +103,7 @@ fun FullscreenImageViewer(
                 onClick = onDismiss,
                 modifier = Modifier
                     .align(Alignment.TopEnd)
-                    .padding(16.dp),
+                    .padding(pad),
             ) {
                 Icon(
                     Icons.Default.Close,
@@ -89,13 +113,13 @@ fun FullscreenImageViewer(
                 )
             }
 
-            // Hide button (re-blur media)
+            // Hide button
             if (showHideButton && onHide != null) {
                 TextButton(
                     onClick = onHide,
                     modifier = Modifier
                         .align(Alignment.TopStart)
-                        .padding(16.dp),
+                        .padding(pad),
                 ) {
                     Icon(
                         Icons.Default.VisibilityOff,
@@ -119,7 +143,7 @@ fun FullscreenImageViewer(
                     style = MaterialTheme.typography.bodyMedium,
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
-                        .padding(16.dp),
+                        .padding(pad),
                 )
             }
 
@@ -132,7 +156,7 @@ fun FullscreenImageViewer(
                     style = MaterialTheme.typography.bodySmall,
                     modifier = Modifier
                         .align(Alignment.BottomStart)
-                        .padding(16.dp)
+                        .padding(pad)
                         .padding(bottom = if (images.size > 1) 32.dp else 0.dp),
                 )
             }
@@ -145,24 +169,50 @@ private fun ZoomableImage(
     imageUrl: String,
     contentDescription: String?,
     onTap: () -> Unit,
+    imageWidth: Dp,
+    imageHeight: Dp,
 ) {
     var scale by remember { mutableFloatStateOf(1f) }
     var offsetX by remember { mutableFloatStateOf(0f) }
     var offsetY by remember { mutableFloatStateOf(0f) }
 
+    fun clampOffsets(viewWidth: Int, viewHeight: Int) {
+        val maxX = (viewWidth * (scale - 1f)) / 2f
+        val maxY = (viewHeight * (scale - 1f)) / 2f
+        offsetX = offsetX.coerceIn(-maxX, maxX)
+        offsetY = offsetY.coerceIn(-maxY, maxY)
+    }
+
     Box(
         modifier = Modifier
-            .fillMaxSize()
+            .size(imageWidth, imageHeight)
+            .clipToBounds()
             .pointerInput(Unit) {
-                detectTransformGestures { _, pan, zoom, _ ->
-                    scale = (scale * zoom).coerceIn(1f, 5f)
-                    if (scale > 1f) {
-                        offsetX += pan.x
-                        offsetY += pan.y
-                    } else {
-                        offsetX = 0f
-                        offsetY = 0f
-                    }
+                awaitEachGesture {
+                    awaitFirstDown(requireUnconsumed = false)
+                    do {
+                        val event = awaitPointerEvent()
+                        val zoom = event.calculateZoom()
+                        val pan = event.calculatePan()
+
+                        if (event.changes.size >= 2) {
+                            scale = (scale * zoom).coerceIn(1f, 5f)
+                            if (scale > 1f) {
+                                offsetX += pan.x
+                                offsetY += pan.y
+                                clampOffsets(size.width, size.height)
+                            } else {
+                                offsetX = 0f
+                                offsetY = 0f
+                            }
+                            event.changes.forEach { if (it.positionChanged()) it.consume() }
+                        } else if (scale > 1f) {
+                            offsetX += pan.x
+                            offsetY += pan.y
+                            clampOffsets(size.width, size.height)
+                            event.changes.forEach { if (it.positionChanged()) it.consume() }
+                        }
+                    } while (event.changes.any { it.pressed })
                 }
             }
             .pointerInput(Unit) {
@@ -186,13 +236,13 @@ private fun ZoomableImage(
             contentDescription = contentDescription,
             contentScale = ContentScale.Fit,
             modifier = Modifier
-                .fillMaxSize()
-                .graphicsLayer(
-                    scaleX = scale,
-                    scaleY = scale,
-                    translationX = offsetX,
-                    translationY = offsetY,
-                ),
+                .size(imageWidth, imageHeight)
+                .graphicsLayer {
+                    scaleX = scale
+                    scaleY = scale
+                    translationX = offsetX
+                    translationY = offsetY
+                },
         )
     }
 }

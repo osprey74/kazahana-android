@@ -1,8 +1,11 @@
 package com.kazahana.app.ui.timeline
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -10,6 +13,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.Favorite
@@ -34,12 +38,24 @@ import androidx.compose.ui.unit.dp
 import com.kazahana.app.data.model.FeedViewPost
 import com.kazahana.app.data.model.PostRecord
 import com.kazahana.app.ui.common.AvatarImage
+import com.kazahana.app.ui.common.BotBadge
+import com.kazahana.app.ui.common.isBotAccount
+import com.kazahana.app.data.bsaf.BsafService
+import com.kazahana.app.data.model.BsafDuplicateInfo
+import com.kazahana.app.data.model.BsafParsedTags
 import com.kazahana.app.ui.common.ModerationDecision
 import com.kazahana.app.ui.common.relativeTime
 import com.kazahana.app.data.AppJson
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.unit.sp
 import kotlinx.serialization.json.decodeFromJsonElement
 private val RepostGreen = androidx.compose.ui.graphics.Color(0xFF00BA7C)
+private val bsafService = BsafService()
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun PostCard(
     feedPost: FeedViewPost,
@@ -50,6 +66,8 @@ fun PostCard(
     onRepost: (postUri: String, postCid: String, currentRepostUri: String?) -> Unit = { _, _, _ -> },
     onBookmark: (postUri: String, postCid: String, currentBookmarkUri: String?) -> Unit = { _, _, _ -> },
     moderationDecision: ModerationDecision = ModerationDecision(),
+    bsafTags: BsafParsedTags? = null,
+    bsafDuplicate: BsafDuplicateInfo? = null,
     modifier: Modifier = Modifier,
 ) {
     val post = feedPost.post
@@ -61,7 +79,25 @@ fun PostCard(
         }
     }
 
-    Column(modifier = modifier.fillMaxWidth()) {
+    val severityColor = remember(bsafTags) {
+        bsafTags?.let { bsafService.severityBorderColor(it.value) }
+    }
+
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .then(
+                if (severityColor != null) {
+                    Modifier.drawBehind {
+                        drawRect(
+                            color = severityColor,
+                            topLeft = Offset.Zero,
+                            size = Size(4.dp.toPx(), size.height),
+                        )
+                    }
+                } else Modifier
+            ),
+    ) {
         // Repost indicator
         if (feedPost.reason?.type?.contains("reasonRepost") == true) {
             Text(
@@ -95,6 +131,10 @@ fun PostCard(
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.weight(1f, fill = false),
                     )
+                    if (isBotAccount(post.author.did, post.author.labels)) {
+                        Spacer(modifier = Modifier.width(3.dp))
+                        BotBadge(size = 14.sp)
+                    }
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
                         text = "@${post.author.handle}",
@@ -183,6 +223,61 @@ fun PostCard(
                 if (external != null) {
                     Spacer(modifier = Modifier.height(8.dp))
                     LinkCard(external = external)
+                }
+
+                // BSAF tag badges (iOS: monospaced 11pt, secondary, with Divider)
+                if (bsafTags != null) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
+                    Spacer(modifier = Modifier.height(4.dp))
+                    FlowRow(
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp),
+                    ) {
+                        listOf(
+                            bsafTags.type,
+                            bsafTags.value,
+                            bsafTags.target,
+                            bsafTags.source,
+                        ).filter { it.isNotEmpty() }.forEach { tag ->
+                            Text(
+                                text = tag,
+                                fontSize = 11.sp,
+                                fontFamily = FontFamily.Monospace,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                                modifier = Modifier
+                                    .background(
+                                        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f),
+                                        RoundedCornerShape(4.dp),
+                                    )
+                                    .padding(horizontal = 6.dp, vertical = 2.dp),
+                            )
+                        }
+                    }
+                }
+
+                // BSAF duplicate indicator (iOS: 11pt, doc.on.doc icon + text)
+                if (bsafDuplicate != null && bsafDuplicate.duplicateHandles.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    ) {
+                        Icon(
+                            Icons.Outlined.Reply,
+                            contentDescription = null,
+                            modifier = Modifier.size(12.dp),
+                            tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                        )
+                        Text(
+                            text = stringResource(
+                                R.string.bsaf_duplicate_indicator,
+                                bsafDuplicate.duplicateHandles.size,
+                            ),
+                            fontSize = 11.sp,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                        )
+                    }
                 }
             }
         }

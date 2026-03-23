@@ -134,6 +134,25 @@
     <string name="report_success">Report submitted</string>
     <string name="report_error">Failed to submit report</string>
 
+    <!-- Bot badge -->
+    <string name="bot_label">This account is automated</string>
+
+    <!-- BSAF -->
+    <string name="bsaf_enable">Enable BSAF (Structured Alert Feed)</string>
+    <string name="bsaf_manage_bots">Manage BSAF Bots</string>
+    <string name="bsaf_title">BSAF Bots</string>
+    <string name="bsaf_register_title">Register Bot</string>
+    <string name="bsaf_register_description">Enter the URL to a bot definition JSON file</string>
+    <string name="bsaf_url_label">Bot Definition URL</string>
+    <string name="bsaf_register_button">Register</string>
+    <string name="bsaf_register_success">Bot registered successfully</string>
+    <string name="bsaf_registered_bots">Registered Bots</string>
+    <string name="bsaf_no_bots">No bots registered</string>
+    <string name="bsaf_select_all">Select all</string>
+    <string name="bsaf_deselect_all">Deselect all</string>
+    <string name="bsaf_unregister">Unregister</string>
+    <string name="bsaf_duplicate_indicator">Also reported by %1$d other bot(s)</string>
+
     <!-- Language names (native, not translated) -->
     <string name="lang_system">System</string>
     <string name="lang_ja">日本語</string>

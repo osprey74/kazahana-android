@@ -58,6 +58,7 @@ import com.kazahana.app.ui.notification.NotificationScreen
 import com.kazahana.app.ui.notification.NotificationViewModel
 import com.kazahana.app.ui.profile.ProfileScreen
 import com.kazahana.app.ui.search.SearchScreen
+import com.kazahana.app.ui.settings.BsafBotsScreen
 import com.kazahana.app.ui.settings.FeedManagementScreen
 import com.kazahana.app.ui.settings.SettingsScreen
 import com.kazahana.app.ui.thread.ThreadScreen
@@ -95,6 +96,7 @@ import kotlinx.serialization.Serializable
 )
 @Serializable object SettingsRoute
 @Serializable object FeedManagementRoute
+@Serializable object BsafBotsRoute
 @Serializable data class ChatRoute(val convoId: String)
 
 data class BottomNavItem(
@@ -190,6 +192,7 @@ private fun MainScreen(
 
     val isOnSettings = currentDestination?.hasRoute(SettingsRoute::class) == true
         || currentDestination?.hasRoute(FeedManagementRoute::class) == true
+        || currentDestination?.hasRoute(BsafBotsRoute::class) == true
 
     val hideChrome = isOnCompose
     val hideFab = hideChrome || isOnSettings
@@ -493,10 +496,20 @@ private fun MainScreen(
                             launchSingleTop = true
                         }
                     },
+                    onBsafBots = {
+                        navController.navigate(BsafBotsRoute) {
+                            launchSingleTop = true
+                        }
+                    },
                 )
             }
             composable<FeedManagementRoute> {
                 FeedManagementScreen(
+                    onNavigateBack = { navController.popBackStack() },
+                )
+            }
+            composable<BsafBotsRoute> {
+                BsafBotsScreen(
                     onNavigateBack = { navController.popBackStack() },
                 )
             }

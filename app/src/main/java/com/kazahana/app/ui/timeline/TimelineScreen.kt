@@ -17,14 +17,15 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.ScrollableTabRow
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRowDefaults
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
@@ -93,10 +94,10 @@ fun TimelineScreen(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            // Feed dropdown selector (left side)
-            if (uiState.showAllInSelector || uiState.feeds.size <= 1) {
+            // Feed dropdown selector (left side) — shows hidden feeds only
+            if (uiState.hiddenFeeds.isNotEmpty()) {
                 FeedDropdown(
-                    feeds = if (uiState.showAllInSelector) uiState.allFeeds else uiState.feeds,
+                    feeds = uiState.hiddenFeeds,
                     selectedFeed = uiState.selectedFeed,
                     onSelect = { viewModel.selectFeed(it) },
                 )
@@ -200,6 +201,8 @@ fun TimelineScreen(
                                 onRepost = { uri, cid, repostUri -> viewModel.toggleRepost(uri, cid, repostUri) },
                                 onBookmark = { uri, cid, bookmarkUri -> viewModel.toggleBookmark(uri, cid, bookmarkUri) },
                                 moderationDecision = modDecision,
+                                bsafTags = uiState.bsafTags[feedPost.post.uri],
+                                bsafDuplicate = uiState.bsafDuplicates[feedPost.post.uri],
                             )
                         }
 
@@ -223,109 +226,68 @@ fun TimelineScreen(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun FeedDropdown(
     feeds: List<FeedInfo>,
     selectedFeed: FeedInfo?,
     onSelect: (FeedInfo) -> Unit,
 ) {
-    var expanded by remember { mutableStateOf(false) }
+    var showSheet by remember { mutableStateOf(false) }
 
-    Box {
-        Row(
-            modifier = Modifier
-                .clickable { expanded = true }
-                .padding(horizontal = 12.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
+    // Trigger button
+    Row(
+        modifier = Modifier
+            .clickable { showSheet = true }
+            .padding(horizontal = 12.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(
+            Icons.Default.KeyboardArrowDown,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.size(20.dp),
+        )
+    }
+
+    if (showSheet) {
+        ModalBottomSheet(
+            onDismissRequest = { showSheet = false },
+            sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
         ) {
-            Icon(
-                Icons.Default.KeyboardArrowDown,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(20.dp),
-            )
-        }
-
-        DropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { expanded = false },
-        ) {
-            // Group by type
-            val following = feeds.filter { it.type == "timeline" }
-            val customFeeds = feeds.filter { it.type == "feed" }
-            val lists = feeds.filter { it.type == "list" }
-
-            following.forEach { feed ->
-                FeedDropdownItem(
-                    feed = feed,
-                    isSelected = feed == selectedFeed,
-                    onClick = {
-                        onSelect(feed)
-                        expanded = false
-                    },
-                )
-            }
-
-            if (customFeeds.isNotEmpty()) {
-                HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
-                customFeeds.forEach { feed ->
-                    FeedDropdownItem(
-                        feed = feed,
-                        isSelected = feed == selectedFeed,
-                        onClick = {
-                            onSelect(feed)
-                            expanded = false
-                        },
-                    )
-                }
-            }
-
-            if (lists.isNotEmpty()) {
-                HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
-                lists.forEach { feed ->
-                    FeedDropdownItem(
-                        feed = feed,
-                        isSelected = feed == selectedFeed,
-                        onClick = {
-                            onSelect(feed)
-                            expanded = false
-                        },
-                    )
+            LazyColumn(
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                items(feeds) { feed ->
+                    val isSelected = feed == selectedFeed
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                onSelect(feed)
+                                showSheet = false
+                            }
+                            .padding(horizontal = 16.dp, vertical = 14.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                    ) {
+                        Text(
+                            text = feed.labelRes?.let { stringResource(it) } ?: feed.displayName,
+                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                            color = if (isSelected) MaterialTheme.colorScheme.primary
+                            else MaterialTheme.colorScheme.onSurface,
+                        )
+                        if (isSelected) {
+                            Icon(
+                                Icons.Default.Check,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(18.dp),
+                            )
+                        }
+                    }
                 }
             }
         }
     }
-}
-
-@Composable
-private fun FeedDropdownItem(
-    feed: FeedInfo,
-    isSelected: Boolean,
-    onClick: () -> Unit,
-) {
-    DropdownMenuItem(
-        text = {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween,
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Text(
-                    text = feed.labelRes?.let { stringResource(it) } ?: feed.displayName,
-                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                    color = if (isSelected) MaterialTheme.colorScheme.primary
-                    else MaterialTheme.colorScheme.onSurface,
-                )
-                if (isSelected) {
-                    Icon(
-                        Icons.Default.Check,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(18.dp),
-                    )
-                }
-            }
-        },
-        onClick = onClick,
-    )
 }

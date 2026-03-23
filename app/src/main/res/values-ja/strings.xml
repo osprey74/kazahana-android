@@ -101,6 +101,24 @@
     <string name="report_submitting">送信中…</string>
     <string name="report_success">通報を送信しました</string>
     <string name="report_error">通報の送信に失敗しました</string>
+    <!-- Bot badge -->
+    <string name="bot_label">このアカウントは自動化されています</string>
+
+    <!-- BSAF -->
+    <string name="bsaf_enable">BSAF (構造化アラートフィード) を有効化</string>
+    <string name="bsaf_manage_bots">BSAF Botを管理</string>
+    <string name="bsaf_title">BSAF Bot</string>
+    <string name="bsaf_register_title">Botを登録</string>
+    <string name="bsaf_register_description">Bot定義JSONファイルのURLを入力してください</string>
+    <string name="bsaf_url_label">Bot定義URL</string>
+    <string name="bsaf_register_button">登録</string>
+    <string name="bsaf_register_success">Botを登録しました</string>
+    <string name="bsaf_registered_bots">登録済みBot</string>
+    <string name="bsaf_no_bots">登録されたBotはありません</string>
+    <string name="bsaf_select_all">すべて選択</string>
+    <string name="bsaf_deselect_all">すべて解除</string>
+    <string name="bsaf_unregister">登録解除</string>
+    <string name="bsaf_duplicate_indicator">他%1$d件のBotも報告</string>
     <!-- Language names -->
     <string name="lang_system">システム</string>
     <string name="settings_account">アカウント</string>

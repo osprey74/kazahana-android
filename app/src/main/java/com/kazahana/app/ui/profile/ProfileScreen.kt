@@ -60,7 +60,10 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.kazahana.app.R
 import coil3.compose.AsyncImage
 import com.kazahana.app.data.model.PostRecord
+import androidx.compose.ui.unit.sp
 import com.kazahana.app.ui.common.AvatarImage
+import com.kazahana.app.ui.common.BotBadge
+import com.kazahana.app.ui.common.isBotAccount
 import com.kazahana.app.ui.common.LocalModerationSettings
 import com.kazahana.app.ui.common.checkModeration
 import com.kazahana.app.ui.timeline.PostCard
@@ -281,13 +284,19 @@ private fun CompactProfileHeader(
                     .weight(1f)
                     .padding(horizontal = 8.dp),
             ) {
-                Text(
-                    text = profile.displayName ?: profile.handle,
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Bold,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = profile.displayName ?: profile.handle,
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    if (isBotAccount(profile.did, profile.labels)) {
+                        Spacer(modifier = Modifier.width(4.dp))
+                        BotBadge(size = 14.sp)
+                    }
+                }
                 Text(
                     text = "@${profile.handle}",
                     style = MaterialTheme.typography.bodySmall,
@@ -423,11 +432,17 @@ private fun ProfileHeader(
                 .offset(y = (-20).dp),
         ) {
             // Display name
-            Text(
-                text = profile.displayName ?: profile.handle,
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = profile.displayName ?: profile.handle,
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                )
+                if (isBotAccount(profile.did, profile.labels)) {
+                    Spacer(modifier = Modifier.width(4.dp))
+                    BotBadge(size = 18.sp)
+                }
+            }
 
             // Handle
             Text(

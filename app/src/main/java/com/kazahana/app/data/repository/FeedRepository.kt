@@ -75,7 +75,7 @@ class FeedRepository(
                 }
             }
 
-            // Step 3: Fetch saved lists individually
+            // Step 3: Fetch saved lists individually (include all purposes — caller filters)
             val savedLists = mutableListOf<ListView>()
             for (listURI in listURIs) {
                 try {
@@ -84,10 +84,7 @@ class FeedRepository(
                         params = mapOf("list" to listURI, "limit" to "1"),
                     )
                     if (listResponse.status.isSuccess()) {
-                        val list = listResponse.body<GetListResponse>().list
-                        if (list.purpose == "app.bsky.graph.defs#curatelist") {
-                            savedLists.add(list)
-                        }
+                        savedLists.add(listResponse.body<GetListResponse>().list)
                     }
                 } catch (_: Exception) { /* skip failed lists */ }
             }
@@ -102,7 +99,6 @@ class FeedRepository(
                     )
                     if (myListsResponse.status.isSuccess()) {
                         val myLists = myListsResponse.body<GetListsResponse>().lists
-                            .filter { it.purpose == "app.bsky.graph.defs#curatelist" }
                         val seenURIs = savedLists.map { it.uri }.toMutableSet()
                         for (list in myLists) {
                             if (seenURIs.add(list.uri)) {
@@ -133,6 +129,22 @@ class FeedRepository(
                 }
             }
             Result.success(allGenerators)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun getListInfo(listUri: String): Result<ListView> {
+        return try {
+            val response = client.get(
+                nsid = "app.bsky.graph.getList",
+                params = mapOf("list" to listUri, "limit" to "1"),
+            )
+            if (response.status.isSuccess()) {
+                Result.success(response.body<GetListResponse>().list)
+            } else {
+                Result.failure(Exception(response.atprotoError()))
+            }
         } catch (e: Exception) {
             Result.failure(e)
         }

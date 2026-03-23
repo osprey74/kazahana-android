@@ -2,9 +2,15 @@ package com.kazahana.app.ui.timeline
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.kazahana.app.data.AppJson
+import com.kazahana.app.data.bsaf.BsafService
 import com.kazahana.app.data.local.SettingsStore
+import com.kazahana.app.data.model.BsafDuplicateInfo
+import com.kazahana.app.data.model.BsafParsedTags
+import com.kazahana.app.data.model.BsafRegisteredBot
 import com.kazahana.app.data.model.FeedResponse
 import com.kazahana.app.data.model.FeedViewPost
+import com.kazahana.app.data.model.PostRecord
 import com.kazahana.app.data.model.PostViewerState
 import com.kazahana.app.data.repository.FeedRepository
 import com.kazahana.app.data.repository.InteractionRepository
@@ -16,6 +22,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.serialization.json.decodeFromJsonElement
 import javax.inject.Inject
 
 data class FeedInfo(
@@ -34,11 +41,15 @@ data class TimelineUiState(
     val error: String? = null,
     val cursor: String? = null,
     val hasMore: Boolean = true,
-    val feeds: List<FeedInfo> = emptyList(),         // visible feeds (tab bar)
-    val allFeeds: List<FeedInfo> = emptyList(),       // all feeds including hidden (dropdown)
+    val feeds: List<FeedInfo> = emptyList(),
+    val allFeeds: List<FeedInfo> = emptyList(),
+    val hiddenFeeds: List<FeedInfo> = emptyList(),
     val selectedFeed: FeedInfo? = null,
     val isFeedsLoading: Boolean = false,
     val showAllInSelector: Boolean = true,
+    // BSAF
+    val bsafTags: Map<String, BsafParsedTags> = emptyMap(),        // postUri → parsed tags
+    val bsafDuplicates: Map<String, BsafDuplicateInfo> = emptyMap(), // postUri → duplicate info
 )
 
 @HiltViewModel
@@ -47,6 +58,7 @@ class TimelineViewModel @Inject constructor(
     private val interactionRepository: InteractionRepository,
     private val feedRepository: FeedRepository,
     private val settingsStore: SettingsStore,
+    private val bsafService: BsafService,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(TimelineUiState())
@@ -125,10 +137,32 @@ class TimelineViewModel @Inject constructor(
                     }
                     val allResult = listOf(following) + allSorted
 
+                    // Hidden feeds only (for dropdown selector)
+                    // Resolve any hidden URIs that were not returned by the API
+                    val knownUris = feedInfos.map { it.uri }.toSet()
+                    val missingHiddenUris = hiddenURIs.filter { it !in knownUris }
+                    for (uri in missingHiddenUris) {
+                        try {
+                            if (uri.contains("/app.bsky.feed.generator/")) {
+                                val genResult = feedRepository.getFeedGenerators(listOf(uri))
+                                genResult.getOrNull()?.firstOrNull()?.let { gen ->
+                                    feedInfos.add(FeedInfo(id = gen.uri, displayName = gen.displayName, uri = gen.uri, type = "feed"))
+                                }
+                            } else {
+                                val listResult = feedRepository.getListInfo(uri)
+                                listResult.getOrNull()?.let { list ->
+                                    feedInfos.add(FeedInfo(id = list.uri, displayName = list.name, uri = list.uri, type = "list"))
+                                }
+                            }
+                        } catch (_: Exception) { /* skip unresolvable */ }
+                    }
+                    val hidden = feedInfos.filter { it.uri != null && it.uri in hiddenURIs }
+
                     _uiState.update {
                         it.copy(
                             feeds = visibleResult,
                             allFeeds = allResult,
+                            hiddenFeeds = hidden,
                             selectedFeed = it.selectedFeed ?: visibleResult.first(),
                             isFeedsLoading = false,
                         )
@@ -159,9 +193,10 @@ class TimelineViewModel @Inject constructor(
             }
             result
                 .onSuccess { response ->
+                    val filtered = processBsaf(response.feed)
                     _uiState.update {
                         it.copy(
-                            posts = response.feed,
+                            posts = filtered,
                             cursor = response.cursor,
                             hasMore = response.cursor != null,
                             isLoading = false,
@@ -187,9 +222,10 @@ class TimelineViewModel @Inject constructor(
             }
             result
                 .onSuccess { response ->
+                    val filtered = processBsaf(response.feed)
                     _uiState.update {
                         it.copy(
-                            posts = response.feed,
+                            posts = filtered,
                             cursor = response.cursor,
                             hasMore = response.cursor != null,
                             isRefreshing = false,
@@ -218,9 +254,10 @@ class TimelineViewModel @Inject constructor(
             }
             result
                 .onSuccess { response ->
+                    val filtered = processBsaf(response.feed, append = true)
                     _uiState.update {
                         it.copy(
-                            posts = it.posts + response.feed,
+                            posts = it.posts + filtered,
                             cursor = response.cursor,
                             hasMore = response.cursor != null,
                             isLoadingMore = false,
@@ -317,5 +354,66 @@ class TimelineViewModel @Inject constructor(
                 }
             )
         }
+    }
+
+    // ── BSAF processing ──
+
+    private suspend fun processBsaf(
+        posts: List<FeedViewPost>,
+        append: Boolean = false,
+    ): List<FeedViewPost> {
+        val bsafEnabled = settingsStore.bsafEnabled.first()
+        if (!bsafEnabled) {
+            _uiState.update { it.copy(bsafTags = emptyMap(), bsafDuplicates = emptyMap()) }
+            return posts
+        }
+
+        val registeredBots = settingsStore.bsafRegisteredBots.first()
+        val registeredDids = registeredBots.associateBy { it.did }
+
+        val newTagsMap = mutableMapOf<String, BsafParsedTags>()
+        val dupGroups = mutableMapOf<String, MutableList<FeedViewPost>>()
+
+        // Parse tags and group duplicates
+        for (feedPost in posts) {
+            val record = try {
+                AppJson.decodeFromJsonElement<PostRecord>(feedPost.post.record)
+            } catch (_: Exception) { continue }
+            val parsed = bsafService.parseBsafTags(record.tags) ?: continue
+            newTagsMap[feedPost.post.uri] = parsed
+            val key = bsafService.duplicateKey(parsed)
+            dupGroups.getOrPut(key) { mutableListOf() }.add(feedPost)
+        }
+
+        // Build duplicate info and determine hidden URIs
+        val newDuplicatesMap = mutableMapOf<String, BsafDuplicateInfo>()
+        val hiddenUris = mutableSetOf<String>()
+
+        for ((_, group) in dupGroups) {
+            if (group.size <= 1) continue
+            val primary = group.first()
+            val others = group.drop(1)
+            newDuplicatesMap[primary.post.uri] = BsafDuplicateInfo(
+                duplicateUris = others.map { it.post.uri },
+                duplicateHandles = others.map { it.post.author.handle },
+            )
+            hiddenUris.addAll(others.map { it.post.uri })
+        }
+
+        // Filter: hide duplicates + apply registered bot filters
+        val filtered = posts.filter { feedPost ->
+            if (feedPost.post.uri in hiddenUris) return@filter false
+            val parsed = newTagsMap[feedPost.post.uri] ?: return@filter true
+            val bot = registeredDids[feedPost.post.author.did] ?: return@filter true
+            bsafService.shouldShowBsafPost(parsed, bot)
+        }
+
+        // Merge with existing data when appending (loadMore)
+        _uiState.update { state ->
+            val mergedTags = if (append) state.bsafTags + newTagsMap else newTagsMap
+            val mergedDups = if (append) state.bsafDuplicates + newDuplicatesMap else newDuplicatesMap
+            state.copy(bsafTags = mergedTags, bsafDuplicates = mergedDups)
+        }
+        return filtered
     }
 }

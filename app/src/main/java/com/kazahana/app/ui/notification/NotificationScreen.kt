@@ -48,7 +48,10 @@ import com.kazahana.app.data.model.FeedViewPost
 import com.kazahana.app.data.model.NotificationItem
 import com.kazahana.app.data.model.PostRecord
 import com.kazahana.app.data.model.PostView
+import androidx.compose.ui.unit.sp
 import com.kazahana.app.ui.common.AvatarImage
+import com.kazahana.app.ui.common.BotBadge
+import com.kazahana.app.ui.common.isBotAccount
 import com.kazahana.app.ui.common.LocalModerationSettings
 import com.kazahana.app.ui.common.checkModeration
 import com.kazahana.app.ui.common.relativeTime
@@ -228,13 +231,19 @@ private fun NotificationRow(
                 ) {
                     AvatarImage(url = notification.author.avatar, size = 32.dp, onClick = onAvatarClick)
                     Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = notification.author.displayName ?: notification.author.handle,
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = if (!notification.isRead) FontWeight.Bold else FontWeight.Normal,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = notification.author.displayName ?: notification.author.handle,
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = if (!notification.isRead) FontWeight.Bold else FontWeight.Normal,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                            if (isBotAccount(notification.author.did, notification.author.labels)) {
+                                Spacer(modifier = Modifier.width(3.dp))
+                                BotBadge(size = 13.sp)
+                            }
+                        }
                         Text(
                             text = label,
                             style = MaterialTheme.typography.bodySmall,
