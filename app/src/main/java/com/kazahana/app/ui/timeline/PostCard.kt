@@ -288,12 +288,14 @@ fun PostCard(
                         horizontalArrangement = Arrangement.spacedBy(4.dp),
                         verticalArrangement = Arrangement.spacedBy(4.dp),
                     ) {
-                        listOf(
-                            bsafTags.type,
-                            bsafTags.value,
-                            bsafTags.target,
-                            bsafTags.source,
-                        ).filter { it.isNotEmpty() }.forEach { tag ->
+                        buildList {
+                            add("bsaf:${bsafTags.version}")
+                            if (bsafTags.type.isNotEmpty()) add("type:${bsafTags.type}")
+                            if (bsafTags.value.isNotEmpty()) add("value:${bsafTags.value}")
+                            if (bsafTags.time.isNotEmpty()) add("time:${bsafTags.time}")
+                            if (bsafTags.target.isNotEmpty()) add("target:${bsafTags.target}")
+                            if (bsafTags.source.isNotEmpty()) add("source:${bsafTags.source}")
+                        }.forEach { tag ->
                             Text(
                                 text = tag,
                                 fontSize = 11.sp,
