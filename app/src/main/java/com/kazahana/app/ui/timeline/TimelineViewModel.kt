@@ -12,8 +12,10 @@ import com.kazahana.app.data.model.FeedResponse
 import com.kazahana.app.data.model.FeedViewPost
 import com.kazahana.app.data.model.PostRecord
 import com.kazahana.app.data.model.PostViewerState
+import com.kazahana.app.data.remote.ATProtoClient
 import com.kazahana.app.data.repository.FeedRepository
 import com.kazahana.app.data.repository.InteractionRepository
+import com.kazahana.app.data.repository.ReportRepository
 import com.kazahana.app.data.repository.TimelineRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -57,12 +59,17 @@ class TimelineViewModel @Inject constructor(
     private val repository: TimelineRepository,
     private val interactionRepository: InteractionRepository,
     private val feedRepository: FeedRepository,
+    private val reportRepository: ReportRepository,
     private val settingsStore: SettingsStore,
     private val bsafService: BsafService,
+    private val client: ATProtoClient,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(TimelineUiState())
     val uiState: StateFlow<TimelineUiState> = _uiState.asStateFlow()
+
+    val currentDid: String
+        get() = client.session?.did ?: ""
 
     init {
         loadTimeline()
@@ -333,6 +340,30 @@ class TimelineViewModel @Inject constructor(
         }
     }
 
+    fun hidePost(postUri: String) {
+        viewModelScope.launch {
+            interactionRepository.hidePost(postUri).onSuccess {
+                // Remove the post from the list
+                _uiState.update { state ->
+                    state.copy(posts = state.posts.filter { it.post.uri != postUri })
+                }
+            }
+        }
+    }
+
+    fun muteThread(postUri: String, mute: Boolean) {
+        viewModelScope.launch {
+            val result = if (mute) {
+                interactionRepository.muteThread(postUri)
+            } else {
+                interactionRepository.unmuteThread(postUri)
+            }
+            result.onSuccess {
+                updatePostViewer(postUri) { it.copy(threadMuted = mute) }
+            }
+        }
+    }
+
     private fun updatePostViewer(postUri: String, transform: (PostViewerState) -> PostViewerState) {
         _uiState.update { state ->
             state.copy(
@@ -358,6 +389,40 @@ class TimelineViewModel @Inject constructor(
                     } else feedPost
                 }
             )
+        }
+    }
+
+    fun reportPostAsync(postUri: String, postCid: String, reasonType: String, reason: String, onResult: (Result<Unit>) -> Unit) {
+        viewModelScope.launch {
+            onResult(reportRepository.reportPost(postUri, postCid, reasonType, reason))
+        }
+    }
+
+    fun reportUserAsync(did: String, reasonType: String, reason: String, onResult: (Result<Unit>) -> Unit) {
+        viewModelScope.launch {
+            onResult(reportRepository.reportAccount(did, reasonType, reason))
+        }
+    }
+
+    fun muteUser(did: String) {
+        viewModelScope.launch {
+            interactionRepository.muteActor(did).onSuccess {
+                // Remove all posts by this user from timeline
+                _uiState.update { state ->
+                    state.copy(posts = state.posts.filter { it.post.author.did != did })
+                }
+            }
+        }
+    }
+
+    fun blockUser(did: String) {
+        viewModelScope.launch {
+            interactionRepository.blockActor(did).onSuccess {
+                // Remove all posts by this user from timeline
+                _uiState.update { state ->
+                    state.copy(posts = state.posts.filter { it.post.author.did != did })
+                }
+            }
         }
     }
 

@@ -39,6 +39,15 @@
     <string name="postgate_allow">Izinkan kutipan</string>
     <string name="postgate_disable">Nonaktifkan kutipan</string>
     <string name="post_reply">Balas</string>
+    <string name="post_pinned">Postingan disematkan</string>
+    <string name="post_translate">Terjemahkan</string>
+    <string name="post_hide">Sembunyikan postingan ini</string>
+    <string name="post_mute_thread">Bisukan notifikasi utas</string>
+    <string name="post_unmute_thread">Bunyikan notifikasi utas</string>
+    <string name="post_report_post">Laporkan postingan ini</string>
+    <string name="post_report_user">Laporkan pengguna ini</string>
+    <string name="post_mute_user">Bisukan pengguna ini</string>
+    <string name="post_block_user">Blokir pengguna ini</string>
     <string name="alt_image_prefix">Gambar </string>
     <string name="thread_title">Utas</string>
     <string name="notification_title">Notifikasi</string>
@@ -118,6 +127,24 @@
     <string name="report_submitting">Melaporkan…</string>
     <string name="report_success">Laporan terkirim</string>
     <string name="report_error">Gagal mengirim laporan</string>
+
+    <!-- Mute / Block -->
+    <string name="mute_user_confirm_title">Bisukan pengguna?</string>
+    <string name="mute_user_confirm_message">Postingan dari @%1$s akan disembunyikan dari feed Anda.</string>
+    <string name="block_user_confirm_title">Blokir pengguna?</string>
+    <string name="block_user_confirm_message">@%1$s tidak akan dapat melihat postingan Anda atau berinteraksi dengan Anda.</string>
+    <string name="mute_user_success">Pengguna dibisukan</string>
+    <string name="unmute_user_success">Pembisuan dibatalkan</string>
+    <string name="block_user_success">Pengguna diblokir</string>
+    <string name="unblock_user_success">Pemblokiran dibatalkan</string>
+    <string name="profile_mute">Bisukan</string>
+    <string name="profile_unmute">Batalkan bisukan</string>
+    <string name="profile_block">Blokir</string>
+    <string name="profile_unblock">Batalkan blokir</string>
+    <string name="profile_report">Laporkan pengguna ini</string>
+    <string name="profile_blocked_notice">Anda telah memblokir pengguna ini</string>
+    <string name="profile_muted_notice">Anda telah membisukan pengguna ini</string>
+
     <!-- Language names -->
     <string name="lang_system">Sistem</string>
     <string name="settings_account">Akun</string>

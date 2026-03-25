@@ -39,6 +39,15 @@
     <string name="postgate_allow">Permitir citações</string>
     <string name="postgate_disable">Desativar citações</string>
     <string name="post_reply">Responder</string>
+    <string name="post_pinned">Publicação fixada</string>
+    <string name="post_translate">Traduzir</string>
+    <string name="post_hide">Ocultar esta publicação</string>
+    <string name="post_mute_thread">Silenciar notificações da conversa</string>
+    <string name="post_unmute_thread">Ativar notificações da conversa</string>
+    <string name="post_report_post">Denunciar esta publicação</string>
+    <string name="post_report_user">Denunciar este utilizador</string>
+    <string name="post_mute_user">Silenciar este utilizador</string>
+    <string name="post_block_user">Bloquear este utilizador</string>
     <string name="alt_image_prefix">Imagem </string>
     <string name="thread_title">Thread</string>
     <string name="notification_title">Notificações</string>
@@ -118,6 +127,24 @@
     <string name="report_submitting">Denunciando…</string>
     <string name="report_success">Denúncia enviada</string>
     <string name="report_error">Falha ao enviar denúncia</string>
+
+    <!-- Mute / Block -->
+    <string name="mute_user_confirm_title">Silenciar utilizador?</string>
+    <string name="mute_user_confirm_message">As publicações de @%1$s serão ocultadas dos seus feeds.</string>
+    <string name="block_user_confirm_title">Bloquear utilizador?</string>
+    <string name="block_user_confirm_message">@%1$s não poderá ver as suas publicações nem interagir consigo.</string>
+    <string name="mute_user_success">Utilizador silenciado</string>
+    <string name="unmute_user_success">Silenciamento removido</string>
+    <string name="block_user_success">Utilizador bloqueado</string>
+    <string name="unblock_user_success">Bloqueio removido</string>
+    <string name="profile_mute">Silenciar</string>
+    <string name="profile_unmute">Remover silenciamento</string>
+    <string name="profile_block">Bloquear</string>
+    <string name="profile_unblock">Desbloquear</string>
+    <string name="profile_report">Denunciar este utilizador</string>
+    <string name="profile_blocked_notice">Bloqueou este utilizador</string>
+    <string name="profile_muted_notice">Silenciou este utilizador</string>
+
     <!-- Language names -->
     <string name="lang_system">Sistema</string>
     <string name="settings_account">Conta</string>

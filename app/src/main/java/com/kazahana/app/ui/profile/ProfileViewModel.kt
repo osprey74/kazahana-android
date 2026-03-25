@@ -10,6 +10,7 @@ import com.kazahana.app.data.model.ProfileViewerState
 import com.kazahana.app.data.remote.ATProtoClient
 import com.kazahana.app.data.repository.InteractionRepository
 import com.kazahana.app.data.repository.ProfileRepository
+import com.kazahana.app.data.repository.ReportRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -30,6 +31,7 @@ enum class ProfileTab(@StringRes val labelRes: Int, val filter: String) {
 data class ProfileUiState(
     val profile: ProfileViewDetailed? = null,
     val posts: List<FeedViewPost> = emptyList(),
+    val pinnedPost: FeedViewPost? = null,
     val selectedTab: ProfileTab = ProfileTab.POSTS,
     val isLoading: Boolean = false,
     val isLoadingPosts: Boolean = false,
@@ -45,6 +47,7 @@ data class ProfileUiState(
 class ProfileViewModel @Inject constructor(
     private val profileRepository: ProfileRepository,
     private val interactionRepository: InteractionRepository,
+    private val reportRepository: ReportRepository,
     private val client: ATProtoClient,
     savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
@@ -72,9 +75,21 @@ class ProfileViewModel @Inject constructor(
                 .onSuccess { profile ->
                     _uiState.update { it.copy(profile = profile, isLoading = false) }
                     loadPosts()
+                    loadPinnedPost(profile)
                 }
                 .onFailure { e ->
                     _uiState.update { it.copy(isLoading = false, error = e.message) }
+                }
+        }
+    }
+
+    private fun loadPinnedPost(profile: ProfileViewDetailed) {
+        val uri = profile.pinnedPost?.uri ?: return
+        viewModelScope.launch {
+            profileRepository.getPosts(listOf(uri))
+                .onSuccess { posts ->
+                    val post = posts.firstOrNull() ?: return@onSuccess
+                    _uiState.update { it.copy(pinnedPost = FeedViewPost(post = post)) }
                 }
         }
     }
@@ -91,11 +106,13 @@ class ProfileViewModel @Inject constructor(
                             profile = profile,
                             isRefreshing = false,
                             posts = emptyList(),
+                            pinnedPost = null,
                             cursor = null,
                             hasMore = true,
                         )
                     }
                     loadPosts()
+                    loadPinnedPost(profile)
                 }
                 .onFailure { e ->
                     _uiState.update { it.copy(isRefreshing = false, error = e.message) }
@@ -284,6 +301,119 @@ class ProfileViewModel @Inject constructor(
         }
     }
 
+    fun hidePost(postUri: String) {
+        viewModelScope.launch {
+            interactionRepository.hidePost(postUri).onSuccess {
+                _uiState.update { state ->
+                    state.copy(posts = state.posts.filter { it.post.uri != postUri })
+                }
+            }
+        }
+    }
+
+    fun muteThread(postUri: String, mute: Boolean) {
+        viewModelScope.launch {
+            val result = if (mute) {
+                interactionRepository.muteThread(postUri)
+            } else {
+                interactionRepository.unmuteThread(postUri)
+            }
+            result.onSuccess {
+                updatePostViewer(postUri) { it.copy(threadMuted = mute) }
+            }
+        }
+    }
+
+    fun toggleMute() {
+        val profile = _uiState.value.profile ?: return
+        val isMuted = profile.viewer?.muted == true
+
+        viewModelScope.launch {
+            if (isMuted) {
+                interactionRepository.unmuteActor(profile.did).onSuccess {
+                    _uiState.update {
+                        it.copy(
+                            profile = it.profile?.copy(
+                                viewer = (it.profile.viewer ?: ProfileViewerState()).copy(muted = false),
+                            ),
+                        )
+                    }
+                }
+            } else {
+                interactionRepository.muteActor(profile.did).onSuccess {
+                    _uiState.update {
+                        it.copy(
+                            profile = it.profile?.copy(
+                                viewer = (it.profile.viewer ?: ProfileViewerState()).copy(muted = true),
+                            ),
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    fun toggleBlock() {
+        val profile = _uiState.value.profile ?: return
+        val blockingUri = profile.viewer?.blocking
+
+        viewModelScope.launch {
+            if (blockingUri != null) {
+                interactionRepository.unblockActor(blockingUri).onSuccess {
+                    _uiState.update {
+                        it.copy(
+                            profile = it.profile?.copy(
+                                viewer = (it.profile.viewer ?: ProfileViewerState()).copy(blocking = null),
+                            ),
+                        )
+                    }
+                }
+            } else {
+                interactionRepository.blockActor(profile.did).onSuccess { response ->
+                    _uiState.update {
+                        it.copy(
+                            profile = it.profile?.copy(
+                                viewer = (it.profile.viewer ?: ProfileViewerState()).copy(blocking = response.uri),
+                            ),
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    fun reportUserAsync(reasonType: String, reason: String, onResult: (Result<Unit>) -> Unit) {
+        viewModelScope.launch {
+            onResult(reportRepository.reportAccount(actorDid, reasonType, reason))
+        }
+    }
+
+    fun reportPostAsync(postUri: String, postCid: String, reasonType: String, reason: String, onResult: (Result<Unit>) -> Unit) {
+        viewModelScope.launch {
+            onResult(reportRepository.reportPost(postUri, postCid, reasonType, reason))
+        }
+    }
+
+    fun muteUser(did: String) {
+        viewModelScope.launch {
+            interactionRepository.muteActor(did).onSuccess {
+                _uiState.update { state ->
+                    state.copy(posts = state.posts.filter { it.post.author.did != did })
+                }
+            }
+        }
+    }
+
+    fun blockUser(did: String) {
+        viewModelScope.launch {
+            interactionRepository.blockActor(did).onSuccess {
+                _uiState.update { state ->
+                    state.copy(posts = state.posts.filter { it.post.author.did != did })
+                }
+            }
+        }
+    }
+
     private fun updatePostViewer(postUri: String, transform: (PostViewerState) -> PostViewerState) {
         _uiState.update { state ->
             state.copy(
@@ -291,7 +421,12 @@ class ProfileViewModel @Inject constructor(
                     if (feedPost.post.uri == postUri) {
                         feedPost.copy(post = feedPost.post.copy(viewer = transform(feedPost.post.viewer ?: PostViewerState())))
                     } else feedPost
-                }
+                },
+                pinnedPost = state.pinnedPost?.let { pinned ->
+                    if (pinned.post.uri == postUri) {
+                        pinned.copy(post = pinned.post.copy(viewer = transform(pinned.post.viewer ?: PostViewerState())))
+                    } else pinned
+                },
             )
         }
     }
@@ -303,7 +438,12 @@ class ProfileViewModel @Inject constructor(
                     if (feedPost.post.uri == postUri) {
                         feedPost.copy(post = transform(feedPost.post))
                     } else feedPost
-                }
+                },
+                pinnedPost = state.pinnedPost?.let { pinned ->
+                    if (pinned.post.uri == postUri) {
+                        pinned.copy(post = transform(pinned.post))
+                    } else pinned
+                },
             )
         }
     }

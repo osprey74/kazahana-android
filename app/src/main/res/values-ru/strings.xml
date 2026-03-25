@@ -39,6 +39,15 @@
     <string name="postgate_allow">Разрешить цитирование</string>
     <string name="postgate_disable">Запретить цитирование</string>
     <string name="post_reply">Ответить</string>
+    <string name="post_pinned">Закреплённый пост</string>
+    <string name="post_translate">Перевести</string>
+    <string name="post_hide">Скрыть этот пост</string>
+    <string name="post_mute_thread">Отключить уведомления ветки</string>
+    <string name="post_unmute_thread">Включить уведомления ветки</string>
+    <string name="post_report_post">Пожаловаться на публикацию</string>
+    <string name="post_report_user">Пожаловаться на пользователя</string>
+    <string name="post_mute_user">Заглушить пользователя</string>
+    <string name="post_block_user">Заблокировать пользователя</string>
     <string name="alt_image_prefix">Изображение </string>
     <string name="thread_title">Тред</string>
     <string name="notification_title">Уведомления</string>
@@ -118,6 +127,24 @@
     <string name="report_submitting">Отправка…</string>
     <string name="report_success">Жалоба отправлена</string>
     <string name="report_error">Не удалось отправить жалобу</string>
+
+    <!-- Mute / Block -->
+    <string name="mute_user_confirm_title">Заглушить пользователя?</string>
+    <string name="mute_user_confirm_message">Публикации @%1$s будут скрыты из ваших лент.</string>
+    <string name="block_user_confirm_title">Заблокировать пользователя?</string>
+    <string name="block_user_confirm_message">@%1$s не сможет видеть ваши публикации и взаимодействовать с вами.</string>
+    <string name="mute_user_success">Пользователь заглушён</string>
+    <string name="unmute_user_success">Заглушение снято</string>
+    <string name="block_user_success">Пользователь заблокирован</string>
+    <string name="unblock_user_success">Блокировка снята</string>
+    <string name="profile_mute">Заглушить</string>
+    <string name="profile_unmute">Снять заглушение</string>
+    <string name="profile_block">Заблокировать</string>
+    <string name="profile_unblock">Разблокировать</string>
+    <string name="profile_report">Пожаловаться на пользователя</string>
+    <string name="profile_blocked_notice">Вы заблокировали этого пользователя</string>
+    <string name="profile_muted_notice">Вы заглушили этого пользователя</string>
+
     <!-- Language names -->
     <string name="lang_system">Системный</string>
     <string name="settings_account">Аккаунт</string>

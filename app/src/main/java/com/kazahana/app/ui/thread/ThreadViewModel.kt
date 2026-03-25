@@ -8,6 +8,7 @@ import androidx.lifecycle.viewModelScope
 import com.kazahana.app.data.model.PostView
 import com.kazahana.app.data.model.PostViewerState
 import com.kazahana.app.data.repository.InteractionRepository
+import com.kazahana.app.data.repository.ReportRepository
 import com.kazahana.app.data.repository.ThreadRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -37,6 +38,7 @@ data class ThreadUiState(
 class ThreadViewModel @Inject constructor(
     private val threadRepository: ThreadRepository,
     private val interactionRepository: InteractionRepository,
+    private val reportRepository: ReportRepository,
     savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
@@ -155,6 +157,67 @@ class ThreadViewModel @Inject constructor(
             } else {
                 interactionRepository.bookmark(postUri, postCid).onSuccess { response ->
                     updatePostViewer(postUri) { it.copy(bookmark = response.uri) }
+                }
+            }
+        }
+    }
+
+    fun hidePost(postUri: String) {
+        viewModelScope.launch {
+            interactionRepository.hidePost(postUri).onSuccess {
+                _uiState.update { state ->
+                    state.copy(
+                        replies = state.replies.filter { it.uri != postUri },
+                    )
+                }
+            }
+        }
+    }
+
+    fun muteThread(postUri: String, mute: Boolean) {
+        viewModelScope.launch {
+            val result = if (mute) {
+                interactionRepository.muteThread(postUri)
+            } else {
+                interactionRepository.unmuteThread(postUri)
+            }
+            result.onSuccess {
+                updatePostViewer(postUri) { it.copy(threadMuted = mute) }
+            }
+        }
+    }
+
+    fun reportPostAsync(postUri: String, postCid: String, reasonType: String, reason: String, onResult: (Result<Unit>) -> Unit) {
+        viewModelScope.launch {
+            onResult(reportRepository.reportPost(postUri, postCid, reasonType, reason))
+        }
+    }
+
+    fun reportUserAsync(did: String, reasonType: String, reason: String, onResult: (Result<Unit>) -> Unit) {
+        viewModelScope.launch {
+            onResult(reportRepository.reportAccount(did, reasonType, reason))
+        }
+    }
+
+    fun muteUser(did: String) {
+        viewModelScope.launch {
+            interactionRepository.muteActor(did).onSuccess {
+                _uiState.update { state ->
+                    state.copy(
+                        replies = state.replies.filter { it.author.did != did },
+                    )
+                }
+            }
+        }
+    }
+
+    fun blockUser(did: String) {
+        viewModelScope.launch {
+            interactionRepository.blockActor(did).onSuccess {
+                _uiState.update { state ->
+                    state.copy(
+                        replies = state.replies.filter { it.author.did != did },
+                    )
                 }
             }
         }

@@ -39,6 +39,15 @@
     <string name="postgate_allow">允許引用</string>
     <string name="postgate_disable">禁止引用</string>
     <string name="post_reply">回覆</string>
+    <string name="post_pinned">置頂貼文</string>
+    <string name="post_translate">翻譯</string>
+    <string name="post_hide">隱藏此貼文</string>
+    <string name="post_mute_thread">靜音此話題通知</string>
+    <string name="post_unmute_thread">取消靜音此話題通知</string>
+    <string name="post_report_post">檢舉此貼文</string>
+    <string name="post_report_user">檢舉此使用者</string>
+    <string name="post_mute_user">靜音此使用者</string>
+    <string name="post_block_user">封鎖此使用者</string>
     <string name="alt_image_prefix">圖片</string>
     <string name="thread_title">討論串</string>
     <string name="notification_title">通知</string>
@@ -118,6 +127,24 @@
     <string name="report_submitting">提交中…</string>
     <string name="report_success">檢舉已提交</string>
     <string name="report_error">檢舉提交失敗</string>
+
+    <!-- Mute / Block -->
+    <string name="mute_user_confirm_title">靜音使用者？</string>
+    <string name="mute_user_confirm_message">@%1$s 的貼文將從你的動態中隱藏。</string>
+    <string name="block_user_confirm_title">封鎖使用者？</string>
+    <string name="block_user_confirm_message">@%1$s 將無法查看你的貼文或與你互動。</string>
+    <string name="mute_user_success">已靜音使用者</string>
+    <string name="unmute_user_success">已取消靜音</string>
+    <string name="block_user_success">已封鎖使用者</string>
+    <string name="unblock_user_success">已取消封鎖</string>
+    <string name="profile_mute">靜音</string>
+    <string name="profile_unmute">取消靜音</string>
+    <string name="profile_block">封鎖</string>
+    <string name="profile_unblock">取消封鎖</string>
+    <string name="profile_report">檢舉此使用者</string>
+    <string name="profile_blocked_notice">你已封鎖此使用者</string>
+    <string name="profile_muted_notice">你已靜音此使用者</string>
+
     <!-- Language names -->
     <string name="lang_system">跟隨系統</string>
     <string name="settings_account">帳號</string>

@@ -39,6 +39,15 @@
     <string name="postgate_allow">Zitate erlauben</string>
     <string name="postgate_disable">Zitate deaktivieren</string>
     <string name="post_reply">Antworten</string>
+    <string name="post_pinned">Angepinnter Beitrag</string>
+    <string name="post_translate">Übersetzen</string>
+    <string name="post_hide">Diesen Beitrag ausblenden</string>
+    <string name="post_mute_thread">Thread-Benachrichtigungen stummschalten</string>
+    <string name="post_unmute_thread">Thread-Benachrichtigungen aktivieren</string>
+    <string name="post_report_post">Diesen Beitrag melden</string>
+    <string name="post_report_user">Diesen Benutzer melden</string>
+    <string name="post_mute_user">Diesen Benutzer stummschalten</string>
+    <string name="post_block_user">Diesen Benutzer blockieren</string>
     <string name="alt_image_prefix">Bild </string>
     <string name="thread_title">Thread</string>
     <string name="notification_title">Benachrichtigungen</string>
@@ -118,6 +127,24 @@
     <string name="report_submitting">Wird gemeldet…</string>
     <string name="report_success">Meldung gesendet</string>
     <string name="report_error">Meldung konnte nicht gesendet werden</string>
+
+    <!-- Mute / Block -->
+    <string name="mute_user_confirm_title">Benutzer stummschalten?</string>
+    <string name="mute_user_confirm_message">Beiträge von @%1$s werden in deinen Feeds ausgeblendet.</string>
+    <string name="block_user_confirm_title">Benutzer blockieren?</string>
+    <string name="block_user_confirm_message">@%1$s kann deine Beiträge nicht sehen und nicht mit dir interagieren.</string>
+    <string name="mute_user_success">Benutzer stummgeschaltet</string>
+    <string name="unmute_user_success">Stummschaltung aufgehoben</string>
+    <string name="block_user_success">Benutzer blockiert</string>
+    <string name="unblock_user_success">Blockierung aufgehoben</string>
+    <string name="profile_mute">Stummschalten</string>
+    <string name="profile_unmute">Stummschaltung aufheben</string>
+    <string name="profile_block">Blockieren</string>
+    <string name="profile_unblock">Blockierung aufheben</string>
+    <string name="profile_report">Diesen Benutzer melden</string>
+    <string name="profile_blocked_notice">Du hast diesen Benutzer blockiert</string>
+    <string name="profile_muted_notice">Du hast diesen Benutzer stummgeschaltet</string>
+
     <!-- Language names -->
     <string name="lang_system">System</string>
     <string name="settings_account">Konto</string>

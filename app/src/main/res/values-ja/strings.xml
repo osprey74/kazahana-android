@@ -44,6 +44,15 @@
     <string name="postgate_allow">引用を許可する</string>
     <string name="postgate_disable">引用を制限する</string>
     <string name="post_reply">返信</string>
+    <string name="post_pinned">ピン留め投稿</string>
+    <string name="post_translate">翻訳</string>
+    <string name="post_hide">この投稿を非表示</string>
+    <string name="post_mute_thread">スレッド通知をミュート</string>
+    <string name="post_unmute_thread">スレッド通知のミュートを解除</string>
+    <string name="post_report_post">この投稿を通報</string>
+    <string name="post_report_user">このユーザーを通報</string>
+    <string name="post_mute_user">このユーザーをミュート</string>
+    <string name="post_block_user">このユーザーをブロック</string>
     <string name="alt_image_prefix">画像</string>
     <string name="thread_title">スレッド</string>
     <string name="notification_title">通知</string>
@@ -123,6 +132,23 @@
     <string name="report_submitting">送信中…</string>
     <string name="report_success">通報を送信しました</string>
     <string name="report_error">通報の送信に失敗しました</string>
+
+    <!-- Mute / Block -->
+    <string name="mute_user_confirm_title">ユーザーをミュートしますか？</string>
+    <string name="mute_user_confirm_message">@%1$s の投稿がフィードに表示されなくなります。</string>
+    <string name="block_user_confirm_title">ユーザーをブロックしますか？</string>
+    <string name="block_user_confirm_message">@%1$s はあなたの投稿を見たり、やり取りしたりできなくなります。</string>
+    <string name="mute_user_success">ユーザーをミュートしました</string>
+    <string name="unmute_user_success">ミュートを解除しました</string>
+    <string name="block_user_success">ユーザーをブロックしました</string>
+    <string name="unblock_user_success">ブロックを解除しました</string>
+    <string name="profile_mute">ミュート</string>
+    <string name="profile_unmute">ミュート解除</string>
+    <string name="profile_block">ブロック</string>
+    <string name="profile_unblock">ブロック解除</string>
+    <string name="profile_report">このユーザーを通報</string>
+    <string name="profile_blocked_notice">このユーザーをブロックしています</string>
+    <string name="profile_muted_notice">このユーザーをミュートしています</string>
     <!-- Bot badge -->
     <string name="bot_label">このアカウントは自動化されています</string>
 

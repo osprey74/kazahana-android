@@ -26,9 +26,18 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.PushPin
+import androidx.compose.material.icons.outlined.Block
+import androidx.compose.material.icons.outlined.Flag
+import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material.icons.outlined.VolumeOff
+import androidx.compose.material.icons.outlined.VolumeUp
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -46,7 +55,12 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import android.widget.Toast
+import androidx.compose.material3.TextButton
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -85,6 +99,15 @@ fun ProfileScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val listState = rememberLazyListState()
+    val context = LocalContext.current
+
+    // Report dialog state
+    var reportTarget by remember { mutableStateOf<Any?>(null) } // Pair<uri,cid> for post, "user" for profile user
+    var isReportSubmitting by remember { mutableStateOf(false) }
+
+    // Mute/Block confirmation dialogs
+    var muteConfirmTarget by remember { mutableStateOf<Pair<String, String>?>(null) }
+    var blockConfirmTarget by remember { mutableStateOf<Pair<String, String>?>(null) }
 
     val shouldLoadMore by remember {
         derivedStateOf {
@@ -146,6 +169,9 @@ fun ProfileScreen(
                             onFollowToggle = { viewModel.toggleFollow() },
                             onNavigateBack = onNavigateBack,
                             onSettingsClick = if (viewModel.isSelf) onSettingsClick else null,
+                            onMuteToggle = if (!viewModel.isSelf) { { viewModel.toggleMute() } } else null,
+                            onBlockToggle = if (!viewModel.isSelf) { { viewModel.toggleBlock() } } else null,
+                            onReport = if (!viewModel.isSelf) { { reportTarget = "user" } } else null,
                         )
                     }
 
@@ -160,6 +186,68 @@ fun ProfileScreen(
                                     selected = uiState.selectedTab == tab,
                                     onClick = { viewModel.selectTab(tab) },
                                     text = { Text(stringResource(tab.labelRes)) },
+                                )
+                            }
+                        }
+                    }
+
+                    // Pinned post (posts tab only)
+                    if (uiState.selectedTab == ProfileTab.POSTS && uiState.pinnedPost != null) {
+                        item(key = "pinned_post") {
+                            val pinnedFeedPost = uiState.pinnedPost!!
+                            val pinnedRecord = remember(pinnedFeedPost.post.record) {
+                                try {
+                                    com.kazahana.app.data.AppJson
+                                        .decodeFromJsonElement<PostRecord>(pinnedFeedPost.post.record)
+                                } catch (_: Exception) { null }
+                            }
+                            val modSettings = LocalModerationSettings.current
+                            val modDecision = remember(pinnedFeedPost.post.labels, modSettings) {
+                                checkModeration(pinnedFeedPost.post.labels, modSettings)
+                            }
+                            Column {
+                                // Pinned label
+                                Row(
+                                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier
+                                        .padding(start = 58.dp, top = 8.dp),
+                                ) {
+                                    Icon(
+                                        Icons.Filled.PushPin,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(12.dp),
+                                        tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                                    )
+                                    Text(
+                                        text = stringResource(R.string.post_pinned),
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                                    )
+                                }
+                                PostCard(
+                                    feedPost = pinnedFeedPost,
+                                    onClick = { uri -> onPostClick(uri) },
+                                    onAuthorClick = { did -> onProfileClick(did) },
+                                    onReply = { uri, cid ->
+                                        onReply(
+                                            uri, cid, uri, cid,
+                                            pinnedFeedPost.post.author.handle,
+                                            pinnedFeedPost.post.author.displayName ?: "",
+                                            pinnedRecord?.text ?: "",
+                                        )
+                                    },
+                                    onLike = { uri, cid, likeUri -> viewModel.toggleLike(uri, cid, likeUri) },
+                                    onRepost = { uri, cid, repostUri -> viewModel.toggleRepost(uri, cid, repostUri) },
+                                    onBookmark = { uri, cid, bookmarkUri -> viewModel.toggleBookmark(uri, cid, bookmarkUri) },
+                                    onHidePost = { uri -> viewModel.hidePost(uri) },
+                                    onMuteThread = { uri, mute -> viewModel.muteThread(uri, mute) },
+                                    onReportPost = { uri, cid -> reportTarget = Pair(uri, cid) },
+                                    onReportUser = { did -> reportTarget = "user" },
+                                    onMuteUser = { did, handle -> muteConfirmTarget = Pair(did, handle) },
+                                    onBlockUser = { did, handle -> blockConfirmTarget = Pair(did, handle) },
+                                    isOwnPost = viewModel.isSelf,
+                                    moderationDecision = modDecision,
                                 )
                             }
                         }
@@ -210,6 +298,10 @@ fun ProfileScreen(
                             onLike = { uri, cid, likeUri -> viewModel.toggleLike(uri, cid, likeUri) },
                             onRepost = { uri, cid, repostUri -> viewModel.toggleRepost(uri, cid, repostUri) },
                             onBookmark = { uri, cid, bookmarkUri -> viewModel.toggleBookmark(uri, cid, bookmarkUri) },
+                            onReportPost = { uri, cid -> reportTarget = Pair(uri, cid) },
+                            onReportUser = { did -> reportTarget = "user" },
+                            onMuteUser = { did, handle -> muteConfirmTarget = Pair(did, handle) },
+                            onBlockUser = { did, handle -> blockConfirmTarget = Pair(did, handle) },
                             moderationDecision = modDecision,
                         )
                     }
@@ -245,6 +337,85 @@ fun ProfileScreen(
                 }
             }
         }
+    }
+
+    // Report dialog
+    val currentReportTarget = reportTarget
+    if (currentReportTarget != null) {
+        val isPost = currentReportTarget is Pair<*, *>
+        com.kazahana.app.ui.common.ReportDialog(
+            isPost = isPost,
+            isSubmitting = isReportSubmitting,
+            onSubmit = { reasonType, details ->
+                isReportSubmitting = true
+                if (isPost) {
+                    @Suppress("UNCHECKED_CAST")
+                    val pair = currentReportTarget as Pair<String, String>
+                    viewModel.reportPostAsync(pair.first, pair.second, reasonType, details) { result ->
+                        isReportSubmitting = false
+                        reportTarget = null
+                        result.onSuccess {
+                            Toast.makeText(context, context.getString(R.string.report_success), Toast.LENGTH_SHORT).show()
+                        }.onFailure {
+                            Toast.makeText(context, context.getString(R.string.report_error), Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                } else {
+                    viewModel.reportUserAsync(reasonType, details) { result ->
+                        isReportSubmitting = false
+                        reportTarget = null
+                        result.onSuccess {
+                            Toast.makeText(context, context.getString(R.string.report_success), Toast.LENGTH_SHORT).show()
+                        }.onFailure {
+                            Toast.makeText(context, context.getString(R.string.report_error), Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                }
+            },
+            onDismiss = { reportTarget = null },
+        )
+    }
+
+    // Mute confirmation dialog
+    muteConfirmTarget?.let { (did, handle) ->
+        AlertDialog(
+            onDismissRequest = { muteConfirmTarget = null },
+            title = { Text(stringResource(R.string.mute_user_confirm_title)) },
+            text = { Text(stringResource(R.string.mute_user_confirm_message, handle)) },
+            confirmButton = {
+                Button(onClick = {
+                    muteConfirmTarget = null
+                    viewModel.muteUser(did)
+                    Toast.makeText(context, context.getString(R.string.mute_user_success), Toast.LENGTH_SHORT).show()
+                }) { Text(stringResource(R.string.profile_mute)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { muteConfirmTarget = null }) {
+                    Text(stringResource(R.string.common_cancel))
+                }
+            },
+        )
+    }
+
+    // Block confirmation dialog
+    blockConfirmTarget?.let { (did, handle) ->
+        AlertDialog(
+            onDismissRequest = { blockConfirmTarget = null },
+            title = { Text(stringResource(R.string.block_user_confirm_title)) },
+            text = { Text(stringResource(R.string.block_user_confirm_message, handle)) },
+            confirmButton = {
+                Button(onClick = {
+                    blockConfirmTarget = null
+                    viewModel.blockUser(did)
+                    Toast.makeText(context, context.getString(R.string.block_user_success), Toast.LENGTH_SHORT).show()
+                }) { Text(stringResource(R.string.profile_block)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { blockConfirmTarget = null }) {
+                    Text(stringResource(R.string.common_cancel))
+                }
+            },
+        )
     }
 }
 
@@ -350,6 +521,9 @@ private fun ProfileHeader(
     onFollowToggle: () -> Unit,
     onNavigateBack: (() -> Unit)?,
     onSettingsClick: (() -> Unit)? = null,
+    onMuteToggle: (() -> Unit)? = null,
+    onBlockToggle: (() -> Unit)? = null,
+    onReport: (() -> Unit)? = null,
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
         // Banner
@@ -410,22 +584,114 @@ private fun ProfileHeader(
             }
 
             if (!isSelf) {
-                val isFollowing = profile.viewer?.following != null
-                if (isFollowing) {
-                    OutlinedButton(
-                        onClick = onFollowToggle,
-                        enabled = !isFollowLoading,
-                        modifier = Modifier.padding(top = 8.dp),
-                    ) {
-                        Text(stringResource(R.string.profile_unfollow))
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(top = 8.dp),
+                ) {
+                    // More menu (mute/block/report)
+                    if (onMuteToggle != null || onBlockToggle != null || onReport != null) {
+                        var showMoreMenu by remember { mutableStateOf(false) }
+                        Box {
+                            IconButton(onClick = { showMoreMenu = true }) {
+                                Icon(
+                                    Icons.Outlined.MoreVert,
+                                    contentDescription = null,
+                                )
+                            }
+                            DropdownMenu(
+                                expanded = showMoreMenu,
+                                onDismissRequest = { showMoreMenu = false },
+                            ) {
+                                if (onMuteToggle != null) {
+                                    val isMuted = profile.viewer?.muted == true
+                                    DropdownMenuItem(
+                                        text = {
+                                            Text(
+                                                stringResource(
+                                                    if (isMuted) R.string.profile_unmute
+                                                    else R.string.profile_mute
+                                                )
+                                            )
+                                        },
+                                        leadingIcon = {
+                                            Icon(
+                                                if (isMuted) Icons.Outlined.VolumeUp
+                                                else Icons.Outlined.VolumeOff,
+                                                contentDescription = null,
+                                                modifier = Modifier.size(20.dp),
+                                            )
+                                        },
+                                        onClick = {
+                                            showMoreMenu = false
+                                            onMuteToggle()
+                                        },
+                                    )
+                                }
+                                if (onBlockToggle != null) {
+                                    val isBlocked = profile.viewer?.blocking != null
+                                    DropdownMenuItem(
+                                        text = {
+                                            Text(
+                                                stringResource(
+                                                    if (isBlocked) R.string.profile_unblock
+                                                    else R.string.profile_block
+                                                )
+                                            )
+                                        },
+                                        leadingIcon = {
+                                            Icon(
+                                                Icons.Outlined.Block,
+                                                contentDescription = null,
+                                                modifier = Modifier.size(20.dp),
+                                                tint = if (isBlocked) MaterialTheme.colorScheme.onSurface
+                                                    else MaterialTheme.colorScheme.error,
+                                            )
+                                        },
+                                        onClick = {
+                                            showMoreMenu = false
+                                            onBlockToggle()
+                                        },
+                                    )
+                                }
+                                if (onReport != null) {
+                                    HorizontalDivider()
+                                    DropdownMenuItem(
+                                        text = { Text(stringResource(R.string.profile_report)) },
+                                        leadingIcon = {
+                                            Icon(
+                                                Icons.Outlined.Flag,
+                                                contentDescription = null,
+                                                modifier = Modifier.size(20.dp),
+                                                tint = MaterialTheme.colorScheme.error,
+                                            )
+                                        },
+                                        onClick = {
+                                            showMoreMenu = false
+                                            onReport()
+                                        },
+                                    )
+                                }
+                            }
+                        }
                     }
-                } else {
-                    Button(
-                        onClick = onFollowToggle,
-                        enabled = !isFollowLoading,
-                        modifier = Modifier.padding(top = 8.dp),
-                    ) {
-                        Text(stringResource(R.string.profile_follow))
+
+                    Spacer(modifier = Modifier.width(4.dp))
+
+                    val isFollowing = profile.viewer?.following != null
+                    if (isFollowing) {
+                        OutlinedButton(
+                            onClick = onFollowToggle,
+                            enabled = !isFollowLoading,
+                        ) {
+                            Text(stringResource(R.string.profile_unfollow))
+                        }
+                    } else {
+                        Button(
+                            onClick = onFollowToggle,
+                            enabled = !isFollowLoading,
+                        ) {
+                            Text(stringResource(R.string.profile_follow))
+                        }
                     }
                 }
             }
@@ -481,6 +747,24 @@ private fun ProfileHeader(
                     text = stringResource(R.string.profile_follows_you),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                )
+            }
+
+            // Muted / Blocked notices
+            if (profile.viewer?.muted == true) {
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = stringResource(R.string.profile_muted_notice),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.error.copy(alpha = 0.8f),
+                )
+            }
+            if (profile.viewer?.blocking != null) {
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = stringResource(R.string.profile_blocked_notice),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.error.copy(alpha = 0.8f),
                 )
             }
         }

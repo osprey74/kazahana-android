@@ -40,6 +40,11 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import android.widget.Toast
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.TextButton
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -66,6 +71,17 @@ fun TimelineScreen(
     val uiState by viewModel.uiState.collectAsState()
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
+    val context = LocalContext.current
+
+    // Report dialog state
+    var reportTarget by remember { mutableStateOf<Any?>(null) } // Pair<uri,cid> for post, String for user DID
+    var isReportSubmitting by remember { mutableStateOf(false) }
+
+    // Mute confirmation dialog state
+    var muteConfirmTarget by remember { mutableStateOf<Pair<String, String>?>(null) } // did, handle
+
+    // Block confirmation dialog state
+    var blockConfirmTarget by remember { mutableStateOf<Pair<String, String>?>(null) } // did, handle
 
     // Tab re-tap: reload feeds + refresh + scroll to top
     LaunchedEffect(retapFlow) {
@@ -209,6 +225,13 @@ fun TimelineScreen(
                                 onLike = { uri, cid, likeUri -> viewModel.toggleLike(uri, cid, likeUri) },
                                 onRepost = { uri, cid, repostUri -> viewModel.toggleRepost(uri, cid, repostUri) },
                                 onBookmark = { uri, cid, bookmarkUri -> viewModel.toggleBookmark(uri, cid, bookmarkUri) },
+                                onHidePost = { uri -> viewModel.hidePost(uri) },
+                                onMuteThread = { uri, mute -> viewModel.muteThread(uri, mute) },
+                                onReportPost = { uri, cid -> reportTarget = Pair(uri, cid) },
+                                onReportUser = { did -> reportTarget = did },
+                                onMuteUser = { did, handle -> muteConfirmTarget = Pair(did, handle) },
+                                onBlockUser = { did, handle -> blockConfirmTarget = Pair(did, handle) },
+                                isOwnPost = feedPost.post.author.did == viewModel.currentDid,
                                 moderationDecision = modDecision,
                                 bsafTags = uiState.bsafTags[feedPost.post.uri],
                                 bsafDuplicate = uiState.bsafDuplicates[feedPost.post.uri],
@@ -232,6 +255,87 @@ fun TimelineScreen(
                 }
             }
         }
+    }
+
+    // Report dialog
+    val currentReportTarget = reportTarget
+    if (currentReportTarget != null) {
+        com.kazahana.app.ui.common.ReportDialog(
+            isPost = currentReportTarget is Pair<*, *>,
+            isSubmitting = isReportSubmitting,
+            onSubmit = { reasonType, details ->
+                isReportSubmitting = true
+                when (currentReportTarget) {
+                    is Pair<*, *> -> {
+                        @Suppress("UNCHECKED_CAST")
+                        val pair = currentReportTarget as Pair<String, String>
+                        viewModel.reportPostAsync(pair.first, pair.second, reasonType, details) { result ->
+                            isReportSubmitting = false
+                            reportTarget = null
+                            result.onSuccess {
+                                Toast.makeText(context, context.getString(R.string.report_success), Toast.LENGTH_SHORT).show()
+                            }.onFailure {
+                                Toast.makeText(context, context.getString(R.string.report_error), Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                    }
+                    is String -> {
+                        viewModel.reportUserAsync(currentReportTarget, reasonType, details) { result ->
+                            isReportSubmitting = false
+                            reportTarget = null
+                            result.onSuccess {
+                                Toast.makeText(context, context.getString(R.string.report_success), Toast.LENGTH_SHORT).show()
+                            }.onFailure {
+                                Toast.makeText(context, context.getString(R.string.report_error), Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                    }
+                }
+            },
+            onDismiss = { reportTarget = null },
+        )
+    }
+
+    // Mute confirmation dialog
+    muteConfirmTarget?.let { (did, handle) ->
+        AlertDialog(
+            onDismissRequest = { muteConfirmTarget = null },
+            title = { Text(stringResource(R.string.mute_user_confirm_title)) },
+            text = { Text(stringResource(R.string.mute_user_confirm_message, handle)) },
+            confirmButton = {
+                Button(onClick = {
+                    muteConfirmTarget = null
+                    viewModel.muteUser(did)
+                    Toast.makeText(context, context.getString(R.string.mute_user_success), Toast.LENGTH_SHORT).show()
+                }) { Text(stringResource(R.string.profile_mute)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { muteConfirmTarget = null }) {
+                    Text(stringResource(R.string.common_cancel))
+                }
+            },
+        )
+    }
+
+    // Block confirmation dialog
+    blockConfirmTarget?.let { (did, handle) ->
+        AlertDialog(
+            onDismissRequest = { blockConfirmTarget = null },
+            title = { Text(stringResource(R.string.block_user_confirm_title)) },
+            text = { Text(stringResource(R.string.block_user_confirm_message, handle)) },
+            confirmButton = {
+                Button(onClick = {
+                    blockConfirmTarget = null
+                    viewModel.blockUser(did)
+                    Toast.makeText(context, context.getString(R.string.block_user_success), Toast.LENGTH_SHORT).show()
+                }) { Text(stringResource(R.string.profile_block)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { blockConfirmTarget = null }) {
+                    Text(stringResource(R.string.common_cancel))
+                }
+            },
+        )
     }
 }
 

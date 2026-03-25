@@ -39,6 +39,15 @@
     <string name="postgate_allow">Autoriser les citations</string>
     <string name="postgate_disable">Désactiver les citations</string>
     <string name="post_reply">Répondre</string>
+    <string name="post_pinned">Publication épinglée</string>
+    <string name="post_translate">Traduire</string>
+    <string name="post_hide">Masquer cette publication</string>
+    <string name="post_mute_thread">Couper les notifications du fil</string>
+    <string name="post_unmute_thread">Réactiver les notifications du fil</string>
+    <string name="post_report_post">Signaler cette publication</string>
+    <string name="post_report_user">Signaler cet utilisateur</string>
+    <string name="post_mute_user">Masquer cet utilisateur</string>
+    <string name="post_block_user">Bloquer cet utilisateur</string>
     <string name="alt_image_prefix">Image </string>
     <string name="thread_title">Fil de discussion</string>
     <string name="notification_title">Notifications</string>
@@ -118,6 +127,24 @@
     <string name="report_submitting">Signalement…</string>
     <string name="report_success">Signalement envoyé</string>
     <string name="report_error">Échec de l\'envoi du signalement</string>
+
+    <!-- Mute / Block -->
+    <string name="mute_user_confirm_title">Masquer l\'utilisateur ?</string>
+    <string name="mute_user_confirm_message">Les publications de @%1$s seront masquées de vos fils.</string>
+    <string name="block_user_confirm_title">Bloquer l\'utilisateur ?</string>
+    <string name="block_user_confirm_message">@%1$s ne pourra plus voir vos publications ni interagir avec vous.</string>
+    <string name="mute_user_success">Utilisateur masqué</string>
+    <string name="unmute_user_success">Masquage annulé</string>
+    <string name="block_user_success">Utilisateur bloqué</string>
+    <string name="unblock_user_success">Blocage annulé</string>
+    <string name="profile_mute">Masquer</string>
+    <string name="profile_unmute">Ne plus masquer</string>
+    <string name="profile_block">Bloquer</string>
+    <string name="profile_unblock">Débloquer</string>
+    <string name="profile_report">Signaler cet utilisateur</string>
+    <string name="profile_blocked_notice">Vous avez bloqué cet utilisateur</string>
+    <string name="profile_muted_notice">Vous avez masqué cet utilisateur</string>
+
     <!-- Language names -->
     <string name="lang_system">Système</string>
     <string name="settings_account">Compte</string>
