@@ -89,6 +89,7 @@ data class PostViewerState(
     val repost: String? = null,
     val bookmark: String? = null,
     val replyDisabled: Boolean? = null,
+    val threadMuted: Boolean? = null,
 )
 
 @Serializable

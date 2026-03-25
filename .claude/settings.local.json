@@ -37,7 +37,13 @@
       "Bash(2)",
       "Bash(xargs ls:*)",
       "Bash(find /mnt/g/dev/kazahana/design -name *.md)",
-      "Bash(git diff:*)"
+      "Bash(git diff:*)",
+      "Bash(git:*)",
+      "Bash(find /mnt/g/dev/kazahana-android/app/src -name \"*Repository*.kt\" -exec basename {})",
+      "Bash(grep -E \"\\\\.\\(kt\\)$\")",
+      "Bash(find /mnt/g/dev/kazahana/src -type f \\\\\\(-name *.ts -o -name *.tsx \\\\\\))",
+      "Bash(find /mnt/g/dev/kazahana-ios -name Localizable.strings -o -name *.xcstrings)",
+      "Bash(python3:*)"
     ]
   }
 }

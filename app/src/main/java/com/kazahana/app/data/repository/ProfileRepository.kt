@@ -2,6 +2,8 @@ package com.kazahana.app.data.repository
 
 import com.kazahana.app.data.model.AuthorFeedResponse
 import com.kazahana.app.data.model.CreateRecordResponse
+import com.kazahana.app.data.model.GetPostsResponse
+import com.kazahana.app.data.model.PostView
 import com.kazahana.app.data.model.ProfileViewDetailed
 import com.kazahana.app.data.remote.ATProtoClient
 import com.kazahana.app.data.remote.atprotoError
@@ -103,6 +105,23 @@ class ProfileRepository(
             val response = client.post("com.atproto.repo.createRecord", body)
             if (response.status.isSuccess()) {
                 Result.success(response.body())
+            } else {
+                Result.failure(Exception(response.atprotoError()))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun getPosts(uris: List<String>): Result<List<PostView>> {
+        if (uris.isEmpty()) return Result.success(emptyList())
+        return try {
+            val response = client.getMultiParam(
+                nsid = "app.bsky.feed.getPosts",
+                params = mapOf("uris" to uris),
+            )
+            if (response.status.isSuccess()) {
+                Result.success(response.body<GetPostsResponse>().posts)
             } else {
                 Result.failure(Exception(response.atprotoError()))
             }

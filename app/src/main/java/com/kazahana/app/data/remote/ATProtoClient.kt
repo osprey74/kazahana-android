@@ -25,6 +25,7 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
+import java.io.IOException
 
 class ATProtoClient(
     private val sessionStore: SessionStore,
@@ -96,14 +97,31 @@ class ATProtoClient(
         return status == 401 || status == 400
     }
 
+    /**
+     * Execute a request with PDS fallback.
+     * If the primary PDS endpoint fails with a network error (DNS, connection, etc.),
+     * retry the request against DEFAULT_PDS (bsky.social entryway).
+     */
+    private suspend fun <T> withPdsFallback(block: suspend (endpoint: String) -> T): T {
+        return try {
+            block(pdsEndpoint)
+        } catch (e: IOException) {
+            if (pdsEndpoint != DEFAULT_PDS) {
+                block(DEFAULT_PDS)
+            } else {
+                throw e
+            }
+        }
+    }
+
     /** Authenticated GET with auto token refresh */
     suspend fun get(
         nsid: String,
         params: Map<String, String> = emptyMap(),
     ): HttpResponse {
-        val response = executeGet(nsid, params)
+        val response = withPdsFallback { ep -> executeGet(ep, nsid, params) }
         if (shouldRefreshToken(response) && refreshToken()) {
-            return executeGet(nsid, params)
+            return withPdsFallback { ep -> executeGet(ep, nsid, params) }
         }
         return response
     }
@@ -113,9 +131,9 @@ class ATProtoClient(
         nsid: String,
         params: Map<String, List<String>> = emptyMap(),
     ): HttpResponse {
-        val response = executeGetMulti(nsid, params)
+        val response = withPdsFallback { ep -> executeGetMulti(ep, nsid, params) }
         if (shouldRefreshToken(response) && refreshToken()) {
-            return executeGetMulti(nsid, params)
+            return withPdsFallback { ep -> executeGetMulti(ep, nsid, params) }
         }
         return response
     }
@@ -125,9 +143,9 @@ class ATProtoClient(
         nsid: String,
         body: JsonElement,
     ): HttpResponse {
-        val response = executePost(nsid, body)
+        val response = withPdsFallback { ep -> executePost(ep, nsid, body) }
         if (shouldRefreshToken(response) && refreshToken()) {
-            return executePost(nsid, body)
+            return withPdsFallback { ep -> executePost(ep, nsid, body) }
         }
         return response
     }
@@ -138,9 +156,9 @@ class ATProtoClient(
         params: Map<String, String> = emptyMap(),
         proxyHeader: String = CHAT_PROXY,
     ): HttpResponse {
-        val response = executeGet(nsid, params, proxyHeader)
+        val response = withPdsFallback { ep -> executeGet(ep, nsid, params, proxyHeader) }
         if (shouldRefreshToken(response) && refreshToken()) {
-            return executeGet(nsid, params, proxyHeader)
+            return withPdsFallback { ep -> executeGet(ep, nsid, params, proxyHeader) }
         }
         return response
     }
@@ -151,20 +169,21 @@ class ATProtoClient(
         body: JsonElement,
         proxyHeader: String = CHAT_PROXY,
     ): HttpResponse {
-        val response = executePost(nsid, body, proxyHeader)
+        val response = withPdsFallback { ep -> executePost(ep, nsid, body, proxyHeader) }
         if (shouldRefreshToken(response) && refreshToken()) {
-            return executePost(nsid, body, proxyHeader)
+            return withPdsFallback { ep -> executePost(ep, nsid, body, proxyHeader) }
         }
         return response
     }
 
     private suspend fun executeGet(
+        endpoint: String,
         nsid: String,
         params: Map<String, String>,
         proxy: String? = null,
     ): HttpResponse {
         val token = sessionStore.load()?.accessJwt
-        return client.get("$pdsEndpoint/xrpc/$nsid") {
+        return client.get("$endpoint/xrpc/$nsid") {
             token?.let { header("Authorization", "Bearer $it") }
             proxy?.let { header("atproto-proxy", it) }
             params.forEach { (k, v) -> parameter(k, v) }
@@ -172,11 +191,12 @@ class ATProtoClient(
     }
 
     private suspend fun executeGetMulti(
+        endpoint: String,
         nsid: String,
         params: Map<String, List<String>>,
     ): HttpResponse {
         val token = sessionStore.load()?.accessJwt
-        return client.get("$pdsEndpoint/xrpc/$nsid") {
+        return client.get("$endpoint/xrpc/$nsid") {
             token?.let { header("Authorization", "Bearer $it") }
             params.forEach { (k, values) ->
                 values.forEach { v -> parameter(k, v) }
@@ -185,19 +205,20 @@ class ATProtoClient(
     }
 
     private suspend fun executePost(
+        endpoint: String,
         nsid: String,
         body: JsonElement,
         proxy: String? = null,
     ): HttpResponse {
         val token = sessionStore.load()?.accessJwt
-        return client.post("$pdsEndpoint/xrpc/$nsid") {
+        return client.post("$endpoint/xrpc/$nsid") {
             token?.let { header("Authorization", "Bearer $it") }
             proxy?.let { header("atproto-proxy", it) }
             setBody(body)
         }
     }
 
-    /** Refresh access token using refreshJwt */
+    /** Refresh access token using refreshJwt — with PDS fallback */
     suspend fun refreshToken(): Boolean = refreshMutex.withLock {
         // If another coroutine already refreshed recently, skip
         val now = System.currentTimeMillis()
@@ -205,8 +226,15 @@ class ATProtoClient(
 
         val currentSession = sessionStore.load() ?: return false
         return try {
-            val response = client.post("$pdsEndpoint/xrpc/com.atproto.server.refreshSession") {
-                header("Authorization", "Bearer ${currentSession.refreshJwt}")
+            suspend fun doRefresh(endpoint: String): HttpResponse {
+                return client.post("$endpoint/xrpc/com.atproto.server.refreshSession") {
+                    header("Authorization", "Bearer ${currentSession.refreshJwt}")
+                }
+            }
+            val response = try {
+                doRefresh(pdsEndpoint)
+            } catch (e: IOException) {
+                if (pdsEndpoint != DEFAULT_PDS) doRefresh(DEFAULT_PDS) else throw e
             }
             if (response.status.isSuccess()) {
                 val refreshed = response.body<RefreshSessionResponse>()
@@ -236,19 +264,20 @@ class ATProtoClient(
         data: ByteArray,
         mimeType: String,
     ): HttpResponse {
-        val response = executeUpload(data, mimeType)
+        val response = withPdsFallback { ep -> executeUpload(ep, data, mimeType) }
         if (shouldRefreshToken(response) && refreshToken()) {
-            return executeUpload(data, mimeType)
+            return withPdsFallback { ep -> executeUpload(ep, data, mimeType) }
         }
         return response
     }
 
     private suspend fun executeUpload(
+        endpoint: String,
         data: ByteArray,
         mimeType: String,
     ): HttpResponse {
         val token = sessionStore.load()?.accessJwt
-        return rawClient.post("$pdsEndpoint/xrpc/com.atproto.repo.uploadBlob") {
+        return rawClient.post("$endpoint/xrpc/com.atproto.repo.uploadBlob") {
             token?.let { header("Authorization", "Bearer $it") }
             contentType(ContentType.parse(mimeType))
             setBody(data)
