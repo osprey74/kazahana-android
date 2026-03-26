@@ -43,7 +43,8 @@
       "Bash(grep -E \"\\\\.\\(kt\\)$\")",
       "Bash(find /mnt/g/dev/kazahana/src -type f \\\\\\(-name *.ts -o -name *.tsx \\\\\\))",
       "Bash(find /mnt/g/dev/kazahana-ios -name Localizable.strings -o -name *.xcstrings)",
-      "Bash(python3:*)"
+      "Bash(python3:*)",
+      "Bash(find /mnt/g/dev/kazahana-android -name strings*.xml -o -name *i18n* -o -name *locale*)"
     ]
   }
 }
