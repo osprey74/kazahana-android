@@ -28,7 +28,7 @@ Kazahana is designed as a **lightweight companion app** — not a full-featured 
 - **Media** — Image grid, fullscreen lightbox with pinch-zoom, ALT text overlay, video playback (HLS)
 - **Link cards** — OGP metadata preview for shared URLs
 - **Notifications** — Notification list with unread badge, background polling
-- **Profile** — User profile with tabs (posts / replies / media / likes), follow / unfollow
+- **Profile** — User profile with tabs (posts / replies / media / likes / starter packs), follow / unfollow
 - **Search** — Posts and users, with search history (save / delete / clear)
 - **Feed management** — Custom feeds and lists with show/hide toggle and reorder
 - **Direct messages** — Conversation list, send/receive, reactions

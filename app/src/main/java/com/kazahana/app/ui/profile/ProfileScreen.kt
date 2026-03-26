@@ -120,8 +120,6 @@ fun ProfileScreen(
             val lastVisibleItem = listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
             val totalItems = listState.layoutInfo.totalItemsCount
             val canLoadMore = when (uiState.selectedTab) {
-                ProfileTab.FEEDS -> !uiState.isLoadingFeeds && uiState.hasMoreFeeds
-                ProfileTab.LISTS -> !uiState.isLoadingLists && uiState.hasMoreLists
                 ProfileTab.STARTER_PACKS -> !uiState.isLoadingStarterPacks && uiState.hasMoreStarterPacks
                 else -> !uiState.isLoadingMore && uiState.hasMore
             }
@@ -205,71 +203,6 @@ fun ProfileScreen(
 
                     // Tab content
                     when (uiState.selectedTab) {
-                        ProfileTab.FEEDS -> {
-                            // Loading
-                            if (uiState.isLoadingFeeds && uiState.actorFeeds.isEmpty()) {
-                                item {
-                                    Box(
-                                        modifier = Modifier.fillMaxWidth().padding(32.dp),
-                                        contentAlignment = Alignment.Center,
-                                    ) { CircularProgressIndicator() }
-                                }
-                            }
-                            // Empty state
-                            if (!uiState.isLoadingFeeds && uiState.actorFeeds.isEmpty()) {
-                                item {
-                                    Box(
-                                        modifier = Modifier.fillMaxWidth().padding(32.dp),
-                                        contentAlignment = Alignment.Center,
-                                    ) { Text(stringResource(R.string.profile_no_feeds), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)) }
-                                }
-                            }
-                            // Feed items
-                            items(
-                                items = uiState.actorFeeds,
-                                key = { it.uri },
-                            ) { feed ->
-                                FeedGeneratorCard(feed = feed)
-                            }
-                            if (uiState.isLoadingFeeds && uiState.actorFeeds.isNotEmpty()) {
-                                item {
-                                    Box(modifier = Modifier.fillMaxWidth().padding(16.dp), contentAlignment = Alignment.Center) {
-                                        CircularProgressIndicator()
-                                    }
-                                }
-                            }
-                        }
-                        ProfileTab.LISTS -> {
-                            if (uiState.isLoadingLists && uiState.actorLists.isEmpty()) {
-                                item {
-                                    Box(
-                                        modifier = Modifier.fillMaxWidth().padding(32.dp),
-                                        contentAlignment = Alignment.Center,
-                                    ) { CircularProgressIndicator() }
-                                }
-                            }
-                            if (!uiState.isLoadingLists && uiState.actorLists.isEmpty()) {
-                                item {
-                                    Box(
-                                        modifier = Modifier.fillMaxWidth().padding(32.dp),
-                                        contentAlignment = Alignment.Center,
-                                    ) { Text(stringResource(R.string.profile_no_lists), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)) }
-                                }
-                            }
-                            items(
-                                items = uiState.actorLists,
-                                key = { it.uri },
-                            ) { list ->
-                                ListViewCard(list = list)
-                            }
-                            if (uiState.isLoadingLists && uiState.actorLists.isNotEmpty()) {
-                                item {
-                                    Box(modifier = Modifier.fillMaxWidth().padding(16.dp), contentAlignment = Alignment.Center) {
-                                        CircularProgressIndicator()
-                                    }
-                                }
-                            }
-                        }
                         ProfileTab.STARTER_PACKS -> {
                             if (uiState.isLoadingStarterPacks && uiState.actorStarterPacks.isEmpty()) {
                                 item {
@@ -904,91 +837,6 @@ private fun ProfileHeader(
     }
 }
 
-@Composable
-private fun FeedGeneratorCard(feed: com.kazahana.app.data.model.FeedGeneratorView) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        AvatarImage(
-            url = feed.avatar,
-            size = 44.dp,
-            modifier = Modifier.clip(MaterialTheme.shapes.small),
-        )
-        Spacer(modifier = Modifier.width(12.dp))
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = feed.displayName,
-                style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.SemiBold,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-            if (!feed.description.isNullOrBlank()) {
-                Text(
-                    text = feed.description,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
-            if (feed.likeCount != null && feed.likeCount > 0) {
-                Text(
-                    text = stringResource(R.string.profile_feed_likes, formatCount(feed.likeCount)),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
-                )
-            }
-        }
-    }
-    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
-}
-
-@Composable
-private fun ListViewCard(list: com.kazahana.app.data.model.ListView) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        AvatarImage(
-            url = list.avatar,
-            size = 44.dp,
-            modifier = Modifier.clip(MaterialTheme.shapes.small),
-        )
-        Spacer(modifier = Modifier.width(12.dp))
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = list.name,
-                style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.SemiBold,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-            if (!list.description.isNullOrBlank()) {
-                Text(
-                    text = list.description,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
-            if (list.listItemCount != null && list.listItemCount > 0) {
-                Text(
-                    text = stringResource(R.string.profile_list_items, formatCount(list.listItemCount)),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
-                )
-            }
-        }
-    }
-    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
-}
 
 @Composable
 private fun StarterPackCard(starterPack: com.kazahana.app.data.model.StarterPackViewBasic) {

@@ -3,9 +3,7 @@ package com.kazahana.app.ui.profile
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.kazahana.app.data.model.FeedGeneratorView
 import com.kazahana.app.data.model.FeedViewPost
-import com.kazahana.app.data.model.ListView
 import com.kazahana.app.data.model.PostViewerState
 import com.kazahana.app.data.model.ProfileViewDetailed
 import com.kazahana.app.data.model.ProfileViewerState
@@ -29,8 +27,6 @@ enum class ProfileTab(@StringRes val labelRes: Int, val filter: String) {
     REPLIES(R.string.profile_tab_replies, "posts_with_replies"),
     MEDIA(R.string.profile_tab_media, "posts_with_media"),
     LIKES(R.string.profile_tab_likes, "likes"),
-    FEEDS(R.string.profile_tab_feeds, "feeds"),
-    LISTS(R.string.profile_tab_lists, "lists"),
     STARTER_PACKS(R.string.profile_tab_starter_packs, "starter_packs"),
 }
 
@@ -47,16 +43,6 @@ data class ProfileUiState(
     val cursor: String? = null,
     val hasMore: Boolean = true,
     val isFollowLoading: Boolean = false,
-    // Feeds tab
-    val actorFeeds: List<FeedGeneratorView> = emptyList(),
-    val isLoadingFeeds: Boolean = false,
-    val feedsCursor: String? = null,
-    val hasMoreFeeds: Boolean = true,
-    // Lists tab
-    val actorLists: List<ListView> = emptyList(),
-    val isLoadingLists: Boolean = false,
-    val listsCursor: String? = null,
-    val hasMoreLists: Boolean = true,
     // Starter Packs tab
     val actorStarterPacks: List<StarterPackViewBasic> = emptyList(),
     val isLoadingStarterPacks: Boolean = false,
@@ -131,20 +117,12 @@ class ProfileViewModel @Inject constructor(
                             pinnedPost = null,
                             cursor = null,
                             hasMore = true,
-                            actorFeeds = emptyList(),
-                            feedsCursor = null,
-                            hasMoreFeeds = true,
-                            actorLists = emptyList(),
-                            listsCursor = null,
-                            hasMoreLists = true,
                             actorStarterPacks = emptyList(),
                             starterPacksCursor = null,
                             hasMoreStarterPacks = true,
                         )
                     }
                     when (currentTab) {
-                        ProfileTab.FEEDS -> loadActorFeeds()
-                        ProfileTab.LISTS -> loadActorLists()
                         ProfileTab.STARTER_PACKS -> loadActorStarterPacks()
                         else -> loadPosts()
                     }
@@ -160,12 +138,6 @@ class ProfileViewModel @Inject constructor(
         if (tab == _uiState.value.selectedTab) return
         _uiState.update { it.copy(selectedTab = tab, posts = emptyList(), cursor = null, hasMore = true) }
         when (tab) {
-            ProfileTab.FEEDS -> {
-                if (_uiState.value.actorFeeds.isEmpty()) loadActorFeeds()
-            }
-            ProfileTab.LISTS -> {
-                if (_uiState.value.actorLists.isEmpty()) loadActorLists()
-            }
             ProfileTab.STARTER_PACKS -> {
                 if (_uiState.value.actorStarterPacks.isEmpty()) loadActorStarterPacks()
             }
@@ -228,63 +200,6 @@ class ProfileViewModel @Inject constructor(
             }
     }
 
-    fun loadActorFeeds(cursor: String? = null) {
-        viewModelScope.launch {
-            _uiState.update { it.copy(isLoadingFeeds = true) }
-            profileRepository.getActorFeeds(actor = actorDid, cursor = cursor)
-                .onSuccess { response ->
-                    _uiState.update {
-                        if (cursor == null) {
-                            it.copy(
-                                actorFeeds = response.feeds,
-                                feedsCursor = response.cursor,
-                                hasMoreFeeds = response.cursor != null,
-                                isLoadingFeeds = false,
-                            )
-                        } else {
-                            it.copy(
-                                actorFeeds = it.actorFeeds + response.feeds,
-                                feedsCursor = response.cursor,
-                                hasMoreFeeds = response.cursor != null,
-                                isLoadingFeeds = false,
-                            )
-                        }
-                    }
-                }
-                .onFailure {
-                    _uiState.update { it.copy(isLoadingFeeds = false) }
-                }
-        }
-    }
-
-    fun loadActorLists(cursor: String? = null) {
-        viewModelScope.launch {
-            _uiState.update { it.copy(isLoadingLists = true) }
-            profileRepository.getActorLists(actor = actorDid, cursor = cursor)
-                .onSuccess { response ->
-                    _uiState.update {
-                        if (cursor == null) {
-                            it.copy(
-                                actorLists = response.lists,
-                                listsCursor = response.cursor,
-                                hasMoreLists = response.cursor != null,
-                                isLoadingLists = false,
-                            )
-                        } else {
-                            it.copy(
-                                actorLists = it.actorLists + response.lists,
-                                listsCursor = response.cursor,
-                                hasMoreLists = response.cursor != null,
-                                isLoadingLists = false,
-                            )
-                        }
-                    }
-                }
-                .onFailure {
-                    _uiState.update { it.copy(isLoadingLists = false) }
-                }
-        }
-    }
 
     fun loadActorStarterPacks(cursor: String? = null) {
         viewModelScope.launch {
@@ -320,16 +235,6 @@ class ProfileViewModel @Inject constructor(
 
         // Handle non-post tabs separately
         when (state.selectedTab) {
-            ProfileTab.FEEDS -> {
-                if (state.isLoadingFeeds || !state.hasMoreFeeds || state.feedsCursor == null) return
-                loadActorFeeds(cursor = state.feedsCursor)
-                return
-            }
-            ProfileTab.LISTS -> {
-                if (state.isLoadingLists || !state.hasMoreLists || state.listsCursor == null) return
-                loadActorLists(cursor = state.listsCursor)
-                return
-            }
             ProfileTab.STARTER_PACKS -> {
                 if (state.isLoadingStarterPacks || !state.hasMoreStarterPacks || state.starterPacksCursor == null) return
                 loadActorStarterPacks(cursor = state.starterPacksCursor)

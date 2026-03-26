@@ -120,7 +120,7 @@ fun PostCard(
                         drawRect(
                             color = severityColor,
                             topLeft = Offset.Zero,
-                            size = Size(4.dp.toPx(), size.height),
+                            size = Size(8.dp.toPx(), size.height),
                         )
                     }
                 } else Modifier
