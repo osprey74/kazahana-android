@@ -21,6 +21,7 @@ import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Repeat
 import androidx.compose.material.icons.outlined.ContentCopy
+import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material.icons.outlined.GTranslate
 import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material.icons.outlined.NotificationsOff
@@ -245,6 +246,7 @@ fun PostCard(
                         style = MaterialTheme.typography.bodyLarge,
                         onHashtagClick = onHashtagClick,
                         onMentionClick = onMentionClick,
+                        onNonLinkClick = { onClick(post.uri) },
                     )
                 }
 
@@ -605,6 +607,27 @@ private fun ActionBar(
                         val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
                         clipboard.setPrimaryClip(ClipData.newPlainText("Post link", url))
                         Toast.makeText(context, context.getString(R.string.post_link_copied), Toast.LENGTH_SHORT).show()
+                    },
+                )
+                // Share
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.post_share)) },
+                    leadingIcon = {
+                        Icon(
+                            Icons.Outlined.Share,
+                            contentDescription = null,
+                            modifier = Modifier.size(20.dp),
+                        )
+                    },
+                    onClick = {
+                        showMenu = false
+                        val rkey = postUri.substringAfterLast("/")
+                        val url = "https://bsky.app/profile/$authorHandle/post/$rkey"
+                        val sendIntent = Intent(Intent.ACTION_SEND).apply {
+                            putExtra(Intent.EXTRA_TEXT, url)
+                            type = "text/plain"
+                        }
+                        context.startActivity(Intent.createChooser(sendIntent, null))
                     },
                 )
                 // Mute thread notifications

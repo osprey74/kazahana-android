@@ -38,6 +38,7 @@ fun RichTextContent(
     onHashtagClick: ((String) -> Unit)? = null,
     onMentionClick: ((String) -> Unit)? = null,
     onLongPress: (() -> Unit)? = null,
+    onNonLinkClick: (() -> Unit)? = null,
 ) {
     val context = LocalContext.current
     val linkColor = MaterialTheme.colorScheme.primary
@@ -107,7 +108,10 @@ fun RichTextContent(
             style = style,
             modifier = modifier,
             onClick = { offset ->
-                handleAnnotationClick(annotatedString, offset, context, onHashtagClick, onMentionClick)
+                val handled = handleAnnotationClick(annotatedString, offset, context, onHashtagClick, onMentionClick)
+                if (!handled) {
+                    onNonLinkClick?.invoke()
+                }
             },
         )
     }
@@ -119,21 +123,22 @@ private fun handleAnnotationClick(
     context: android.content.Context,
     onHashtagClick: ((String) -> Unit)?,
     onMentionClick: ((String) -> Unit)?,
-) {
+): Boolean {
     annotatedString.getStringAnnotations("URL", offset, offset).firstOrNull()?.let {
         try {
             context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(it.item)))
         } catch (_: Exception) {}
-        return
+        return true
     }
     annotatedString.getStringAnnotations("HASHTAG", offset, offset).firstOrNull()?.let {
         onHashtagClick?.invoke(it.item)
-        return
+        return true
     }
     annotatedString.getStringAnnotations("MENTION", offset, offset).firstOrNull()?.let {
         onMentionClick?.invoke(it.item)
-        return
+        return true
     }
+    return false
 }
 
 /**

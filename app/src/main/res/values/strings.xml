@@ -74,6 +74,7 @@
     <string name="post_block_user">Block this user</string>
     <string name="post_copy_link">Copy link</string>
     <string name="post_link_copied">Link copied</string>
+    <string name="post_share">Share</string>
 
     <!-- ALT text -->
     <string name="alt_image_prefix">Image </string>
