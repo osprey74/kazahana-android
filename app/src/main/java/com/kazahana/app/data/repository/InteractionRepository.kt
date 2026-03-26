@@ -223,6 +223,23 @@ class InteractionRepository(
         }
     }
 
+    /** Add a user to a list */
+    suspend fun addToList(listUri: String, subjectDid: String): Result<CreateRecordResponse> {
+        val repo = did() ?: return Result.failure(Exception("Not authenticated"))
+        val record = buildJsonObject {
+            put("\$type", "app.bsky.graph.listitem")
+            put("subject", subjectDid)
+            put("list", listUri)
+            put("createdAt", now())
+        }
+        return createRecord(repo, "app.bsky.graph.listitem", record)
+    }
+
+    /** Remove a user from a list */
+    suspend fun removeFromList(listItemUri: String): Result<Unit> {
+        return deleteRecord(listItemUri)
+    }
+
     private suspend fun createRecord(
         repo: String,
         collection: String,

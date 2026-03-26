@@ -64,6 +64,8 @@
     <string name="post_report_user">このユーザーを通報</string>
     <string name="post_mute_user">このユーザーをミュート</string>
     <string name="post_block_user">このユーザーをブロック</string>
+    <string name="post_copy_link">リンクをコピー</string>
+    <string name="post_link_copied">リンクをコピーしました</string>
     <string name="alt_image_prefix">画像</string>
     <string name="thread_title">スレッド</string>
     <string name="notification_title">通知</string>
@@ -179,6 +181,12 @@
     <string name="profile_block">ブロック</string>
     <string name="profile_unblock">ブロック解除</string>
     <string name="profile_report">このユーザーを通報</string>
+    <string name="profile_add_to_list">リストに追加</string>
+    <string name="profile_add_to_list_title">リストに追加</string>
+    <string name="profile_no_curate_lists">リストがありません。Blueskyでリストを作成してください。</string>
+    <string name="profile_list_add_success">リストに追加しました</string>
+    <string name="profile_list_remove_success">リストから削除しました</string>
+    <string name="profile_list_error">リストの更新に失敗しました</string>
     <string name="profile_blocked_notice">このユーザーをブロックしています</string>
     <string name="profile_muted_notice">このユーザーをミュートしています</string>
     <string name="profile_mention">メンション</string>

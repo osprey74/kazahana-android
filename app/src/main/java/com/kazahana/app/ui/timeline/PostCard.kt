@@ -20,6 +20,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Repeat
+import androidx.compose.material.icons.outlined.ContentCopy
 import androidx.compose.material.icons.outlined.GTranslate
 import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material.icons.outlined.NotificationsOff
@@ -47,8 +48,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.widget.Toast
 import com.kazahana.app.R
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
@@ -580,6 +585,26 @@ private fun ActionBar(
                             val url = "https://translate.google.com/?sl=auto&tl=$lang&text=$encoded&op=translate"
                             context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
                         }
+                    },
+                )
+                // Copy link
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.post_copy_link)) },
+                    leadingIcon = {
+                        Icon(
+                            Icons.Outlined.ContentCopy,
+                            contentDescription = null,
+                            modifier = Modifier.size(20.dp),
+                        )
+                    },
+                    onClick = {
+                        showMenu = false
+                        // Extract rkey from AT-URI: at://did/app.bsky.feed.post/rkey
+                        val rkey = postUri.substringAfterLast("/")
+                        val url = "https://bsky.app/profile/$authorHandle/post/$rkey"
+                        val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                        clipboard.setPrimaryClip(ClipData.newPlainText("Post link", url))
+                        Toast.makeText(context, context.getString(R.string.post_link_copied), Toast.LENGTH_SHORT).show()
                     },
                 )
                 // Mute thread notifications

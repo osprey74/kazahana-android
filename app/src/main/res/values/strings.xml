@@ -72,6 +72,8 @@
     <string name="post_report_user">Report this user</string>
     <string name="post_mute_user">Mute this user</string>
     <string name="post_block_user">Block this user</string>
+    <string name="post_copy_link">Copy link</string>
+    <string name="post_link_copied">Link copied</string>
 
     <!-- ALT text -->
     <string name="alt_image_prefix">Image </string>
@@ -213,6 +215,12 @@
     <string name="profile_block">Block</string>
     <string name="profile_unblock">Unblock</string>
     <string name="profile_report">Report this user</string>
+    <string name="profile_add_to_list">Add to list</string>
+    <string name="profile_add_to_list_title">Add to list</string>
+    <string name="profile_no_curate_lists">No lists. Create a list in Bluesky to get started.</string>
+    <string name="profile_list_add_success">Added to list</string>
+    <string name="profile_list_remove_success">Removed from list</string>
+    <string name="profile_list_error">Failed to update list</string>
     <string name="profile_blocked_notice">You have blocked this user</string>
     <string name="profile_muted_notice">You have muted this user</string>
     <string name="profile_mention">Mention</string>

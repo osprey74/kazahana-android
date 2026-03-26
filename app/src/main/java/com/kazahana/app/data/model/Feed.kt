@@ -52,7 +52,14 @@ data class FeedResponse(
 @Serializable
 data class GetListResponse(
     val list: ListView,
+    val items: List<ListItemView> = emptyList(),
     val cursor: String? = null,
+)
+
+@Serializable
+data class ListItemView(
+    val uri: String = "",
+    val subject: ProfileViewBasic,
 )
 
 @Serializable

@@ -9,6 +9,8 @@ import com.kazahana.app.data.model.ProfileViewDetailed
 import com.kazahana.app.data.model.ProfileViewerState
 import com.kazahana.app.data.model.StarterPackViewBasic
 import com.kazahana.app.data.remote.ATProtoClient
+import com.kazahana.app.data.model.ListView
+import com.kazahana.app.data.repository.FeedRepository
 import com.kazahana.app.data.repository.InteractionRepository
 import com.kazahana.app.data.repository.ProfileRepository
 import com.kazahana.app.data.repository.ReportRepository
@@ -48,6 +50,11 @@ data class ProfileUiState(
     val isLoadingStarterPacks: Boolean = false,
     val starterPacksCursor: String? = null,
     val hasMoreStarterPacks: Boolean = true,
+    // List management
+    val curateLists: List<ListView> = emptyList(),
+    val listMembership: Map<String, String?> = emptyMap(), // listUri -> listItemUri (null = not member)
+    val isLoadingLists: Boolean = false,
+    val showListSheet: Boolean = false,
 )
 
 @HiltViewModel
@@ -55,6 +62,7 @@ class ProfileViewModel @Inject constructor(
     private val profileRepository: ProfileRepository,
     private val interactionRepository: InteractionRepository,
     private val reportRepository: ReportRepository,
+    private val feedRepository: FeedRepository,
     private val client: ATProtoClient,
     savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
@@ -460,6 +468,70 @@ class ProfileViewModel @Inject constructor(
                 _uiState.update { state ->
                     state.copy(posts = state.posts.filter { it.post.author.did != did })
                 }
+            }
+        }
+    }
+
+    fun showListSheet() {
+        _uiState.update { it.copy(showListSheet = true) }
+        loadCurateLists()
+    }
+
+    fun hideListSheet() {
+        _uiState.update { it.copy(showListSheet = false) }
+    }
+
+    private fun loadCurateLists() {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoadingLists = true) }
+            feedRepository.getMyCurateLists()
+                .onSuccess { lists ->
+                    _uiState.update { it.copy(curateLists = lists, isLoadingLists = false) }
+                    // Check membership for each list
+                    for (list in lists) {
+                        checkListMembership(list.uri)
+                    }
+                }
+                .onFailure {
+                    _uiState.update { it.copy(isLoadingLists = false) }
+                }
+        }
+    }
+
+    private fun checkListMembership(listUri: String) {
+        viewModelScope.launch {
+            feedRepository.getListWithItems(listUri, actorDid)
+                .onSuccess { (_, listItemUri) ->
+                    _uiState.update {
+                        it.copy(listMembership = it.listMembership + (listUri to listItemUri))
+                    }
+                }
+        }
+    }
+
+    fun toggleListMembership(listUri: String, onResult: (Result<Boolean>) -> Unit) {
+        val currentItemUri = _uiState.value.listMembership[listUri]
+        viewModelScope.launch {
+            if (currentItemUri != null) {
+                // Remove from list
+                interactionRepository.removeFromList(currentItemUri)
+                    .onSuccess {
+                        _uiState.update {
+                            it.copy(listMembership = it.listMembership + (listUri to null))
+                        }
+                        onResult(Result.success(false)) // removed
+                    }
+                    .onFailure { e -> onResult(Result.failure(e)) }
+            } else {
+                // Add to list
+                interactionRepository.addToList(listUri, actorDid)
+                    .onSuccess { response ->
+                        _uiState.update {
+                            it.copy(listMembership = it.listMembership + (listUri to response.uri))
+                        }
+                        onResult(Result.success(true)) // added
+                    }
+                    .onFailure { e -> onResult(Result.failure(e)) }
             }
         }
     }

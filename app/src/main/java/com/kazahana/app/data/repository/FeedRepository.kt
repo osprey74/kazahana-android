@@ -145,6 +145,60 @@ class FeedRepository(
         }
     }
 
+    /** Get user's own curate lists */
+    suspend fun getMyCurateLists(): Result<List<ListView>> {
+        return try {
+            val actorDid = client.session?.did
+                ?: return Result.failure(Exception("Not authenticated"))
+            val response = client.get(
+                nsid = "app.bsky.graph.getLists",
+                params = mapOf("actor" to actorDid, "limit" to "100"),
+            )
+            if (response.status.isSuccess()) {
+                val lists = response.body<GetListsResponse>().lists
+                // Filter to curate lists only (not mod lists)
+                Result.success(lists.filter { it.purpose == "app.bsky.graph.defs#curatelist" || it.purpose == null })
+            } else {
+                Result.failure(Exception(response.atprotoError()))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    /** Get full list with items to check membership */
+    suspend fun getListWithItems(listUri: String, targetDid: String): Result<Pair<ListView, String?>> {
+        // Paginate through list items to find if targetDid is a member
+        // Returns the list and the listitem URI if found (null if not a member)
+        return try {
+            var cursor: String? = null
+            var listItemUri: String? = null
+            var listView: ListView? = null
+            do {
+                val params = buildMap {
+                    put("list", listUri)
+                    put("limit", "100")
+                    cursor?.let { put("cursor", it) }
+                }
+                val response = client.get(nsid = "app.bsky.graph.getList", params = params)
+                if (!response.status.isSuccess()) {
+                    return Result.failure(Exception(response.atprotoError()))
+                }
+                val body = response.body<GetListResponse>()
+                if (listView == null) listView = body.list
+                val found = body.items.firstOrNull { it.subject.did == targetDid }
+                if (found != null) {
+                    listItemUri = found.uri
+                    break
+                }
+                cursor = body.cursor
+            } while (cursor != null)
+            Result.success(Pair(listView!!, listItemUri))
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
     suspend fun getListInfo(listUri: String): Result<ListView> {
         return try {
             val response = client.get(

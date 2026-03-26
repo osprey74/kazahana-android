@@ -6,6 +6,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -30,6 +31,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.PushPin
 import androidx.compose.material.icons.outlined.Block
 import androidx.compose.material.icons.outlined.Flag
+import androidx.compose.material.icons.outlined.List
 import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.VolumeOff
@@ -37,10 +39,13 @@ import androidx.compose.material.icons.outlined.VolumeUp
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -182,6 +187,7 @@ fun ProfileScreen(
                             onMuteToggle = if (!viewModel.isSelf) { { viewModel.toggleMute() } } else null,
                             onBlockToggle = if (!viewModel.isSelf) { { viewModel.toggleBlock() } } else null,
                             onReport = if (!viewModel.isSelf) { { reportTarget = "user" } } else null,
+                            onAddToList = if (!viewModel.isSelf) { { viewModel.showListSheet() } } else null,
                         )
                     }
 
@@ -405,6 +411,95 @@ fun ProfileScreen(
         }
     }
 
+    // List management bottom sheet
+    if (uiState.showListSheet) {
+        ModalBottomSheet(
+            onDismissRequest = { viewModel.hideListSheet() },
+            sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+            ) {
+                Text(
+                    text = stringResource(R.string.profile_add_to_list_title),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(bottom = 12.dp),
+                )
+                when {
+                    uiState.isLoadingLists -> {
+                        Box(
+                            modifier = Modifier.fillMaxWidth().padding(32.dp),
+                            contentAlignment = Alignment.Center,
+                        ) { CircularProgressIndicator() }
+                    }
+                    uiState.curateLists.isEmpty() -> {
+                        Text(
+                            text = stringResource(R.string.profile_no_curate_lists),
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                            modifier = Modifier.padding(vertical = 16.dp),
+                        )
+                    }
+                    else -> {
+                        uiState.curateLists.forEach { list ->
+                            val isMember = uiState.listMembership[list.uri] != null
+                            val isChecked = uiState.listMembership.containsKey(list.uri)
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable(enabled = isChecked) {
+                                        viewModel.toggleListMembership(list.uri) { result ->
+                                            result
+                                                .onSuccess { added ->
+                                                    val msgRes = if (added) R.string.profile_list_add_success
+                                                        else R.string.profile_list_remove_success
+                                                    Toast.makeText(context, context.getString(msgRes), Toast.LENGTH_SHORT).show()
+                                                }
+                                                .onFailure {
+                                                    Toast.makeText(context, context.getString(R.string.profile_list_error), Toast.LENGTH_SHORT).show()
+                                                }
+                                        }
+                                    }
+                                    .padding(vertical = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Checkbox(
+                                    checked = isMember,
+                                    onCheckedChange = null, // handled by row click
+                                    enabled = isChecked,
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = list.name,
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                    )
+                                    if (!list.description.isNullOrBlank()) {
+                                        Text(
+                                            text = list.description,
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis,
+                                        )
+                                    }
+                                }
+                                if (!isChecked) {
+                                    CircularProgressIndicator(modifier = Modifier.size(20.dp))
+                                }
+                            }
+                        }
+                    }
+                }
+                Spacer(modifier = Modifier.height(16.dp))
+            }
+        }
+    }
+
     // Report dialog
     val currentReportTarget = reportTarget
     if (currentReportTarget != null) {
@@ -590,6 +685,7 @@ private fun ProfileHeader(
     onMuteToggle: (() -> Unit)? = null,
     onBlockToggle: (() -> Unit)? = null,
     onReport: (() -> Unit)? = null,
+    onAddToList: (() -> Unit)? = null,
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
         // Banner
@@ -654,8 +750,8 @@ private fun ProfileHeader(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.padding(top = 8.dp),
                 ) {
-                    // More menu (mention/mute/block/report)
-                    if (onMuteToggle != null || onBlockToggle != null || onReport != null) {
+                    // More menu (mute/list/block/report)
+                    if (onMuteToggle != null || onBlockToggle != null || onReport != null || onAddToList != null) {
                         var showMoreMenu by remember { mutableStateOf(false) }
                         Box {
                             IconButton(onClick = { showMoreMenu = true }) {
@@ -690,6 +786,22 @@ private fun ProfileHeader(
                                         onClick = {
                                             showMoreMenu = false
                                             onMuteToggle()
+                                        },
+                                    )
+                                }
+                                if (onAddToList != null) {
+                                    DropdownMenuItem(
+                                        text = { Text(stringResource(R.string.profile_add_to_list)) },
+                                        leadingIcon = {
+                                            Icon(
+                                                Icons.Outlined.List,
+                                                contentDescription = null,
+                                                modifier = Modifier.size(20.dp),
+                                            )
+                                        },
+                                        onClick = {
+                                            showMoreMenu = false
+                                            onAddToList()
                                         },
                                     )
                                 }
