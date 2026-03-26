@@ -90,6 +90,8 @@ fun PostCard(
     onReportUser: ((authorDid: String) -> Unit)? = null,
     onMuteUser: ((authorDid: String, authorHandle: String) -> Unit)? = null,
     onBlockUser: ((authorDid: String, authorHandle: String) -> Unit)? = null,
+    onHashtagClick: ((String) -> Unit)? = null,
+    onMentionClick: ((String) -> Unit)? = null,
     isOwnPost: Boolean = false,
     moderationDecision: ModerationDecision = ModerationDecision(),
     bsafTags: BsafParsedTags? = null,
@@ -232,9 +234,12 @@ fun PostCard(
                 // Post text (always visible)
                 if (record != null && record.text.isNotEmpty()) {
                     Spacer(modifier = Modifier.height(4.dp))
-                    Text(
+                    com.kazahana.app.ui.common.RichTextContent(
                         text = record.text,
+                        facets = record.facets.ifEmpty { null },
                         style = MaterialTheme.typography.bodyLarge,
+                        onHashtagClick = onHashtagClick,
+                        onMentionClick = onMentionClick,
                     )
                 }
 

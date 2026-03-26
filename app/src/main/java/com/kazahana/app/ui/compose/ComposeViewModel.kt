@@ -15,7 +15,10 @@ import com.kazahana.app.data.remote.ATProtoClient
 import com.kazahana.app.data.repository.ExternalEmbedData
 import com.kazahana.app.data.util.ImageHelper
 import com.kazahana.app.data.richtext.RichTextParser
+import com.kazahana.app.data.local.DraftStore
+import com.kazahana.app.data.local.PostDraft
 import com.kazahana.app.data.local.SettingsStore
+import com.kazahana.app.data.remote.ClaudeService
 import com.kazahana.app.data.repository.PostRepository
 import io.ktor.client.call.body
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -23,9 +26,11 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -110,6 +115,11 @@ data class ComposeUiState(
     val linkCard: OgpData? = null,
     val isFetchingLinkCard: Boolean = false,
     val linkCardDismissed: Boolean = false,
+    val isGeneratingAlt: Boolean = false,
+    val generatingAltIndex: Int? = null,
+    val editingImageIndex: Int? = null,
+    val showDraftList: Boolean = false,
+    val draftSaved: Boolean = false,
 ) {
     val canPost: Boolean
         get() = (text.isNotBlank() || images.isNotEmpty() || video != null) && !isPosting
@@ -140,8 +150,9 @@ private fun String.graphemeCount(): Int {
 class ComposeViewModel @Inject constructor(
     private val postRepository: PostRepository,
     private val atProtoClient: ATProtoClient,
-    private val imageHelper: ImageHelper,
+    val imageHelper: ImageHelper,
     private val settingsStore: SettingsStore,
+    private val draftStore: DraftStore,
     @ApplicationContext private val context: Context,
 ) : ViewModel() {
 
@@ -152,6 +163,11 @@ class ComposeViewModel @Inject constructor(
 
     private val _uiState = MutableStateFlow(ComposeUiState())
     val uiState: StateFlow<ComposeUiState> = _uiState.asStateFlow()
+
+    val claudeApiKeyFlow = settingsStore.claudeApiKey
+
+    val drafts: StateFlow<List<PostDraft>> = draftStore.loadAll()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     private var ogpFetchJob: Job? = null
     private var lastFetchedUrl: String? = null
@@ -216,10 +232,28 @@ class ComposeViewModel @Inject constructor(
         }
     }
 
+    fun updateImageUri(index: Int, newUri: Uri) {
+        _uiState.update { state ->
+            val updated = state.images.toMutableList()
+            if (index in updated.indices) {
+                updated[index] = updated[index].copy(uri = newUri, mimeType = "image/jpeg")
+            }
+            state.copy(images = updated)
+        }
+    }
+
     fun removeImage(index: Int) {
         _uiState.update { state ->
             state.copy(images = state.images.filterIndexed { i, _ -> i != index })
         }
+    }
+
+    fun startEditImage(index: Int) {
+        _uiState.update { it.copy(editingImageIndex = index) }
+    }
+
+    fun dismissImageEditor() {
+        _uiState.update { it.copy(editingImageIndex = null) }
     }
 
     fun startEditAlt(index: Int) {
@@ -238,6 +272,38 @@ class ComposeViewModel @Inject constructor(
 
     fun dismissAltEditor() {
         _uiState.update { it.copy(editingAltIndex = null) }
+    }
+
+    fun generateAltText(index: Int) {
+        val image = _uiState.value.images.getOrNull(index) ?: return
+        viewModelScope.launch {
+            _uiState.update { it.copy(isGeneratingAlt = true, generatingAltIndex = index) }
+            try {
+                val apiKey = settingsStore.claudeApiKey.first()
+                if (apiKey.isBlank()) {
+                    _uiState.update { it.copy(isGeneratingAlt = false, generatingAltIndex = null, error = "Claude API key not set") }
+                    return@launch
+                }
+                val bytes = imageHelper.readBytes(image.uri)
+                if (bytes == null) {
+                    _uiState.update { it.copy(isGeneratingAlt = false, generatingAltIndex = null, error = "Failed to read image") }
+                    return@launch
+                }
+                val langCode = settingsStore.appLocale.first().ifEmpty {
+                    java.util.Locale.getDefault().language
+                }
+                ClaudeService.generateAltText(bytes, apiKey, langCode)
+                    .onSuccess { altText ->
+                        updateAlt(index, altText)
+                        _uiState.update { it.copy(isGeneratingAlt = false, generatingAltIndex = null) }
+                    }
+                    .onFailure { e ->
+                        _uiState.update { it.copy(isGeneratingAlt = false, generatingAltIndex = null, error = "ALT generation failed: ${e.message}") }
+                    }
+            } catch (e: Exception) {
+                _uiState.update { it.copy(isGeneratingAlt = false, generatingAltIndex = null, error = "ALT generation failed: ${e.message}") }
+            }
+        }
     }
 
     fun setThreadgateSetting(setting: ThreadgateSetting) {
@@ -309,8 +375,8 @@ class ComposeViewModel @Inject constructor(
                 // Upload images first
                 val imageEmbeds = mutableListOf<ImageEmbedItem>()
                 for (image in state.images) {
-                    val bytes = imageHelper.readBytes(image.uri) ?: continue
-                    val uploadResult = postRepository.uploadBlob(bytes, image.mimeType)
+                    val (bytes, compressedMime) = imageHelper.readAndCompressImage(image.uri, image.mimeType) ?: continue
+                    val uploadResult = postRepository.uploadBlob(bytes, compressedMime)
                     uploadResult.onSuccess { blob ->
                         val aspectRatio = imageHelper.getAspectRatio(image.uri)
                         imageEmbeds.add(
@@ -453,6 +519,118 @@ class ComposeViewModel @Inject constructor(
                 } else facet
             } else facet
         }.filterNotNull()
+    }
+
+    // ── Drafts ──
+
+    fun showDraftList() {
+        _uiState.update { it.copy(showDraftList = true) }
+    }
+
+    fun dismissDraftList() {
+        _uiState.update { it.copy(showDraftList = false) }
+    }
+
+    fun dismissDraftSaved() {
+        _uiState.update { it.copy(draftSaved = false) }
+    }
+
+    /**
+     * Returns true if the compose screen has unsaved content.
+     */
+    fun hasContent(): Boolean {
+        val state = _uiState.value
+        return state.text.isNotBlank() || state.images.isNotEmpty() || state.video != null
+    }
+
+    /**
+     * Save current compose state as a draft.
+     */
+    fun saveDraft() {
+        val state = _uiState.value
+        if (!hasContent()) return
+
+        viewModelScope.launch {
+            val imageBytes = state.images.mapNotNull { image ->
+                val bytes = imageHelper.readBytes(image.uri) ?: return@mapNotNull null
+                Pair(bytes, image.mimeType)
+            }
+            val videoBytes = state.video?.let { video ->
+                val bytes = imageHelper.readBytes(video.uri) ?: return@let null
+                Pair(bytes, video.mimeType)
+            }
+
+            val threadgateIndex = ThreadgateSetting.entries.indexOf(state.threadgateSetting)
+
+            draftStore.saveDraft(
+                text = state.text,
+                images = imageBytes,
+                video = videoBytes,
+                threadgateIndex = threadgateIndex,
+                disableEmbedding = state.disableEmbedding,
+            )
+            _uiState.update { it.copy(draftSaved = true) }
+        }
+    }
+
+    /**
+     * Load a draft into the compose state.
+     */
+    fun loadDraft(draft: PostDraft) {
+        viewModelScope.launch {
+            // Restore images — save draft bytes to cache and create URIs
+            val images = draft.imageFileNames.mapIndexedNotNull { index, _ ->
+                val bytes = draftStore.loadImageBytes(draft, index) ?: return@mapIndexedNotNull null
+                val bitmap = android.graphics.BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+                    ?: return@mapIndexedNotNull null
+                val uri = imageHelper.saveBitmapToCache(bitmap)
+                bitmap.recycle()
+                AttachedImage(uri = uri, mimeType = "image/jpeg")
+            }
+
+            // Restore video — save to cache file and create URI
+            val video = draft.videoFileName?.let {
+                val bytes = draftStore.loadVideoBytes(draft) ?: return@let null
+                val cacheFile = java.io.File(context.cacheDir, "draft_video_${System.currentTimeMillis()}.mp4")
+                cacheFile.writeBytes(bytes)
+                val uri = androidx.core.content.FileProvider.getUriForFile(
+                    context,
+                    "${context.packageName}.fileprovider",
+                    cacheFile,
+                )
+                AttachedVideo(uri = uri, mimeType = "video/mp4", sizeBytes = bytes.size.toLong())
+            }
+
+            val threadgateSetting = ThreadgateSetting.entries.getOrElse(draft.threadgateIndex) {
+                ThreadgateSetting.EVERYONE
+            }
+
+            _uiState.update {
+                it.copy(
+                    text = draft.text,
+                    images = images,
+                    video = video,
+                    threadgateSetting = threadgateSetting,
+                    disableEmbedding = draft.disableEmbedding,
+                    showDraftList = false,
+                )
+            }
+
+            // Delete the loaded draft
+            draftStore.delete(draft.id)
+        }
+    }
+
+    fun deleteDraft(id: String) {
+        viewModelScope.launch {
+            draftStore.delete(id)
+        }
+    }
+
+    fun deleteAllDrafts() {
+        viewModelScope.launch {
+            draftStore.deleteAll()
+        }
     }
 
     private suspend fun resolveHandle(handle: String): String? {

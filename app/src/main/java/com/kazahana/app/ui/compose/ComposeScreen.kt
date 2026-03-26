@@ -1,9 +1,12 @@
 package com.kazahana.app.ui.compose
 
 import android.net.Uri
+import android.text.format.DateUtils
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -19,25 +22,37 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.InsertDriveFile
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SwipeToDismissBox
+import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -50,10 +65,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil3.compose.AsyncImage
 import com.kazahana.app.R
+import com.kazahana.app.data.local.PostDraft
+import java.time.Instant
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
@@ -65,6 +83,9 @@ fun ComposeScreen(
     viewModel: ComposeViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val draftsList by viewModel.drafts.collectAsState()
+    val snackbarHostState = remember { SnackbarHostState() }
+    var showUnsavedDialog by remember { mutableStateOf(false) }
 
     // Set reply/quote targets once
     LaunchedEffect(replyTarget) {
@@ -81,6 +102,24 @@ fun ComposeScreen(
     // Navigate back after successful post
     LaunchedEffect(uiState.posted) {
         if (uiState.posted) {
+            onNavigateBack()
+        }
+    }
+
+    // Show snackbar when draft is saved
+    val draftSavedMessage = stringResource(R.string.compose_draft_saved)
+    LaunchedEffect(uiState.draftSaved) {
+        if (uiState.draftSaved) {
+            snackbarHostState.showSnackbar(draftSavedMessage)
+            viewModel.dismissDraftSaved()
+        }
+    }
+
+    // Back handler — prompt to save draft if there's unsaved content
+    BackHandler {
+        if (viewModel.hasContent()) {
+            showUnsavedDialog = true
+        } else {
             onNavigateBack()
         }
     }
@@ -116,18 +155,48 @@ fun ComposeScreen(
         val index = uiState.editingAltIndex!!
         val currentAlt = uiState.images.getOrNull(index)?.alt ?: ""
         var altText by remember(index) { mutableStateOf(currentAlt) }
+        val isGenerating = uiState.isGeneratingAlt && uiState.generatingAltIndex == index
+        val claudeApiKey by viewModel.claudeApiKeyFlow.collectAsState(initial = "")
+
+        // Update altText when generation completes
+        LaunchedEffect(uiState.images.getOrNull(index)?.alt) {
+            val newAlt = uiState.images.getOrNull(index)?.alt ?: ""
+            if (newAlt.isNotBlank() && newAlt != altText) {
+                altText = newAlt
+            }
+        }
 
         AlertDialog(
             onDismissRequest = { viewModel.dismissAltEditor() },
             title = { Text(stringResource(R.string.compose_alt_title)) },
             text = {
-                OutlinedTextField(
-                    value = altText,
-                    onValueChange = { altText = it },
-                    label = { Text(stringResource(R.string.compose_alt_hint)) },
-                    modifier = Modifier.fillMaxWidth(),
-                    maxLines = 4,
-                )
+                Column {
+                    OutlinedTextField(
+                        value = altText,
+                        onValueChange = { altText = it },
+                        label = { Text(stringResource(R.string.compose_alt_hint)) },
+                        modifier = Modifier.fillMaxWidth(),
+                        maxLines = 4,
+                    )
+                    if (claudeApiKey.isNotEmpty()) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        TextButton(
+                            onClick = { viewModel.generateAltText(index) },
+                            enabled = !isGenerating,
+                        ) {
+                            if (isGenerating) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(16.dp),
+                                    strokeWidth = 2.dp,
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(stringResource(R.string.compose_generating_alt))
+                            } else {
+                                Text(stringResource(R.string.compose_generate_alt))
+                            }
+                        }
+                    }
+                }
             },
             confirmButton = {
                 TextButton(onClick = {
@@ -299,7 +368,95 @@ fun ComposeScreen(
         )
     }
 
+    // Unsaved content dialog
+    if (showUnsavedDialog) {
+        AlertDialog(
+            onDismissRequest = { showUnsavedDialog = false },
+            title = { Text(stringResource(R.string.compose_unsaved_title)) },
+            text = { Text(stringResource(R.string.compose_unsaved_message)) },
+            confirmButton = {
+                TextButton(onClick = {
+                    showUnsavedDialog = false
+                    viewModel.saveDraft()
+                    onNavigateBack()
+                }) {
+                    Text(stringResource(R.string.compose_save_draft))
+                }
+            },
+            dismissButton = {
+                Row {
+                    TextButton(onClick = { showUnsavedDialog = false }) {
+                        Text(stringResource(R.string.common_cancel))
+                    }
+                    TextButton(onClick = {
+                        showUnsavedDialog = false
+                        onNavigateBack()
+                    }) {
+                        Text(stringResource(R.string.compose_draft_discard))
+                    }
+                }
+            },
+        )
+    }
+
+    // Draft list bottom sheet
+    if (uiState.showDraftList) {
+        val sheetState = rememberModalBottomSheetState()
+        ModalBottomSheet(
+            onDismissRequest = { viewModel.dismissDraftList() },
+            sheetState = sheetState,
+        ) {
+            Column(modifier = Modifier.padding(horizontal = 16.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = stringResource(R.string.compose_drafts),
+                        style = MaterialTheme.typography.titleMedium,
+                    )
+                    if (draftsList.isNotEmpty()) {
+                        TextButton(onClick = {
+                            viewModel.deleteAllDrafts()
+                        }) {
+                            Text(
+                                text = stringResource(R.string.compose_draft_delete_all),
+                                color = MaterialTheme.colorScheme.error,
+                            )
+                        }
+                    }
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+                if (draftsList.isEmpty()) {
+                    Text(
+                        text = stringResource(R.string.compose_drafts),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(vertical = 24.dp),
+                    )
+                } else {
+                    LazyColumn {
+                        items(
+                            items = draftsList,
+                            key = { it.id },
+                        ) { draft ->
+                            DraftRow(
+                                draft = draft,
+                                onTap = { viewModel.loadDraft(draft) },
+                                onDelete = { viewModel.deleteDraft(draft.id) },
+                            )
+                        }
+                    }
+                }
+                Spacer(modifier = Modifier.height(16.dp))
+            }
+        }
+    }
+
+    Box(modifier = Modifier.fillMaxSize()) {
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = {
@@ -312,11 +469,27 @@ fun ComposeScreen(
                     )
                 },
                 navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
+                    IconButton(onClick = {
+                        if (viewModel.hasContent()) {
+                            showUnsavedDialog = true
+                        } else {
+                            onNavigateBack()
+                        }
+                    }) {
                         Icon(Icons.Default.Close, contentDescription = stringResource(R.string.common_cancel))
                     }
                 },
                 actions = {
+                    // Drafts button — only show if drafts exist
+                    if (draftsList.isNotEmpty()) {
+                        IconButton(onClick = { viewModel.showDraftList() }) {
+                            Icon(
+                                Icons.AutoMirrored.Filled.InsertDriveFile,
+                                contentDescription = stringResource(R.string.compose_drafts),
+                                tint = MaterialTheme.colorScheme.primary,
+                            )
+                        }
+                    }
                     if (uiState.isPosting) {
                         CircularProgressIndicator(
                             modifier = Modifier
@@ -416,6 +589,7 @@ fun ComposeScreen(
                             image = image,
                             onRemove = { viewModel.removeImage(index) },
                             onEditAlt = { viewModel.startEditAlt(index) },
+                            onEditImage = { viewModel.startEditImage(index) },
                         )
                     }
                 }
@@ -649,6 +823,24 @@ fun ComposeScreen(
             }
         }
     }
+
+    // Image editor overlay
+    val editingIndex = uiState.editingImageIndex
+    if (editingIndex != null) {
+        val editingImage = uiState.images.getOrNull(editingIndex)
+        if (editingImage != null) {
+            ImageEditScreen(
+                imageUri = editingImage.uri,
+                imageHelper = viewModel.imageHelper,
+                onDone = { newUri ->
+                    viewModel.updateImageUri(editingIndex, newUri)
+                    viewModel.dismissImageEditor()
+                },
+                onCancel = { viewModel.dismissImageEditor() },
+            )
+        }
+    }
+    } // Box
 }
 
 @Composable
@@ -689,6 +881,7 @@ private fun ImageThumbnail(
     image: AttachedImage,
     onRemove: () -> Unit,
     onEditAlt: () -> Unit,
+    onEditImage: () -> Unit,
 ) {
     Box(
         modifier = Modifier.size(100.dp),
@@ -699,7 +892,7 @@ private fun ImageThumbnail(
             modifier = Modifier
                 .fillMaxSize()
                 .clip(RoundedCornerShape(8.dp))
-                .clickable { onEditAlt() },
+                .clickable { onEditImage() },
             contentScale = ContentScale.Crop,
         )
 
@@ -750,6 +943,111 @@ private fun ImageThumbnail(
                 },
             )
         }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun DraftRow(
+    draft: PostDraft,
+    onTap: () -> Unit,
+    onDelete: () -> Unit,
+) {
+    val dismissState = rememberSwipeToDismissBoxState(
+        confirmValueChange = {
+            if (it == SwipeToDismissBoxValue.EndToStart) {
+                onDelete()
+                true
+            } else false
+        },
+    )
+
+    SwipeToDismissBox(
+        state = dismissState,
+        backgroundContent = {
+            val color by animateColorAsState(
+                when (dismissState.targetValue) {
+                    SwipeToDismissBoxValue.EndToStart -> MaterialTheme.colorScheme.errorContainer
+                    else -> MaterialTheme.colorScheme.surface
+                },
+                label = "swipe_bg",
+            )
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(color)
+                    .padding(horizontal = 20.dp),
+                contentAlignment = Alignment.CenterEnd,
+            ) {
+                Icon(
+                    Icons.Default.Delete,
+                    contentDescription = stringResource(R.string.common_delete),
+                    tint = MaterialTheme.colorScheme.error,
+                )
+            }
+        },
+        enableDismissFromStartToEnd = false,
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(MaterialTheme.colorScheme.surface)
+                .clickable { onTap() }
+                .padding(vertical = 12.dp),
+        ) {
+            // Text preview
+            if (draft.text.isNotBlank()) {
+                Text(
+                    text = draft.text,
+                    style = MaterialTheme.typography.bodyMedium,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+            }
+
+            // Metadata row: timestamp, image count, video badge
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                // Relative timestamp
+                val relativeTime = remember(draft.createdAt) {
+                    try {
+                        val instant = Instant.parse(draft.createdAt)
+                        DateUtils.getRelativeTimeSpanString(
+                            instant.toEpochMilli(),
+                            System.currentTimeMillis(),
+                            DateUtils.MINUTE_IN_MILLIS,
+                        ).toString()
+                    } catch (_: Exception) {
+                        draft.createdAt
+                    }
+                }
+                Text(
+                    text = relativeTime,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+
+                if (draft.imageFileNames.isNotEmpty()) {
+                    Text(
+                        text = stringResource(R.string.compose_draft_images, draft.imageFileNames.size),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                }
+
+                if (draft.videoFileName != null) {
+                    Text(
+                        text = stringResource(R.string.compose_draft_video),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                }
+            }
+        }
+        HorizontalDivider()
     }
 }
 

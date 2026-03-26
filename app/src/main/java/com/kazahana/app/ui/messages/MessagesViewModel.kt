@@ -5,6 +5,8 @@ import androidx.lifecycle.viewModelScope
 import com.kazahana.app.data.model.ConvoView
 import com.kazahana.app.data.repository.ChatRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -29,8 +31,39 @@ class MessagesViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(MessagesUiState())
     val uiState: StateFlow<MessagesUiState> = _uiState.asStateFlow()
 
+    private var pollingJob: Job? = null
+
     init {
         loadConversations()
+        startPolling()
+    }
+
+    private fun startPolling() {
+        pollingJob?.cancel()
+        pollingJob = viewModelScope.launch {
+            while (true) {
+                delay(30_000L) // 30 seconds
+                silentRefresh()
+            }
+        }
+    }
+
+    private suspend fun silentRefresh() {
+        chatRepository.listConvos()
+            .onSuccess { response ->
+                _uiState.update {
+                    it.copy(
+                        conversations = response.convos,
+                        cursor = response.cursor,
+                        hasMore = response.cursor != null,
+                    )
+                }
+            }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        pollingJob?.cancel()
     }
 
     fun loadConversations() {
@@ -69,6 +102,18 @@ class MessagesViewModel @Inject constructor(
                 }
                 .onFailure { e ->
                     _uiState.update { it.copy(isRefreshing = false, error = e.message) }
+                }
+        }
+    }
+
+    fun acceptConvo(convoId: String) {
+        viewModelScope.launch {
+            chatRepository.acceptConvo(convoId)
+                .onSuccess {
+                    refresh()
+                }
+                .onFailure { e ->
+                    _uiState.update { it.copy(error = e.message) }
                 }
         }
     }

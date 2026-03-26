@@ -66,14 +66,24 @@ import kotlinx.serialization.json.decodeFromJsonElement
 fun SearchScreen(
     retapFlow: SharedFlow<Unit>? = null,
     viewModel: SearchViewModel = hiltViewModel(),
+    initialQuery: String? = null,
     onPostClick: (postUri: String) -> Unit = {},
     onProfileClick: (did: String) -> Unit = {},
     onReply: (postUri: String, postCid: String, rootUri: String, rootCid: String, authorHandle: String, authorDisplayName: String, postText: String) -> Unit = { _, _, _, _, _, _, _ -> },
     onQuote: (postUri: String, postCid: String, authorHandle: String, authorDisplayName: String, postText: String) -> Unit = { _, _, _, _, _ -> },
+    onHashtagClick: (String) -> Unit = {},
+    onMentionClick: (String) -> Unit = {},
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val keyboardController = LocalSoftwareKeyboardController.current
     val listState = rememberLazyListState()
+
+    // If an initial query is provided (e.g. from hashtag tap), trigger search immediately
+    LaunchedEffect(initialQuery) {
+        if (!initialQuery.isNullOrBlank()) {
+            viewModel.searchFromHistory(initialQuery)
+        }
+    }
 
     LaunchedEffect(retapFlow) {
         retapFlow?.collect {
@@ -207,6 +217,8 @@ fun SearchScreen(
                                     onRepost = { uri, cid, repostUri -> viewModel.toggleRepost(uri, cid, repostUri) },
                                     onBookmark = { uri, cid, bookmarkUri -> viewModel.toggleBookmark(uri, cid, bookmarkUri) },
                                     moderationDecision = modDecision,
+                                    onHashtagClick = onHashtagClick,
+                                    onMentionClick = onMentionClick,
                                 )
                             }
                         }

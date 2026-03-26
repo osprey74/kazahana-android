@@ -13,6 +13,8 @@ import com.kazahana.app.data.remote.ATProtoClient
 import com.kazahana.app.data.remote.atprotoError
 import io.ktor.client.call.body
 import io.ktor.http.isSuccess
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonArray
 
 class FeedRepository(
     private val client: ATProtoClient,
@@ -34,10 +36,19 @@ class FeedRepository(
             var listURIs = mutableListOf<String>()
 
             // Try v2 format first
+            val json = Json { ignoreUnknownKeys = true }
             val v2Pref = prefs.preferences
                 .firstOrNull { it.type == "app.bsky.actor.defs#savedFeedsPrefV2" }
-            if (v2Pref?.items != null) {
-                for (item in v2Pref.items) {
+            val v2Items: List<SavedFeedItem>? = v2Pref?.items?.let { element ->
+                try {
+                    json.decodeFromJsonElement(
+                        kotlinx.serialization.builtins.ListSerializer(SavedFeedItem.serializer()),
+                        element,
+                    )
+                } catch (_: Exception) { null }
+            }
+            if (v2Items != null) {
+                for (item in v2Items) {
                     when (item.type) {
                         "feed" -> feedURIs.add(item.value)
                         "list" -> listURIs.add(item.value)

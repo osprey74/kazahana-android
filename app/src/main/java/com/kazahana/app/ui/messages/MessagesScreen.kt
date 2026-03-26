@@ -1,5 +1,6 @@
 package com.kazahana.app.ui.messages
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -12,11 +13,17 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.Badge
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SmallFloatingActionButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
@@ -43,6 +50,7 @@ fun MessagesScreen(
     viewModel: MessagesViewModel = hiltViewModel(),
     onConvoClick: (convoId: String) -> Unit = {},
     onProfileClick: (did: String) -> Unit = {},
+    onNewConversation: () -> Unit = {},
     myDid: String = "",
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -53,53 +61,68 @@ fun MessagesScreen(
         }
     }
 
-    PullToRefreshBox(
-        isRefreshing = uiState.isRefreshing,
-        onRefresh = { viewModel.refresh() },
-        modifier = Modifier.fillMaxSize(),
-    ) {
-        when {
-            uiState.isLoading && uiState.conversations.isEmpty() -> {
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator()
+    Box(modifier = Modifier.fillMaxSize()) {
+        PullToRefreshBox(
+            isRefreshing = uiState.isRefreshing,
+            onRefresh = { viewModel.refresh() },
+            modifier = Modifier.fillMaxSize(),
+        ) {
+            when {
+                uiState.isLoading && uiState.conversations.isEmpty() -> {
+                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator()
+                    }
                 }
-            }
-            uiState.error != null && uiState.conversations.isEmpty() -> {
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text(
-                        text = uiState.error ?: "",
-                        color = MaterialTheme.colorScheme.error,
-                    )
-                }
-            }
-            uiState.conversations.isEmpty() -> {
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text(
-                        text = stringResource(R.string.messages_empty),
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
-                    )
-                }
-            }
-            else -> {
-                LazyColumn(modifier = Modifier.fillMaxSize()) {
-                    items(
-                        items = uiState.conversations,
-                        key = { it.id },
-                    ) { convo ->
-                        ConvoRow(
-                            convo = convo,
-                            myDid = myDid,
-                            onClick = { onConvoClick(convo.id) },
-                            onAvatarClick = {
-                                val otherDid = convo.members.firstOrNull { it.did != myDid }?.did
-                                    ?: convo.members.firstOrNull()?.did
-                                otherDid?.let { onProfileClick(it) }
-                            },
+                uiState.error != null && uiState.conversations.isEmpty() -> {
+                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Text(
+                            text = uiState.error ?: "",
+                            color = MaterialTheme.colorScheme.error,
                         )
-                        HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
+                    }
+                }
+                uiState.conversations.isEmpty() -> {
+                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Text(
+                            text = stringResource(R.string.messages_empty),
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                        )
+                    }
+                }
+                else -> {
+                    LazyColumn(modifier = Modifier.fillMaxSize()) {
+                        items(
+                            items = uiState.conversations,
+                            key = { it.id },
+                        ) { convo ->
+                            ConvoRow(
+                                convo = convo,
+                                myDid = myDid,
+                                onClick = { onConvoClick(convo.id) },
+                                onAvatarClick = {
+                                    val otherDid = convo.members.firstOrNull { it.did != myDid }?.did
+                                        ?: convo.members.firstOrNull()?.did
+                                    otherDid?.let { onProfileClick(it) }
+                                },
+                                onAccept = { viewModel.acceptConvo(convo.id) },
+                            )
+                            HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
+                        }
                     }
                 }
             }
+        }
+
+        SmallFloatingActionButton(
+            onClick = onNewConversation,
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(16.dp),
+        ) {
+            Icon(
+                Icons.Default.Edit,
+                contentDescription = stringResource(R.string.messages_new_conversation),
+            )
         }
     }
 }
@@ -110,12 +133,21 @@ private fun ConvoRow(
     myDid: String,
     onClick: () -> Unit,
     onAvatarClick: () -> Unit = {},
+    onAccept: () -> Unit = {},
 ) {
     val otherMember = convo.members.firstOrNull { it.did != myDid } ?: convo.members.firstOrNull()
+    val isPending = convo.status != null && convo.status != "accepted" || convo.opened == false
 
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .then(
+                if (isPending) {
+                    Modifier.background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f))
+                } else {
+                    Modifier
+                },
+            )
             .clickable(onClick = onClick)
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -133,7 +165,7 @@ private fun ConvoRow(
                 Text(
                     text = otherMember?.displayName ?: otherMember?.handle ?: stringResource(R.string.messages_unknown),
                     style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = if (convo.unreadCount > 0) FontWeight.Bold else FontWeight.Normal,
+                    fontWeight = if (convo.unreadCount > 0 || isPending) FontWeight.Bold else FontWeight.Normal,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f),
@@ -145,6 +177,14 @@ private fun ConvoRow(
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
                     )
                 }
+            }
+
+            if (isPending) {
+                Text(
+                    text = stringResource(R.string.messages_request),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.primary,
+                )
             }
 
             Row(
@@ -164,7 +204,17 @@ private fun ConvoRow(
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f),
                 )
-                if (convo.unreadCount > 0) {
+                if (isPending) {
+                    FilledTonalButton(
+                        onClick = onAccept,
+                        contentPadding = ButtonDefaults.ContentPadding,
+                    ) {
+                        Text(
+                            text = stringResource(R.string.messages_accept),
+                            style = MaterialTheme.typography.labelMedium,
+                        )
+                    }
+                } else if (convo.unreadCount > 0) {
                     Badge {
                         Text(convo.unreadCount.toString())
                     }

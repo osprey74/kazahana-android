@@ -67,6 +67,8 @@ fun ThreadScreen(
     onPostClick: (postUri: String) -> Unit = {},
     onProfileClick: (did: String) -> Unit = {},
     onReply: (postUri: String, postCid: String, rootUri: String, rootCid: String, authorHandle: String, authorDisplayName: String, postText: String) -> Unit = { _, _, _, _, _, _, _ -> },
+    onHashtagClick: (String) -> Unit = {},
+    onMentionClick: (String) -> Unit = {},
     viewModel: ThreadViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -171,6 +173,8 @@ fun ThreadScreen(
                                 onReportUser = { did -> reportTarget = did },
                                 onMuteUser = { did, handle -> muteConfirmTarget = Pair(did, handle) },
                                 onBlockUser = { did, handle -> blockConfirmTarget = Pair(did, handle) },
+                                onHashtagClick = onHashtagClick,
+                                onMentionClick = onMentionClick,
                             )
                         }
 
@@ -195,6 +199,8 @@ fun ThreadScreen(
                                     onReportUser = { did -> reportTarget = did },
                                     onMuteUser = { did, handle -> muteConfirmTarget = Pair(did, handle) },
                                     onBlockUser = { did, handle -> blockConfirmTarget = Pair(did, handle) },
+                                    onHashtagClick = onHashtagClick,
+                                    onMentionClick = onMentionClick,
                                 )
                             }
                         }
@@ -235,6 +241,8 @@ fun ThreadScreen(
                                     onMuteUser = { did, handle -> muteConfirmTarget = Pair(did, handle) },
                                     onBlockUser = { did, handle -> blockConfirmTarget = Pair(did, handle) },
                                     moderationDecision = modDecision,
+                                    onHashtagClick = onHashtagClick,
+                                    onMentionClick = onMentionClick,
                                 )
                             }
                         }
@@ -350,6 +358,8 @@ private fun ThreadPostItem(
     onReportUser: ((String) -> Unit)? = null,
     onMuteUser: ((String, String) -> Unit)? = null,
     onBlockUser: ((String, String) -> Unit)? = null,
+    onHashtagClick: ((String) -> Unit)? = null,
+    onMentionClick: ((String) -> Unit)? = null,
     isOwnPost: Boolean = false,
 ) {
     val highlightColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.08f)
@@ -397,6 +407,8 @@ private fun ThreadPostItem(
             onBlockUser = onBlockUser,
             isOwnPost = isOwnPost,
             moderationDecision = modDecision,
+            onHashtagClick = onHashtagClick,
+            onMentionClick = onMentionClick,
         )
     }
 }

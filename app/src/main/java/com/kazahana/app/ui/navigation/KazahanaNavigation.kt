@@ -54,6 +54,7 @@ import com.kazahana.app.ui.auth.AuthViewModel
 import com.kazahana.app.ui.compose.ComposeScreen
 import com.kazahana.app.ui.messages.ChatScreen
 import com.kazahana.app.ui.messages.MessagesScreen
+import com.kazahana.app.ui.messages.NewConversationScreen
 import com.kazahana.app.ui.notification.NotificationScreen
 import com.kazahana.app.ui.notification.NotificationViewModel
 import com.kazahana.app.ui.profile.ProfileScreen
@@ -100,6 +101,8 @@ import kotlinx.serialization.Serializable
 @Serializable object FeedManagementRoute
 @Serializable object BsafBotsRoute
 @Serializable data class ChatRoute(val convoId: String)
+@Serializable object NewConversationRoute
+@Serializable data class SearchWithQueryRoute(val query: String)
 
 data class BottomNavItem(
     val route: Any,
@@ -178,9 +181,9 @@ private fun MainScreen(
                 is DeepLink.Compose -> navController.navigate(
                     ShareComposeRoute(sharedText = deepLink.text)
                 ) { launchSingleTop = true }
-                is DeepLink.Search -> navController.navigate(SearchRoute) {
-                    launchSingleTop = true
-                }
+                is DeepLink.Search -> navController.navigate(
+                    SearchWithQueryRoute(query = deepLink.query)
+                ) { launchSingleTop = true }
             }
         }
     }
@@ -219,8 +222,13 @@ private fun MainScreen(
         || currentDestination?.hasRoute(FeedManagementRoute::class) == true
         || currentDestination?.hasRoute(BsafBotsRoute::class) == true
 
+    val isOnMessages = currentDestination?.hasRoute(MessagesRoute::class) == true
+        || currentDestination?.hasRoute(NewConversationRoute::class) == true
+
+    val isOnProfileDetail = currentDestination?.hasRoute(ProfileDetailRoute::class) == true
+
     val hideChrome = isOnCompose
-    val hideFab = hideChrome || isOnSettings
+    val hideFab = hideChrome || isOnSettings || isOnMessages || isOnProfileDetail
 
     Scaffold(
         bottomBar = {
@@ -298,6 +306,18 @@ private fun MainScreen(
             }
         },
     ) { innerPadding ->
+        // Shared navigation callbacks for hashtag/mention clicks
+        val navigateToHashtag: (String) -> Unit = { tag ->
+            navController.navigate(SearchWithQueryRoute(query = "#$tag")) {
+                launchSingleTop = true
+            }
+        }
+        val navigateToMention: (String) -> Unit = { didOrHandle ->
+            navController.navigate(ProfileDetailRoute(actorDid = didOrHandle)) {
+                launchSingleTop = true
+            }
+        }
+
         NavHost(
             navController = navController,
             startDestination = HomeRoute,
@@ -342,6 +362,8 @@ private fun MainScreen(
                             )
                         ) { launchSingleTop = true }
                     },
+                    onHashtagClick = navigateToHashtag,
+                    onMentionClick = navigateToMention,
                 )
             }
             composable<SearchRoute> {
@@ -367,6 +389,8 @@ private fun MainScreen(
                             QuoteRoute(postUri = postUri, postCid = postCid, authorHandle = authorHandle, authorDisplayName = authorDisplayName, postText = postText)
                         ) { launchSingleTop = true }
                     },
+                    onHashtagClick = navigateToHashtag,
+                    onMentionClick = navigateToMention,
                 )
             }
             composable<NotificationsRoute> {
@@ -383,6 +407,8 @@ private fun MainScreen(
                             launchSingleTop = true
                         }
                     },
+                    onHashtagClick = navigateToHashtag,
+                    onMentionClick = navigateToMention,
                 )
             }
             composable<MessagesRoute> {
@@ -396,6 +422,11 @@ private fun MainScreen(
                     },
                     onProfileClick = { did ->
                         navController.navigate(ProfileDetailRoute(actorDid = did)) {
+                            launchSingleTop = true
+                        }
+                    },
+                    onNewConversation = {
+                        navController.navigate(NewConversationRoute) {
                             launchSingleTop = true
                         }
                     },
@@ -429,6 +460,17 @@ private fun MainScreen(
                             launchSingleTop = true
                         }
                     },
+                    onHashtagClick = navigateToHashtag,
+                    onMentionClick = navigateToMention,
+                    onCompose = { text ->
+                        if (text.isNullOrEmpty()) {
+                            navController.navigate(ComposeRoute) { launchSingleTop = true }
+                        } else {
+                            navController.navigate(ShareComposeRoute(sharedText = text)) {
+                                launchSingleTop = true
+                            }
+                        }
+                    },
                 )
             }
             composable<ProfileDetailRoute> { backStackEntry ->
@@ -455,6 +497,17 @@ private fun MainScreen(
                             QuoteRoute(postUri = postUri, postCid = postCid, authorHandle = authorHandle, authorDisplayName = authorDisplayName, postText = postText)
                         ) { launchSingleTop = true }
                     },
+                    onHashtagClick = navigateToHashtag,
+                    onMentionClick = navigateToMention,
+                    onCompose = { text ->
+                        if (text.isNullOrEmpty()) {
+                            navController.navigate(ComposeRoute) { launchSingleTop = true }
+                        } else {
+                            navController.navigate(ShareComposeRoute(sharedText = text)) {
+                                launchSingleTop = true
+                            }
+                        }
+                    },
                 )
             }
             composable<ThreadRoute> { backStackEntry ->
@@ -480,6 +533,8 @@ private fun MainScreen(
                             )
                         ) { launchSingleTop = true }
                     },
+                    onHashtagClick = navigateToHashtag,
+                    onMentionClick = navigateToMention,
                 )
             }
             composable<ComposeRoute> {
@@ -550,11 +605,60 @@ private fun MainScreen(
                     onNavigateBack = { navController.popBackStack() },
                 )
             }
+            composable<NewConversationRoute> {
+                NewConversationScreen(
+                    onNavigateBack = { navController.popBackStack() },
+                    onConvoCreated = { convoId ->
+                        navController.popBackStack()
+                        navController.navigate(ChatRoute(convoId = convoId)) {
+                            launchSingleTop = true
+                        }
+                    },
+                )
+            }
             composable<ChatRoute> { backStackEntry ->
                 val route = backStackEntry.toRoute<ChatRoute>()
                 ChatScreen(
                     myDid = myDid,
                     onNavigateBack = { navController.popBackStack() },
+                    onHashtagClick = { tag ->
+                        navController.navigate(SearchWithQueryRoute(query = "#$tag")) {
+                            launchSingleTop = true
+                        }
+                    },
+                    onProfileClick = { handleOrDid ->
+                        navController.navigate(ProfileDetailRoute(actorDid = handleOrDid)) {
+                            launchSingleTop = true
+                        }
+                    },
+                )
+            }
+            composable<SearchWithQueryRoute> { backStackEntry ->
+                val route = backStackEntry.toRoute<SearchWithQueryRoute>()
+                SearchScreen(
+                    initialQuery = route.query,
+                    onPostClick = { postUri ->
+                        navController.navigate(ThreadRoute(postUri = postUri)) {
+                            launchSingleTop = true
+                        }
+                    },
+                    onProfileClick = { did ->
+                        navController.navigate(ProfileDetailRoute(actorDid = did)) {
+                            launchSingleTop = true
+                        }
+                    },
+                    onReply = { postUri, postCid, rootUri, rootCid, authorHandle, authorDisplayName, postText ->
+                        navController.navigate(
+                            ReplyRoute(postUri = postUri, postCid = postCid, rootUri = rootUri, rootCid = rootCid, authorHandle = authorHandle, authorDisplayName = authorDisplayName, postText = postText)
+                        ) { launchSingleTop = true }
+                    },
+                    onQuote = { postUri, postCid, authorHandle, authorDisplayName, postText ->
+                        navController.navigate(
+                            QuoteRoute(postUri = postUri, postCid = postCid, authorHandle = authorHandle, authorDisplayName = authorDisplayName, postText = postText)
+                        ) { launchSingleTop = true }
+                    },
+                    onHashtagClick = navigateToHashtag,
+                    onMentionClick = navigateToMention,
                 )
             }
         }

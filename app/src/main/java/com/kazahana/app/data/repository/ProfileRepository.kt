@@ -2,6 +2,9 @@ package com.kazahana.app.data.repository
 
 import com.kazahana.app.data.model.AuthorFeedResponse
 import com.kazahana.app.data.model.CreateRecordResponse
+import com.kazahana.app.data.model.GetActorFeedsResponse
+import com.kazahana.app.data.model.GetActorStarterPacksResponse
+import com.kazahana.app.data.model.GetListsResponse
 import com.kazahana.app.data.model.GetPostsResponse
 import com.kazahana.app.data.model.PostView
 import com.kazahana.app.data.model.ProfileViewDetailed
@@ -122,6 +125,81 @@ class ProfileRepository(
             )
             if (response.status.isSuccess()) {
                 Result.success(response.body<GetPostsResponse>().posts)
+            } else {
+                Result.failure(Exception(response.atprotoError()))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun getActorFeeds(
+        actor: String,
+        cursor: String? = null,
+        limit: Int = 50,
+    ): Result<GetActorFeedsResponse> {
+        return try {
+            val params = buildMap {
+                put("actor", actor)
+                put("limit", limit.toString())
+                cursor?.let { put("cursor", it) }
+            }
+            val response = client.get(
+                nsid = "app.bsky.feed.getActorFeeds",
+                params = params,
+            )
+            if (response.status.isSuccess()) {
+                Result.success(response.body())
+            } else {
+                Result.failure(Exception(response.atprotoError()))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun getActorLists(
+        actor: String,
+        cursor: String? = null,
+        limit: Int = 50,
+    ): Result<GetListsResponse> {
+        return try {
+            val params = buildMap {
+                put("actor", actor)
+                put("limit", limit.toString())
+                cursor?.let { put("cursor", it) }
+            }
+            val response = client.get(
+                nsid = "app.bsky.graph.getLists",
+                params = params,
+            )
+            if (response.status.isSuccess()) {
+                Result.success(response.body())
+            } else {
+                Result.failure(Exception(response.atprotoError()))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun getActorStarterPacks(
+        actor: String,
+        cursor: String? = null,
+        limit: Int = 50,
+    ): Result<GetActorStarterPacksResponse> {
+        return try {
+            val params = buildMap {
+                put("actor", actor)
+                put("limit", limit.toString())
+                cursor?.let { put("cursor", it) }
+            }
+            val response = client.get(
+                nsid = "app.bsky.graph.getActorStarterPacks",
+                params = params,
+            )
+            if (response.status.isSuccess()) {
+                Result.success(response.body())
             } else {
                 Result.failure(Exception(response.atprotoError()))
             }

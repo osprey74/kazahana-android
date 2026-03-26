@@ -27,6 +27,7 @@ data class SettingsUiState(
     val pollIntervalSeconds: Int = 60,
     val showVia: Boolean = false,
     val bsafEnabled: Boolean = false,
+    val claudeApiKey: String = "",
 )
 
 @HiltViewModel
@@ -35,28 +36,43 @@ class SettingsViewModel @Inject constructor(
 ) : ViewModel() {
 
     val uiState: StateFlow<SettingsUiState> = combine(
-        settingsStore.themeMode,
-        settingsStore.appLocaleEnum,
-        settingsStore.adultContentEnabled,
-        settingsStore.nudityPref,
-        settingsStore.sexualPref,
-        settingsStore.pornPref,
-        settingsStore.graphicMediaPref,
-        settingsStore.pollIntervalSeconds,
-        settingsStore.showVia,
-        settingsStore.bsafEnabled,
-    ) { values ->
-        SettingsUiState(
-            themeMode = values[0] as ThemeMode,
-            appLocale = values[1] as AppLocale,
-            adultContentEnabled = values[2] as Boolean,
-            nudityPref = values[3] as ModerationPref,
-            sexualPref = values[4] as ModerationPref,
-            pornPref = values[5] as ModerationPref,
-            graphicMediaPref = values[6] as ModerationPref,
-            pollIntervalSeconds = values[7] as Int,
-            showVia = values[8] as Boolean,
-            bsafEnabled = values[9] as Boolean,
+        combine(
+            settingsStore.themeMode,
+            settingsStore.appLocaleEnum,
+            settingsStore.adultContentEnabled,
+            settingsStore.nudityPref,
+            settingsStore.sexualPref,
+        ) { theme, locale, adult, nudity, sexual ->
+            SettingsUiState(
+                themeMode = theme,
+                appLocale = locale,
+                adultContentEnabled = adult,
+                nudityPref = nudity,
+                sexualPref = sexual,
+            )
+        },
+        combine(
+            settingsStore.pornPref,
+            settingsStore.graphicMediaPref,
+            settingsStore.pollIntervalSeconds,
+            settingsStore.showVia,
+            settingsStore.bsafEnabled,
+            settingsStore.claudeApiKey,
+        ) { values ->
+            Triple(
+                Triple(values[0] as ModerationPref, values[1] as ModerationPref, values[2] as Int),
+                Pair(values[3] as Boolean, values[4] as Boolean),
+                values[5] as String,
+            )
+        },
+    ) { base, extra ->
+        base.copy(
+            pornPref = extra.first.first,
+            graphicMediaPref = extra.first.second,
+            pollIntervalSeconds = extra.first.third,
+            showVia = extra.second.first,
+            bsafEnabled = extra.second.second,
+            claudeApiKey = extra.third,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), SettingsUiState())
 
@@ -96,5 +112,13 @@ class SettingsViewModel @Inject constructor(
 
     fun setBsafEnabled(enabled: Boolean) {
         viewModelScope.launch { settingsStore.setBsafEnabled(enabled) }
+    }
+
+    fun setClaudeApiKey(key: String) {
+        viewModelScope.launch { settingsStore.setClaudeApiKey(key) }
+    }
+
+    fun clearClaudeApiKey() {
+        viewModelScope.launch { settingsStore.setClaudeApiKey("") }
     }
 }

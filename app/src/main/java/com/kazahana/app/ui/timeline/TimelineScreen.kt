@@ -67,6 +67,8 @@ fun TimelineScreen(
     onProfileClick: (did: String) -> Unit = {},
     onReply: (postUri: String, postCid: String, rootUri: String, rootCid: String, authorHandle: String, authorDisplayName: String, postText: String) -> Unit = { _, _, _, _, _, _, _ -> },
     onQuote: (postUri: String, postCid: String, authorHandle: String, authorDisplayName: String, postText: String) -> Unit = { _, _, _, _, _ -> },
+    onHashtagClick: (String) -> Unit = {},
+    onMentionClick: (String) -> Unit = {},
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val listState = rememberLazyListState()
@@ -235,6 +237,8 @@ fun TimelineScreen(
                                 moderationDecision = modDecision,
                                 bsafTags = uiState.bsafTags[feedPost.post.uri],
                                 bsafDuplicate = uiState.bsafDuplicates[feedPost.post.uri],
+                                onHashtagClick = onHashtagClick,
+                                onMentionClick = onMentionClick,
                             )
                         }
 

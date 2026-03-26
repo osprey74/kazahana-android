@@ -43,8 +43,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Button
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.kazahana.app.R
@@ -140,6 +144,15 @@ fun SettingsScreen(
 
             HorizontalDivider()
 
+            // ── Section: Polling Interval ──
+            SectionHeader(stringResource(R.string.settings_polling_interval))
+            PollingIntervalDropdown(
+                selectedSeconds = uiState.pollIntervalSeconds,
+                onSelect = { viewModel.setPollInterval(it) },
+            )
+
+            HorizontalDivider()
+
             // ── Section: Post ──
             SectionHeader(stringResource(R.string.settings_post))
             Row(
@@ -200,6 +213,43 @@ fun SettingsScreen(
                         tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
                     )
                 }
+            }
+
+            HorizontalDivider()
+
+            // ── Section: Claude API ──
+            SectionHeader(stringResource(R.string.settings_claude_api))
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp),
+            ) {
+                OutlinedTextField(
+                    value = uiState.claudeApiKey,
+                    onValueChange = { viewModel.setClaudeApiKey(it) },
+                    modifier = Modifier.fillMaxWidth(),
+                    placeholder = { Text("sk-ant-...") },
+                    visualTransformation = PasswordVisualTransformation(),
+                    singleLine = true,
+                )
+                if (uiState.claudeApiKey.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Button(
+                        onClick = { viewModel.clearClaudeApiKey() },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.error,
+                        ),
+                    ) {
+                        Text(stringResource(R.string.settings_claude_api_revoke))
+                    }
+                }
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = stringResource(R.string.settings_claude_api_footer),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                )
+                Spacer(modifier = Modifier.height(8.dp))
             }
 
             HorizontalDivider()
@@ -399,6 +449,81 @@ private fun localeDisplayName(locale: AppLocale): String {
         AppLocale.ES -> stringResource(R.string.lang_es)
         AppLocale.RU -> stringResource(R.string.lang_ru)
         AppLocale.ID -> stringResource(R.string.lang_id)
+    }
+}
+
+@Composable
+private fun PollingIntervalDropdown(
+    selectedSeconds: Int,
+    onSelect: (Int) -> Unit,
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val options = listOf(30, 60, 90, 120)
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 4.dp),
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { expanded = true }
+                .padding(vertical = 12.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = pollingIntervalLabel(selectedSeconds),
+                style = MaterialTheme.typography.bodyLarge,
+            )
+            Icon(
+                Icons.Default.KeyboardArrowDown,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+            )
+        }
+
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+        ) {
+            options.forEach { seconds ->
+                DropdownMenuItem(
+                    text = {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = pollingIntervalLabel(seconds),
+                                fontWeight = if (seconds == selectedSeconds) FontWeight.Bold else FontWeight.Normal,
+                            )
+                            if (seconds == selectedSeconds) {
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = "✓",
+                                    color = MaterialTheme.colorScheme.primary,
+                                    fontWeight = FontWeight.Bold,
+                                )
+                            }
+                        }
+                    },
+                    onClick = {
+                        onSelect(seconds)
+                        expanded = false
+                    },
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun pollingIntervalLabel(seconds: Int): String {
+    return when (seconds) {
+        30 -> stringResource(R.string.settings_polling_30s)
+        60 -> stringResource(R.string.settings_polling_60s)
+        90 -> stringResource(R.string.settings_polling_90s)
+        120 -> stringResource(R.string.settings_polling_120s)
+        else -> stringResource(R.string.settings_polling_60s)
     }
 }
 

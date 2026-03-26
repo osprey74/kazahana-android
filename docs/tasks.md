@@ -7,6 +7,7 @@
 - Phase 3 (通知・プロフィール・検索): 7/7 ✅
 - Phase 4 (DM・モデレーション・設定): 8/8 ✅
 - Phase 5 (BSAF・高度な機能): 4/4 ✅
+- Phase 6 (iOS/Desktop パリティ): 20/20 ✅
 
 ## Phase 1: 基盤構築
 
@@ -54,6 +55,29 @@
 - [x] スレッドゲート / ポストゲート
 - [x] 共有シート連携 (Intent Filter)
 - [x] ディープリンク (App Links)
+
+## Phase 6: iOS/Desktop パリティ (機能差異解消)
+
+- [x] タイムライン自動ポーリング (設定間隔で自動更新)
+- [x] 自動更新間隔設定UI (30/60/90/120秒)
+- [x] DM自動ポーリング (会話15秒 / 一覧30秒)
+- [x] DM URL/ハッシュタグのリンク化 (RichTextContent)
+- [x] 投稿テキストのリッチテキスト表示 (サーバーfacets対応 + ハッシュタグ/メンション/URLタップ)
+- [x] 画像自動圧縮 (950KB上限、JPEG品質段階圧縮)
+- [x] DMメッセージ削除 (deleteMessageForSelf API)
+- [x] プロフィール フィード一覧タブ
+- [x] プロフィール リスト一覧タブ
+- [x] プロフィール スターターパックタブ
+- [x] DMメッセージリクエスト承認 (acceptConvo API + UI)
+- [x] DM新規会話作成 (NewConversationScreen + 検索履歴)
+- [x] プロフィールからの自動メンション挿入 (FABタップで@handle付きCompose)
+- [x] Claude APIキー管理 (設定画面のSecureField)
+- [x] ALTテキスト自動生成 (Claude Haiku API、アプリ言語設定連動)
+- [x] 画像クロップ (オリジナル/正方形/自由 3モード)
+- [x] 画像回転 (90度単位)
+- [x] 下書き保存 (最大20件、画像/動画ファイル永続化)
+- [x] フィード並び替え ドラッグ&ドロップ
+- [x] PreferenceItem.items デシリアライズ修正 (hiddenPostsPref対応)
 
 ## コード品質改善
 

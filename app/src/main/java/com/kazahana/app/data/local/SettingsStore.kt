@@ -54,9 +54,11 @@ class SettingsStore(private val context: Context) {
         val HIDDEN_FEED_URIS = stringPreferencesKey("hidden_feed_uris")
         val SHOW_ALL_FEEDS_IN_SELECTOR = booleanPreferencesKey("show_all_feeds_in_selector")
         val SEARCH_HISTORY = stringPreferencesKey("search_history")
+        val DM_SEARCH_HISTORY = stringPreferencesKey("dm_search_history")
         val SHOW_VIA = booleanPreferencesKey("show_via")
         val BSAF_ENABLED = booleanPreferencesKey("bsaf_enabled")
         val BSAF_REGISTERED_BOTS = stringPreferencesKey("bsaf_registered_bots")
+        val CLAUDE_API_KEY = stringPreferencesKey("claude_api_key")
     }
 
     val themeMode: Flow<ThemeMode> = context.dataStore.data.map { prefs ->
@@ -205,6 +207,38 @@ class SettingsStore(private val context: Context) {
         }
     }
 
+    // ── DM Search History ──
+
+    val dmSearchHistory: Flow<List<String>> = context.dataStore.data.map { prefs ->
+        parseStringList(prefs[Keys.DM_SEARCH_HISTORY])
+    }
+
+    suspend fun addDmSearchHistory(query: String) {
+        context.dataStore.edit { prefs ->
+            val current = parseStringList(prefs[Keys.DM_SEARCH_HISTORY]).toMutableList()
+            current.remove(query) // remove duplicate
+            current.add(0, query) // add to front
+            if (current.size > MAX_SEARCH_HISTORY) {
+                current.subList(MAX_SEARCH_HISTORY, current.size).clear()
+            }
+            prefs[Keys.DM_SEARCH_HISTORY] = encodeStringList(current)
+        }
+    }
+
+    suspend fun removeDmSearchHistory(query: String) {
+        context.dataStore.edit { prefs ->
+            val current = parseStringList(prefs[Keys.DM_SEARCH_HISTORY]).toMutableList()
+            current.remove(query)
+            prefs[Keys.DM_SEARCH_HISTORY] = encodeStringList(current)
+        }
+    }
+
+    suspend fun clearDmSearchHistory() {
+        context.dataStore.edit { prefs ->
+            prefs.remove(Keys.DM_SEARCH_HISTORY)
+        }
+    }
+
     // ── Via ──
 
     val showVia: Flow<Boolean> = context.dataStore.data.map { prefs ->
@@ -214,6 +248,18 @@ class SettingsStore(private val context: Context) {
     suspend fun setShowVia(enabled: Boolean) {
         context.dataStore.edit { prefs ->
             prefs[Keys.SHOW_VIA] = enabled
+        }
+    }
+
+    // ── Claude API ──
+
+    val claudeApiKey: Flow<String> = context.dataStore.data.map { prefs ->
+        prefs[Keys.CLAUDE_API_KEY] ?: ""
+    }
+
+    suspend fun setClaudeApiKey(key: String) {
+        context.dataStore.edit { prefs ->
+            prefs[Keys.CLAUDE_API_KEY] = key
         }
     }
 

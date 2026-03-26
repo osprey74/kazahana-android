@@ -17,6 +17,8 @@ data class ConvoView(
     val lastMessage: ChatMessageOrDeleted? = null,
     val unreadCount: Int = 0,
     val muted: Boolean = false,
+    val status: String? = null,
+    val opened: Boolean? = null,
 )
 
 @Serializable

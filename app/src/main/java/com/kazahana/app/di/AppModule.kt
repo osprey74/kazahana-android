@@ -102,4 +102,5 @@ object AppModule {
     fun provideReportRepository(
         client: ATProtoClient,
     ): ReportRepository = ReportRepository(client)
+
 }

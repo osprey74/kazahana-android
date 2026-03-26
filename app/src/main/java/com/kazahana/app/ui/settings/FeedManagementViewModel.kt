@@ -135,6 +135,15 @@ class FeedManagementViewModel @Inject constructor(
         }
     }
 
+    fun moveFeed(from: Int, to: Int) {
+        val visible = _uiState.value.visibleFeeds.toMutableList()
+        if (from !in visible.indices || to !in visible.indices || from == to) return
+        val item = visible.removeAt(from)
+        visible.add(to, item)
+        _uiState.update { it.copy(visibleFeeds = visible) }
+        saveOrder()
+    }
+
     fun moveUp(feed: FeedInfo) {
         val visible = _uiState.value.visibleFeeds.toMutableList()
         val index = visible.indexOf(feed)

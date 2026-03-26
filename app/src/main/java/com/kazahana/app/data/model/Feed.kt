@@ -2,6 +2,7 @@ package com.kazahana.app.data.model
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonElement
 
 @Serializable
 data class FeedGeneratorView(
@@ -29,9 +30,9 @@ data class PreferencesResponse(
 @Serializable
 data class PreferenceItem(
     @SerialName("\$type") val type: String? = null,
-    val pinned: List<String>? = null,   // savedFeedsPrefV2
+    val pinned: List<String>? = null,   // savedFeedsPrefV1
     val saved: List<String>? = null,
-    val items: List<SavedFeedItem>? = null,
+    val items: JsonElement? = null,      // savedFeedsPrefV2: List<SavedFeedItem>; hiddenPostsPref: List<String>
 )
 
 @Serializable
@@ -68,6 +69,7 @@ data class ListView(
     val purpose: String? = null,
     val description: String? = null,
     val avatar: String? = null,
+    val listItemCount: Int? = null,
     val indexedAt: String? = null,
 )
 
@@ -78,4 +80,34 @@ data class ListView(
 data class AllSavedFeedItems(
     val feeds: List<FeedGeneratorView>,
     val lists: List<ListView>,
+)
+
+/** Response for app.bsky.feed.getActorFeeds */
+@Serializable
+data class GetActorFeedsResponse(
+    val feeds: List<FeedGeneratorView> = emptyList(),
+    val cursor: String? = null,
+)
+
+/** Response for app.bsky.graph.getActorStarterPacks */
+@Serializable
+data class GetActorStarterPacksResponse(
+    val starterPacks: List<StarterPackViewBasic> = emptyList(),
+    val cursor: String? = null,
+)
+
+/**
+ * Starter pack view (app.bsky.graph.defs#starterPackViewBasic).
+ */
+@Serializable
+data class StarterPackViewBasic(
+    val uri: String = "",
+    val cid: String = "",
+    val record: JsonElement? = null,
+    val creator: ProfileViewBasic,
+    val listItemCount: Int? = null,
+    val joinedWeekCount: Int? = null,
+    val joinedAllTimeCount: Int? = null,
+    val labels: List<ContentLabel> = emptyList(),
+    val indexedAt: String? = null,
 )

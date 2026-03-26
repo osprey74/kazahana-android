@@ -34,6 +34,17 @@
     <string name="compose_fetching_link_card">Fetching link card…</string>
     <string name="compose_replying_to">Replying to</string>
     <string name="compose_quoting">Quoting</string>
+    <string name="compose_generate_alt">Generate ALT text</string>
+    <string name="compose_generating_alt">Generating…</string>
+    <string name="compose_drafts">Drafts</string>
+    <string name="compose_save_draft">Save draft</string>
+    <string name="compose_draft_saved">Draft saved</string>
+    <string name="compose_draft_discard">Discard</string>
+    <string name="compose_draft_delete_all">Delete all</string>
+    <string name="compose_draft_images">%1$d images</string>
+    <string name="compose_draft_video">Video</string>
+    <string name="compose_unsaved_title">Save draft?</string>
+    <string name="compose_unsaved_message">You have unsaved changes.</string>
 
     <!-- Threadgate -->
     <string name="threadgate_title">Who can reply?</string>
@@ -91,6 +102,15 @@
     <string name="profile_tab_replies">Replies</string>
     <string name="profile_tab_media">Media</string>
     <string name="profile_tab_likes">Likes</string>
+    <string name="profile_tab_feeds">Feeds</string>
+    <string name="profile_tab_lists">Lists</string>
+    <string name="profile_tab_starter_packs">Starter Packs</string>
+    <string name="profile_no_feeds">No feeds yet</string>
+    <string name="profile_no_lists">No lists yet</string>
+    <string name="profile_no_starter_packs">No starter packs yet</string>
+    <string name="profile_feed_likes">%1$s likes</string>
+    <string name="profile_list_items">%1$s items</string>
+    <string name="profile_starter_pack_members">%1$s members</string>
 
     <!-- Search -->
     <string name="search_placeholder">Search posts or users</string>
@@ -112,6 +132,13 @@
     <string name="messages_deleted">Message deleted</string>
     <string name="messages_unknown">Unknown user</string>
     <string name="messages_load_failed">Failed to load messages</string>
+    <string name="messages_delete_confirm">Delete message</string>
+    <string name="messages_new_conversation">New conversation</string>
+    <string name="messages_search_user">Search users…</string>
+    <string name="messages_request">Message request</string>
+    <string name="messages_accept">Accept</string>
+    <string name="dm_search_history">Recent</string>
+    <string name="dm_search_history_clear">Clear all</string>
 
     <!-- Settings -->
     <string name="settings_title">Settings</string>
@@ -136,6 +163,11 @@
     <string name="settings_pref_hide">Hide</string>
     <string name="settings_pref_warn">Warn</string>
     <string name="settings_pref_show">Show</string>
+    <string name="settings_polling_interval">Auto-refresh interval</string>
+    <string name="settings_polling_30s">30 seconds</string>
+    <string name="settings_polling_60s">60 seconds</string>
+    <string name="settings_polling_90s">90 seconds</string>
+    <string name="settings_polling_120s">120 seconds</string>
     <string name="settings_post">Post</string>
     <string name="settings_show_via">Show posting source (via)</string>
     <string name="settings_feed_management">Home Feed Management</string>
@@ -183,6 +215,7 @@
     <string name="profile_report">Report this user</string>
     <string name="profile_blocked_notice">You have blocked this user</string>
     <string name="profile_muted_notice">You have muted this user</string>
+    <string name="profile_mention">Mention</string>
 
     <!-- Bot badge -->
     <string name="bot_label">This account is automated</string>
@@ -203,6 +236,11 @@
     <string name="bsaf_unregister">Unregister</string>
     <string name="bsaf_duplicate_indicator">Also reported by %1$d other bot(s)</string>
 
+    <!-- Claude API -->
+    <string name="settings_claude_api">Claude API</string>
+    <string name="settings_claude_api_revoke">Revoke API key</string>
+    <string name="settings_claude_api_footer">Used for automatic ALT text generation for images.</string>
+
     <!-- Language names (native, not translated) -->
     <string name="lang_system">System</string>
     <string name="lang_ja">日本語</string>
@@ -220,6 +258,14 @@
     <!-- Feed types -->
     <string name="feed_type_feed">Feed</string>
     <string name="feed_type_list">List</string>
+
+    <!-- Image Edit -->
+    <string name="image_edit_title">Edit Image</string>
+    <string name="image_edit_crop_original">Original</string>
+    <string name="image_edit_crop_square">Square</string>
+    <string name="image_edit_crop_free">Free</string>
+    <string name="image_edit_rotate">Rotate</string>
+    <string name="image_edit_done">Done</string>
 
     <!-- Common -->
     <string name="common_retry">Retry</string>

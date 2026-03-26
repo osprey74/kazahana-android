@@ -18,6 +18,8 @@ import com.kazahana.app.data.repository.InteractionRepository
 import com.kazahana.app.data.repository.ReportRepository
 import com.kazahana.app.data.repository.TimelineRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -68,6 +70,8 @@ class TimelineViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(TimelineUiState())
     val uiState: StateFlow<TimelineUiState> = _uiState.asStateFlow()
 
+    private var pollingJob: Job? = null
+
     val currentDid: String
         get() = client.session?.did ?: ""
 
@@ -77,6 +81,43 @@ class TimelineViewModel @Inject constructor(
         viewModelScope.launch {
             settingsStore.showAllFeedsInSelector.collect { enabled ->
                 _uiState.update { it.copy(showAllInSelector = enabled) }
+            }
+        }
+        // Auto-polling: restart whenever the interval setting changes
+        viewModelScope.launch {
+            settingsStore.pollIntervalSeconds.collect { seconds ->
+                startPolling(seconds)
+            }
+        }
+    }
+
+    private fun startPolling(intervalSeconds: Int) {
+        pollingJob?.cancel()
+        pollingJob = viewModelScope.launch {
+            while (true) {
+                delay(intervalSeconds * 1000L)
+                silentRefresh()
+            }
+        }
+    }
+
+    /** Refresh without showing the pull-to-refresh indicator. */
+    private suspend fun silentRefresh() {
+        val feed = _uiState.value.selectedFeed
+        val result: Result<FeedResponse> = when {
+            feed == null || feed.uri == null ->
+                repository.getTimeline().map { FeedResponse(feed = it.feed, cursor = it.cursor) }
+            feed.type == "list" -> feedRepository.getListFeed(feed.uri)
+            else -> feedRepository.getFeed(feed.uri)
+        }
+        result.onSuccess { response ->
+            val filtered = processBsaf(response.feed)
+            _uiState.update {
+                it.copy(
+                    posts = filtered,
+                    cursor = response.cursor,
+                    hasMore = response.cursor != null,
+                )
             }
         }
     }

@@ -193,6 +193,39 @@ class ChatRepository(
         }
     }
 
+    suspend fun deleteMessageForSelf(convoId: String, messageId: String): Result<Unit> {
+        return try {
+            val body = buildJsonObject {
+                put("convoId", convoId)
+                put("messageId", messageId)
+            }
+            val response = client.postWithProxy("chat.bsky.convo.deleteMessageForSelf", body)
+            if (response.status.isSuccess()) {
+                Result.success(Unit)
+            } else {
+                Result.failure(Exception(response.atprotoError()))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun acceptConvo(convoId: String): Result<Unit> {
+        return try {
+            val body = buildJsonObject {
+                put("convoId", convoId)
+            }
+            val response = client.postWithProxy("chat.bsky.convo.acceptConvo", body)
+            if (response.status.isSuccess()) {
+                Result.success(Unit)
+            } else {
+                Result.failure(Exception(response.atprotoError()))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
     suspend fun leaveConvo(convoId: String): Result<Unit> {
         return try {
             val body = buildJsonObject {

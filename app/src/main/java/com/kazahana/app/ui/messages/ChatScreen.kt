@@ -62,6 +62,7 @@ import com.kazahana.app.data.model.ChatReaction
 import com.kazahana.app.ui.common.relativeTime
 
 private val QUICK_REACTIONS = listOf("❤️", "👍", "😂", "😮", "😢", "🎉")
+private const val DELETED_MESSAGE_TYPE = "chat.bsky.convo.defs#deletedMessageView"
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -69,6 +70,8 @@ fun ChatScreen(
     viewModel: ChatViewModel = hiltViewModel(),
     myDid: String = "",
     onNavigateBack: () -> Unit = {},
+    onHashtagClick: (String) -> Unit = {},
+    onProfileClick: (String) -> Unit = {},
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val listState = rememberLazyListState()
@@ -174,6 +177,14 @@ fun ChatScreen(
                                     }
                                 },
                                 onDismissReactions = { reactionTargetId = null },
+                                onDelete = {
+                                    message.id?.let { id ->
+                                        viewModel.deleteMessage(id)
+                                    }
+                                    reactionTargetId = null
+                                },
+                                onHashtagClick = onHashtagClick,
+                                onProfileClick = onProfileClick,
                             )
                         }
                     }
@@ -227,6 +238,9 @@ private fun MessageBubble(
     onReaction: (String) -> Unit = {},
     onReactionBadgeTap: (String) -> Unit = {},
     onDismissReactions: () -> Unit = {},
+    onDelete: () -> Unit = {},
+    onHashtagClick: (String) -> Unit = {},
+    onProfileClick: (String) -> Unit = {},
 ) {
     val isDeleted = message.type?.contains("deletedMessage") == true
     val screenWidth = LocalConfiguration.current.screenWidthDp.dp
@@ -270,6 +284,16 @@ private fun MessageBubble(
                                 .padding(horizontal = 6.dp, vertical = 4.dp),
                         )
                     }
+                    if (isMine) {
+                        Text(
+                            text = "\uD83D\uDDD1\uFE0F",
+                            fontSize = 24.sp,
+                            modifier = Modifier
+                                .clip(CircleShape)
+                                .clickable { onDelete() }
+                                .padding(horizontal = 6.dp, vertical = 4.dp),
+                        )
+                    }
                 }
             }
         }
@@ -298,13 +322,22 @@ private fun MessageBubble(
                 )
                 .padding(horizontal = 12.dp, vertical = 8.dp),
         ) {
-            Text(
-                text = if (isDeleted) stringResource(R.string.messages_deleted)
-                else message.text ?: "",
-                style = MaterialTheme.typography.bodyMedium,
-                color = if (isDeleted) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
-                else MaterialTheme.colorScheme.onSurface,
-            )
+            if (isDeleted) {
+                Text(
+                    text = stringResource(R.string.messages_deleted),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                )
+            } else {
+                com.kazahana.app.ui.common.RichTextContent(
+                    text = message.text ?: "",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    onHashtagClick = onHashtagClick,
+                    onMentionClick = onProfileClick,
+                    onLongPress = onLongPress,
+                )
+            }
             if (message.sentAt != null) {
                 Text(
                     text = relativeTime(message.sentAt),

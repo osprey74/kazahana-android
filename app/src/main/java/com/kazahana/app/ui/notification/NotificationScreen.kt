@@ -70,6 +70,8 @@ fun NotificationScreen(
     viewModel: NotificationViewModel = hiltViewModel(),
     onPostClick: (postUri: String) -> Unit = {},
     onProfileClick: (did: String) -> Unit = {},
+    onHashtagClick: (String) -> Unit = {},
+    onMentionClick: (String) -> Unit = {},
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val listState = rememberLazyListState()
@@ -154,6 +156,8 @@ fun NotificationScreen(
                             onLike = { uri, cid, likeUri -> viewModel.toggleLike(uri, cid, likeUri) },
                             onRepost = { uri, cid, repostUri -> viewModel.toggleRepost(uri, cid, repostUri) },
                             onBookmark = { uri, cid, bookmarkUri -> viewModel.toggleBookmark(uri, cid, bookmarkUri) },
+                            onHashtagClick = onHashtagClick,
+                            onMentionClick = onMentionClick,
                         )
                         HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
                     }
@@ -185,6 +189,8 @@ private fun NotificationRow(
     onLike: (postUri: String, postCid: String, currentLikeUri: String?) -> Unit = { _, _, _ -> },
     onRepost: (postUri: String, postCid: String, currentRepostUri: String?) -> Unit = { _, _, _ -> },
     onBookmark: (postUri: String, postCid: String, currentBookmarkUri: String?) -> Unit = { _, _, _ -> },
+    onHashtagClick: (String) -> Unit = {},
+    onMentionClick: (String) -> Unit = {},
 ) {
     val (icon, iconColor) = remember(notification.reason) {
         when (notification.reason) {
@@ -295,6 +301,8 @@ private fun NotificationRow(
                 onBookmark = onBookmark,
                 modifier = Modifier.padding(start = 32.dp),
                 moderationDecision = modDecision,
+                onHashtagClick = onHashtagClick,
+                onMentionClick = onMentionClick,
             )
         }
     }

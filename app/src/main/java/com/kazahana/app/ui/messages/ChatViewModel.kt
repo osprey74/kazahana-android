@@ -8,6 +8,8 @@ import com.kazahana.app.data.model.ChatReaction
 import com.kazahana.app.data.model.ConvoView
 import com.kazahana.app.data.repository.ChatRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -37,11 +39,43 @@ class ChatViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(ChatUiState())
     val uiState: StateFlow<ChatUiState> = _uiState.asStateFlow()
 
+    private var pollingJob: Job? = null
+
     init {
         if (convoId.isNotEmpty()) {
             loadConvo()
             loadMessages()
+            startPolling()
         }
+    }
+
+    private fun startPolling() {
+        pollingJob?.cancel()
+        pollingJob = viewModelScope.launch {
+            while (true) {
+                delay(15_000L) // 15 seconds
+                pollNewMessages()
+            }
+        }
+    }
+
+    private suspend fun pollNewMessages() {
+        chatRepository.getMessages(convoId)
+            .onSuccess { response ->
+                val existingIds = _uiState.value.messages.map { it.id }.toSet()
+                val newMessages = response.messages.filter { it.id !in existingIds }
+                if (newMessages.isNotEmpty()) {
+                    _uiState.update {
+                        it.copy(messages = newMessages + it.messages)
+                    }
+                    chatRepository.updateRead(convoId)
+                }
+            }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        pollingJob?.cancel()
     }
 
     private fun loadConvo() {
@@ -147,6 +181,26 @@ class ChatViewModel @Inject constructor(
                     )
                 }
             }
+        }
+    }
+
+    fun deleteMessage(messageId: String) {
+        viewModelScope.launch {
+            chatRepository.deleteMessageForSelf(convoId, messageId)
+                .onSuccess {
+                    _uiState.update { state ->
+                        state.copy(
+                            messages = state.messages.map { msg ->
+                                if (msg.id == messageId) {
+                                    msg.copy(
+                                        type = "chat.bsky.convo.defs#deletedMessageView",
+                                        text = null,
+                                    )
+                                } else msg
+                            }
+                        )
+                    }
+                }
         }
     }
 

@@ -25,6 +25,7 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.PushPin
 import androidx.compose.material.icons.outlined.Block
@@ -83,6 +84,8 @@ import com.kazahana.app.ui.common.checkModeration
 import com.kazahana.app.ui.timeline.PostCard
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.decodeFromJsonElement
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -96,6 +99,9 @@ fun ProfileScreen(
     onReply: (postUri: String, postCid: String, rootUri: String, rootCid: String, authorHandle: String, authorDisplayName: String, postText: String) -> Unit = { _, _, _, _, _, _, _ -> },
     onQuote: (postUri: String, postCid: String, authorHandle: String, authorDisplayName: String, postText: String) -> Unit = { _, _, _, _, _ -> },
     onSettingsClick: (() -> Unit)? = null,
+    onHashtagClick: (String) -> Unit = {},
+    onMentionClick: (String) -> Unit = {},
+    onCompose: ((String?) -> Unit)? = null,
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val listState = rememberLazyListState()
@@ -113,7 +119,13 @@ fun ProfileScreen(
         derivedStateOf {
             val lastVisibleItem = listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
             val totalItems = listState.layoutInfo.totalItemsCount
-            lastVisibleItem >= totalItems - 5 && !uiState.isLoadingMore && uiState.hasMore
+            val canLoadMore = when (uiState.selectedTab) {
+                ProfileTab.FEEDS -> !uiState.isLoadingFeeds && uiState.hasMoreFeeds
+                ProfileTab.LISTS -> !uiState.isLoadingLists && uiState.hasMoreLists
+                ProfileTab.STARTER_PACKS -> !uiState.isLoadingStarterPacks && uiState.hasMoreStarterPacks
+                else -> !uiState.isLoadingMore && uiState.hasMore
+            }
+            lastVisibleItem >= totalItems - 5 && canLoadMore
         }
     }
 
@@ -191,128 +203,228 @@ fun ProfileScreen(
                         }
                     }
 
-                    // Pinned post (posts tab only)
-                    if (uiState.selectedTab == ProfileTab.POSTS && uiState.pinnedPost != null) {
-                        item(key = "pinned_post") {
-                            val pinnedFeedPost = uiState.pinnedPost!!
-                            val pinnedRecord = remember(pinnedFeedPost.post.record) {
-                                try {
-                                    com.kazahana.app.data.AppJson
-                                        .decodeFromJsonElement<PostRecord>(pinnedFeedPost.post.record)
-                                } catch (_: Exception) { null }
+                    // Tab content
+                    when (uiState.selectedTab) {
+                        ProfileTab.FEEDS -> {
+                            // Loading
+                            if (uiState.isLoadingFeeds && uiState.actorFeeds.isEmpty()) {
+                                item {
+                                    Box(
+                                        modifier = Modifier.fillMaxWidth().padding(32.dp),
+                                        contentAlignment = Alignment.Center,
+                                    ) { CircularProgressIndicator() }
+                                }
                             }
-                            val modSettings = LocalModerationSettings.current
-                            val modDecision = remember(pinnedFeedPost.post.labels, modSettings) {
-                                checkModeration(pinnedFeedPost.post.labels, modSettings)
+                            // Empty state
+                            if (!uiState.isLoadingFeeds && uiState.actorFeeds.isEmpty()) {
+                                item {
+                                    Box(
+                                        modifier = Modifier.fillMaxWidth().padding(32.dp),
+                                        contentAlignment = Alignment.Center,
+                                    ) { Text(stringResource(R.string.profile_no_feeds), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)) }
+                                }
                             }
-                            Column {
-                                // Pinned label
-                                Row(
-                                    horizontalArrangement = Arrangement.spacedBy(4.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    modifier = Modifier
-                                        .padding(start = 58.dp, top = 8.dp),
-                                ) {
-                                    Icon(
-                                        Icons.Filled.PushPin,
-                                        contentDescription = null,
-                                        modifier = Modifier.size(12.dp),
-                                        tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                                    )
-                                    Text(
-                                        text = stringResource(R.string.post_pinned),
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                                    )
+                            // Feed items
+                            items(
+                                items = uiState.actorFeeds,
+                                key = { it.uri },
+                            ) { feed ->
+                                FeedGeneratorCard(feed = feed)
+                            }
+                            if (uiState.isLoadingFeeds && uiState.actorFeeds.isNotEmpty()) {
+                                item {
+                                    Box(modifier = Modifier.fillMaxWidth().padding(16.dp), contentAlignment = Alignment.Center) {
+                                        CircularProgressIndicator()
+                                    }
+                                }
+                            }
+                        }
+                        ProfileTab.LISTS -> {
+                            if (uiState.isLoadingLists && uiState.actorLists.isEmpty()) {
+                                item {
+                                    Box(
+                                        modifier = Modifier.fillMaxWidth().padding(32.dp),
+                                        contentAlignment = Alignment.Center,
+                                    ) { CircularProgressIndicator() }
+                                }
+                            }
+                            if (!uiState.isLoadingLists && uiState.actorLists.isEmpty()) {
+                                item {
+                                    Box(
+                                        modifier = Modifier.fillMaxWidth().padding(32.dp),
+                                        contentAlignment = Alignment.Center,
+                                    ) { Text(stringResource(R.string.profile_no_lists), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)) }
+                                }
+                            }
+                            items(
+                                items = uiState.actorLists,
+                                key = { it.uri },
+                            ) { list ->
+                                ListViewCard(list = list)
+                            }
+                            if (uiState.isLoadingLists && uiState.actorLists.isNotEmpty()) {
+                                item {
+                                    Box(modifier = Modifier.fillMaxWidth().padding(16.dp), contentAlignment = Alignment.Center) {
+                                        CircularProgressIndicator()
+                                    }
+                                }
+                            }
+                        }
+                        ProfileTab.STARTER_PACKS -> {
+                            if (uiState.isLoadingStarterPacks && uiState.actorStarterPacks.isEmpty()) {
+                                item {
+                                    Box(
+                                        modifier = Modifier.fillMaxWidth().padding(32.dp),
+                                        contentAlignment = Alignment.Center,
+                                    ) { CircularProgressIndicator() }
+                                }
+                            }
+                            if (!uiState.isLoadingStarterPacks && uiState.actorStarterPacks.isEmpty()) {
+                                item {
+                                    Box(
+                                        modifier = Modifier.fillMaxWidth().padding(32.dp),
+                                        contentAlignment = Alignment.Center,
+                                    ) { Text(stringResource(R.string.profile_no_starter_packs), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)) }
+                                }
+                            }
+                            items(
+                                items = uiState.actorStarterPacks,
+                                key = { it.uri },
+                            ) { starterPack ->
+                                StarterPackCard(starterPack = starterPack)
+                            }
+                            if (uiState.isLoadingStarterPacks && uiState.actorStarterPacks.isNotEmpty()) {
+                                item {
+                                    Box(modifier = Modifier.fillMaxWidth().padding(16.dp), contentAlignment = Alignment.Center) {
+                                        CircularProgressIndicator()
+                                    }
+                                }
+                            }
+                        }
+                        else -> {
+                            // Post-based tabs (POSTS, REPLIES, MEDIA, LIKES)
+                            // Pinned post (posts tab only)
+                            if (uiState.selectedTab == ProfileTab.POSTS && uiState.pinnedPost != null) {
+                                item(key = "pinned_post") {
+                                    val pinnedFeedPost = uiState.pinnedPost!!
+                                    val pinnedRecord = remember(pinnedFeedPost.post.record) {
+                                        try {
+                                            com.kazahana.app.data.AppJson
+                                                .decodeFromJsonElement<PostRecord>(pinnedFeedPost.post.record)
+                                        } catch (_: Exception) { null }
+                                    }
+                                    val modSettings = LocalModerationSettings.current
+                                    val modDecision = remember(pinnedFeedPost.post.labels, modSettings) {
+                                        checkModeration(pinnedFeedPost.post.labels, modSettings)
+                                    }
+                                    Column {
+                                        Row(
+                                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            modifier = Modifier.padding(start = 58.dp, top = 8.dp),
+                                        ) {
+                                            Icon(
+                                                Icons.Filled.PushPin,
+                                                contentDescription = null,
+                                                modifier = Modifier.size(12.dp),
+                                                tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                                            )
+                                            Text(
+                                                text = stringResource(R.string.post_pinned),
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                                            )
+                                        }
+                                        PostCard(
+                                            feedPost = pinnedFeedPost,
+                                            onClick = { uri -> onPostClick(uri) },
+                                            onAuthorClick = { did -> onProfileClick(did) },
+                                            onReply = { uri, cid ->
+                                                onReply(
+                                                    uri, cid, uri, cid,
+                                                    pinnedFeedPost.post.author.handle,
+                                                    pinnedFeedPost.post.author.displayName ?: "",
+                                                    pinnedRecord?.text ?: "",
+                                                )
+                                            },
+                                            onLike = { uri, cid, likeUri -> viewModel.toggleLike(uri, cid, likeUri) },
+                                            onRepost = { uri, cid, repostUri -> viewModel.toggleRepost(uri, cid, repostUri) },
+                                            onBookmark = { uri, cid, bookmarkUri -> viewModel.toggleBookmark(uri, cid, bookmarkUri) },
+                                            onHidePost = { uri -> viewModel.hidePost(uri) },
+                                            onMuteThread = { uri, mute -> viewModel.muteThread(uri, mute) },
+                                            onReportPost = { uri, cid -> reportTarget = Pair(uri, cid) },
+                                            onReportUser = { did -> reportTarget = "user" },
+                                            onMuteUser = { did, handle -> muteConfirmTarget = Pair(did, handle) },
+                                            onBlockUser = { did, handle -> blockConfirmTarget = Pair(did, handle) },
+                                            isOwnPost = viewModel.isSelf,
+                                            moderationDecision = modDecision,
+                                            onHashtagClick = onHashtagClick,
+                                            onMentionClick = onMentionClick,
+                                        )
+                                    }
+                                }
+                            }
+
+                            // Loading posts
+                            if (uiState.isLoadingPosts && uiState.posts.isEmpty()) {
+                                item {
+                                    Box(
+                                        modifier = Modifier.fillMaxWidth().padding(32.dp),
+                                        contentAlignment = Alignment.Center,
+                                    ) { CircularProgressIndicator() }
+                                }
+                            }
+
+                            // Posts
+                            itemsIndexed(
+                                items = uiState.posts,
+                                key = { index, feedPost -> "${feedPost.post.uri}#$index" },
+                            ) { _, feedPost ->
+                                val record = remember(feedPost.post.record) {
+                                    try {
+                                        com.kazahana.app.data.AppJson
+                                            .decodeFromJsonElement<PostRecord>(feedPost.post.record)
+                                    } catch (_: Exception) { null }
+                                }
+                                val modSettings = LocalModerationSettings.current
+                                val modDecision = remember(feedPost.post.labels, modSettings) {
+                                    checkModeration(feedPost.post.labels, modSettings)
                                 }
                                 PostCard(
-                                    feedPost = pinnedFeedPost,
+                                    feedPost = feedPost,
                                     onClick = { uri -> onPostClick(uri) },
                                     onAuthorClick = { did -> onProfileClick(did) },
                                     onReply = { uri, cid ->
+                                        val replyRoot = feedPost.reply?.root
+                                        val rootUri = replyRoot?.uri ?: uri
+                                        val rootCid = replyRoot?.cid ?: cid
                                         onReply(
-                                            uri, cid, uri, cid,
-                                            pinnedFeedPost.post.author.handle,
-                                            pinnedFeedPost.post.author.displayName ?: "",
-                                            pinnedRecord?.text ?: "",
+                                            uri, cid, rootUri, rootCid,
+                                            feedPost.post.author.handle,
+                                            feedPost.post.author.displayName ?: "",
+                                            record?.text ?: "",
                                         )
                                     },
                                     onLike = { uri, cid, likeUri -> viewModel.toggleLike(uri, cid, likeUri) },
                                     onRepost = { uri, cid, repostUri -> viewModel.toggleRepost(uri, cid, repostUri) },
                                     onBookmark = { uri, cid, bookmarkUri -> viewModel.toggleBookmark(uri, cid, bookmarkUri) },
-                                    onHidePost = { uri -> viewModel.hidePost(uri) },
-                                    onMuteThread = { uri, mute -> viewModel.muteThread(uri, mute) },
                                     onReportPost = { uri, cid -> reportTarget = Pair(uri, cid) },
                                     onReportUser = { did -> reportTarget = "user" },
                                     onMuteUser = { did, handle -> muteConfirmTarget = Pair(did, handle) },
                                     onBlockUser = { did, handle -> blockConfirmTarget = Pair(did, handle) },
-                                    isOwnPost = viewModel.isSelf,
                                     moderationDecision = modDecision,
+                                    onHashtagClick = onHashtagClick,
+                                    onMentionClick = onMentionClick,
                                 )
                             }
-                        }
-                    }
 
-                    // Loading posts
-                    if (uiState.isLoadingPosts && uiState.posts.isEmpty()) {
-                        item {
-                            Box(
-                                modifier = Modifier.fillMaxWidth().padding(32.dp),
-                                contentAlignment = Alignment.Center,
-                            ) {
-                                CircularProgressIndicator()
-                            }
-                        }
-                    }
-
-                    // Posts
-                    itemsIndexed(
-                        items = uiState.posts,
-                        key = { index, feedPost -> "${feedPost.post.uri}#$index" },
-                    ) { _, feedPost ->
-                        val record = remember(feedPost.post.record) {
-                            try {
-                                com.kazahana.app.data.AppJson
-                                    .decodeFromJsonElement<PostRecord>(feedPost.post.record)
-                            } catch (_: Exception) { null }
-                        }
-                        val modSettings = LocalModerationSettings.current
-                        val modDecision = remember(feedPost.post.labels, modSettings) {
-                            checkModeration(feedPost.post.labels, modSettings)
-                        }
-                        PostCard(
-                            feedPost = feedPost,
-                            onClick = { uri -> onPostClick(uri) },
-                            onAuthorClick = { did -> onProfileClick(did) },
-                            onReply = { uri, cid ->
-                                val replyRoot = feedPost.reply?.root
-                                val rootUri = replyRoot?.uri ?: uri
-                                val rootCid = replyRoot?.cid ?: cid
-                                onReply(
-                                    uri, cid, rootUri, rootCid,
-                                    feedPost.post.author.handle,
-                                    feedPost.post.author.displayName ?: "",
-                                    record?.text ?: "",
-                                )
-                            },
-                            onLike = { uri, cid, likeUri -> viewModel.toggleLike(uri, cid, likeUri) },
-                            onRepost = { uri, cid, repostUri -> viewModel.toggleRepost(uri, cid, repostUri) },
-                            onBookmark = { uri, cid, bookmarkUri -> viewModel.toggleBookmark(uri, cid, bookmarkUri) },
-                            onReportPost = { uri, cid -> reportTarget = Pair(uri, cid) },
-                            onReportUser = { did -> reportTarget = "user" },
-                            onMuteUser = { did, handle -> muteConfirmTarget = Pair(did, handle) },
-                            onBlockUser = { did, handle -> blockConfirmTarget = Pair(did, handle) },
-                            moderationDecision = modDecision,
-                        )
-                    }
-
-                    if (uiState.isLoadingMore) {
-                        item {
-                            Box(
-                                modifier = Modifier.fillMaxWidth().padding(16.dp),
-                                contentAlignment = Alignment.Center,
-                            ) {
-                                CircularProgressIndicator()
+                            if (uiState.isLoadingMore) {
+                                item {
+                                    Box(
+                                        modifier = Modifier.fillMaxWidth().padding(16.dp),
+                                        contentAlignment = Alignment.Center,
+                                    ) { CircularProgressIndicator() }
+                                }
                             }
                         }
                     }
@@ -334,6 +446,27 @@ fun ProfileScreen(
                         onSettingsClick = if (viewModel.isSelf) onSettingsClick else null,
                         onTabSelect = { viewModel.selectTab(it) },
                     )
+                }
+
+                // FAB: compose with auto-mention for other users
+                if (onCompose != null) {
+                    androidx.compose.material3.FloatingActionButton(
+                        onClick = {
+                            if (!viewModel.isSelf) {
+                                onCompose("@${profile.handle} ")
+                            } else {
+                                onCompose(null)
+                            }
+                        },
+                        modifier = Modifier
+                            .align(Alignment.BottomEnd)
+                            .padding(16.dp),
+                    ) {
+                        Icon(
+                            Icons.Default.Edit,
+                            contentDescription = stringResource(R.string.compose_title),
+                        )
+                    }
                 }
             }
         }
@@ -588,7 +721,7 @@ private fun ProfileHeader(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.padding(top = 8.dp),
                 ) {
-                    // More menu (mute/block/report)
+                    // More menu (mention/mute/block/report)
                     if (onMuteToggle != null || onBlockToggle != null || onReport != null) {
                         var showMoreMenu by remember { mutableStateOf(false) }
                         Box {
@@ -769,6 +902,166 @@ private fun ProfileHeader(
             }
         }
     }
+}
+
+@Composable
+private fun FeedGeneratorCard(feed: com.kazahana.app.data.model.FeedGeneratorView) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        AvatarImage(
+            url = feed.avatar,
+            size = 44.dp,
+            modifier = Modifier.clip(MaterialTheme.shapes.small),
+        )
+        Spacer(modifier = Modifier.width(12.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = feed.displayName,
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            if (!feed.description.isNullOrBlank()) {
+                Text(
+                    text = feed.description,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+            if (feed.likeCount != null && feed.likeCount > 0) {
+                Text(
+                    text = stringResource(R.string.profile_feed_likes, formatCount(feed.likeCount)),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                )
+            }
+        }
+    }
+    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+}
+
+@Composable
+private fun ListViewCard(list: com.kazahana.app.data.model.ListView) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        AvatarImage(
+            url = list.avatar,
+            size = 44.dp,
+            modifier = Modifier.clip(MaterialTheme.shapes.small),
+        )
+        Spacer(modifier = Modifier.width(12.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = list.name,
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            if (!list.description.isNullOrBlank()) {
+                Text(
+                    text = list.description,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+            if (list.listItemCount != null && list.listItemCount > 0) {
+                Text(
+                    text = stringResource(R.string.profile_list_items, formatCount(list.listItemCount)),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                )
+            }
+        }
+    }
+    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+}
+
+@Composable
+private fun StarterPackCard(starterPack: com.kazahana.app.data.model.StarterPackViewBasic) {
+    // Parse name from the record JSON
+    val name = remember(starterPack.record) {
+        try {
+            starterPack.record?.let { record ->
+                val obj = record as? JsonObject
+                (obj?.get("name") as? JsonPrimitive)?.content
+            } ?: ""
+        } catch (_: Exception) { "" }
+    }
+    val description = remember(starterPack.record) {
+        try {
+            starterPack.record?.let { record ->
+                val obj = record as? JsonObject
+                (obj?.get("description") as? JsonPrimitive)?.content
+            }
+        } catch (_: Exception) { null }
+    }
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        // Starter packs don't have avatars, use a placeholder icon
+        Box(
+            modifier = Modifier
+                .size(44.dp)
+                .background(
+                    MaterialTheme.colorScheme.primaryContainer,
+                    MaterialTheme.shapes.small,
+                ),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(
+                text = (name?.firstOrNull() ?: 'S').uppercase(),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onPrimaryContainer,
+            )
+        }
+        Spacer(modifier = Modifier.width(12.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = name ?: "",
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            if (!description.isNullOrBlank()) {
+                Text(
+                    text = description,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+            val memberCount = starterPack.listItemCount ?: 0
+            if (memberCount > 0) {
+                Text(
+                    text = stringResource(R.string.profile_starter_pack_members, formatCount(memberCount)),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                )
+            }
+        }
+    }
+    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
 }
 
 @Composable
