@@ -44,7 +44,8 @@
       "Bash(find /mnt/g/dev/kazahana/src -type f \\\\\\(-name *.ts -o -name *.tsx \\\\\\))",
       "Bash(find /mnt/g/dev/kazahana-ios -name Localizable.strings -o -name *.xcstrings)",
       "Bash(python3:*)",
-      "Bash(find /mnt/g/dev/kazahana-android -name strings*.xml -o -name *i18n* -o -name *locale*)"
+      "Bash(find /mnt/g/dev/kazahana-android -name strings*.xml -o -name *i18n* -o -name *locale*)",
+      "Bash(wc -l /mnt/g/dev/kazahana-android/app/src/main/java/com/kazahana/app/ui/**/*.kt)"
     ]
   }
 }
