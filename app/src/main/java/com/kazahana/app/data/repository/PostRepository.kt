@@ -4,6 +4,7 @@ import com.kazahana.app.data.model.BlobRef
 import com.kazahana.app.data.model.BlobResponse
 import com.kazahana.app.data.model.CreateRecordResponse
 import com.kazahana.app.data.model.Facet
+import com.kazahana.app.data.model.GetQuotesResponse
 import com.kazahana.app.data.model.ImageEmbedItem
 import com.kazahana.app.data.model.VideoJobStatus
 import com.kazahana.app.data.model.VideoJobStatusWrapper
@@ -402,6 +403,30 @@ class PostRepository(
                 Result.success(response.body())
             } else {
                 Result.failure(Exception("Postgate failed: HTTP ${response.status.value}"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun getQuotes(
+        uri: String,
+        cursor: String? = null,
+        limit: Int = 25,
+    ): Result<GetQuotesResponse> {
+        return try {
+            val response = client.get(
+                nsid = "app.bsky.feed.getQuotes",
+                params = buildMap {
+                    put("uri", uri)
+                    put("limit", limit.toString())
+                    if (cursor != null) put("cursor", cursor)
+                },
+            )
+            if (response.status.isSuccess()) {
+                Result.success(response.body())
+            } else {
+                Result.failure(Exception("getQuotes failed: HTTP ${response.status.value}"))
             }
         } catch (e: Exception) {
             Result.failure(e)

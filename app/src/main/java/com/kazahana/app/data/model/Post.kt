@@ -90,6 +90,7 @@ data class PostViewerState(
     val bookmark: String? = null,
     val replyDisabled: Boolean? = null,
     val threadMuted: Boolean? = null,
+    val embeddingDisabled: Boolean? = null,
 )
 
 @Serializable
@@ -272,4 +273,13 @@ data class VideoJobStatus(
     val blob: BlobData? = null,
     val error: String? = null,
     val message: String? = null,
+)
+
+// getQuotes response
+@Serializable
+data class GetQuotesResponse(
+    val uri: String,
+    val cid: String? = null,
+    val cursor: String? = null,
+    val posts: List<PostView> = emptyList(),
 )

@@ -71,6 +71,7 @@ fun SearchScreen(
     onProfileClick: (did: String) -> Unit = {},
     onReply: (postUri: String, postCid: String, rootUri: String, rootCid: String, authorHandle: String, authorDisplayName: String, postText: String) -> Unit = { _, _, _, _, _, _, _ -> },
     onQuote: (postUri: String, postCid: String, authorHandle: String, authorDisplayName: String, postText: String) -> Unit = { _, _, _, _, _ -> },
+    onViewQuotes: (postUri: String) -> Unit = {},
     onHashtagClick: (String) -> Unit = {},
     onMentionClick: (String) -> Unit = {},
 ) {
@@ -216,6 +217,10 @@ fun SearchScreen(
                                     onLike = { uri, cid, likeUri -> viewModel.toggleLike(uri, cid, likeUri) },
                                     onRepost = { uri, cid, repostUri -> viewModel.toggleRepost(uri, cid, repostUri) },
                                     onBookmark = { uri, cid, bookmarkUri -> viewModel.toggleBookmark(uri, cid, bookmarkUri) },
+                                    onQuote = { uri, cid, handle, displayName, text ->
+                                        onQuote(uri, cid, handle, displayName, text)
+                                    },
+                                    onViewQuotes = { uri -> onViewQuotes(uri) },
                                     moderationDecision = modDecision,
                                     onHashtagClick = onHashtagClick,
                                     onMentionClick = onMentionClick,

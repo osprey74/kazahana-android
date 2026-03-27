@@ -21,7 +21,6 @@ import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Repeat
 import androidx.compose.material.icons.outlined.ContentCopy
-import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material.icons.outlined.GTranslate
 import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material.icons.outlined.NotificationsOff
@@ -35,6 +34,8 @@ import androidx.compose.material.icons.outlined.BookmarkBorder
 import androidx.compose.material.icons.outlined.ChatBubbleOutline
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.Repeat
+import androidx.compose.material.icons.filled.FormatQuote
+import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
@@ -96,6 +97,8 @@ fun PostCard(
     onReportUser: ((authorDid: String) -> Unit)? = null,
     onMuteUser: ((authorDid: String, authorHandle: String) -> Unit)? = null,
     onBlockUser: ((authorDid: String, authorHandle: String) -> Unit)? = null,
+    onQuote: ((postUri: String, postCid: String, authorHandle: String, authorDisplayName: String, postText: String) -> Unit)? = null,
+    onViewQuotes: ((postUri: String) -> Unit)? = null,
     onHashtagClick: ((String) -> Unit)? = null,
     onMentionClick: ((String) -> Unit)? = null,
     isOwnPost: Boolean = false,
@@ -379,20 +382,36 @@ fun PostCard(
             replyCount = post.replyCount ?: 0,
             repostCount = post.repostCount ?: 0,
             likeCount = post.likeCount ?: 0,
+            quoteCount = post.quoteCount ?: 0,
             isLiked = post.viewer?.like != null,
             isReposted = post.viewer?.repost != null,
             isBookmarked = post.viewer?.bookmark != null,
+            quoteDisabled = post.viewer?.embeddingDisabled == true,
             postText = record?.text ?: "",
             postUri = post.uri,
             postCid = post.cid,
             authorDid = post.author.did,
             authorHandle = post.author.handle,
+            authorDisplayName = post.author.displayName ?: "",
             isOwnPost = isOwnPost,
             threadMuted = post.viewer?.threadMuted == true,
             onReply = { onReply(post.uri, post.cid) },
             onLike = { onLike(post.uri, post.cid, post.viewer?.like) },
             onRepost = { onRepost(post.uri, post.cid, post.viewer?.repost) },
             onBookmark = { onBookmark(post.uri, post.cid, post.viewer?.bookmark) },
+            onQuote = if (onQuote != null) {
+                {
+                    onQuote(
+                        post.uri, post.cid,
+                        post.author.handle,
+                        post.author.displayName ?: "",
+                        record?.text ?: "",
+                    )
+                }
+            } else null,
+            onViewQuotes = if (onViewQuotes != null) {
+                { onViewQuotes(post.uri) }
+            } else null,
             onHidePost = onHidePost,
             onMuteThread = onMuteThread,
             onReportPost = onReportPost,
@@ -491,20 +510,25 @@ private fun ActionBar(
     replyCount: Int,
     repostCount: Int,
     likeCount: Int,
+    quoteCount: Int = 0,
     isLiked: Boolean,
     isReposted: Boolean,
     isBookmarked: Boolean,
+    quoteDisabled: Boolean = false,
     postText: String = "",
     postUri: String = "",
     postCid: String = "",
     authorDid: String = "",
     authorHandle: String = "",
+    authorDisplayName: String = "",
     isOwnPost: Boolean = false,
     threadMuted: Boolean = false,
     onReply: () -> Unit,
     onLike: () -> Unit,
     onRepost: () -> Unit,
     onBookmark: () -> Unit,
+    onQuote: (() -> Unit)? = null,
+    onViewQuotes: (() -> Unit)? = null,
     onHidePost: ((postUri: String) -> Unit)? = null,
     onMuteThread: ((postUri: String, mute: Boolean) -> Unit)? = null,
     onReportPost: ((postUri: String, postCid: String) -> Unit)? = null,
@@ -515,6 +539,7 @@ private fun ActionBar(
 ) {
     val context = LocalContext.current
     var showMenu by remember { mutableStateOf(false) }
+    var showQuoteMenu by remember { mutableStateOf(false) }
 
     Row(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -544,6 +569,53 @@ private fun ActionBar(
             activeColor = MaterialTheme.colorScheme.error,
             onClick = onLike,
         )
+        // Quote button with dropdown
+        Box {
+            ActionItem(
+                icon = Icons.Filled.FormatQuote,
+                activeIcon = Icons.Filled.FormatQuote,
+                count = quoteCount,
+                isActive = false,
+                onClick = { showQuoteMenu = true },
+            )
+            DropdownMenu(
+                expanded = showQuoteMenu,
+                onDismissRequest = { showQuoteMenu = false },
+            ) {
+                if (!quoteDisabled && onQuote != null) {
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.post_quote_post)) },
+                        leadingIcon = {
+                            Icon(
+                                Icons.Outlined.Edit,
+                                contentDescription = null,
+                                modifier = Modifier.size(20.dp),
+                            )
+                        },
+                        onClick = {
+                            showQuoteMenu = false
+                            onQuote()
+                        },
+                    )
+                }
+                if (onViewQuotes != null) {
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.post_view_quotes)) },
+                        leadingIcon = {
+                            Icon(
+                                Icons.Filled.FormatQuote,
+                                contentDescription = null,
+                                modifier = Modifier.size(20.dp),
+                            )
+                        },
+                        onClick = {
+                            showQuoteMenu = false
+                            onViewQuotes()
+                        },
+                    )
+                }
+            }
+        }
         ActionItem(
             icon = Icons.Outlined.BookmarkBorder,
             activeIcon = Icons.Filled.Bookmark,
@@ -569,6 +641,25 @@ private fun ActionBar(
                 expanded = showMenu,
                 onDismissRequest = { showMenu = false },
             ) {
+                // Copy link
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.post_copy_link)) },
+                    leadingIcon = {
+                        Icon(
+                            Icons.Outlined.ContentCopy,
+                            contentDescription = null,
+                            modifier = Modifier.size(20.dp),
+                        )
+                    },
+                    onClick = {
+                        showMenu = false
+                        val rkey = postUri.substringAfterLast("/")
+                        val url = "https://bsky.app/profile/$authorHandle/post/$rkey"
+                        val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                        clipboard.setPrimaryClip(ClipData.newPlainText("Post link", url))
+                        Toast.makeText(context, context.getString(R.string.post_link_copied), Toast.LENGTH_SHORT).show()
+                    },
+                )
                 // Translate
                 DropdownMenuItem(
                     text = { Text(stringResource(R.string.post_translate)) },
@@ -589,47 +680,42 @@ private fun ActionBar(
                         }
                     },
                 )
-                // Copy link
-                DropdownMenuItem(
-                    text = { Text(stringResource(R.string.post_copy_link)) },
-                    leadingIcon = {
-                        Icon(
-                            Icons.Outlined.ContentCopy,
-                            contentDescription = null,
-                            modifier = Modifier.size(20.dp),
-                        )
-                    },
-                    onClick = {
-                        showMenu = false
-                        // Extract rkey from AT-URI: at://did/app.bsky.feed.post/rkey
-                        val rkey = postUri.substringAfterLast("/")
-                        val url = "https://bsky.app/profile/$authorHandle/post/$rkey"
-                        val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                        clipboard.setPrimaryClip(ClipData.newPlainText("Post link", url))
-                        Toast.makeText(context, context.getString(R.string.post_link_copied), Toast.LENGTH_SHORT).show()
-                    },
-                )
-                // Share
-                DropdownMenuItem(
-                    text = { Text(stringResource(R.string.post_share)) },
-                    leadingIcon = {
-                        Icon(
-                            Icons.Outlined.Share,
-                            contentDescription = null,
-                            modifier = Modifier.size(20.dp),
-                        )
-                    },
-                    onClick = {
-                        showMenu = false
-                        val rkey = postUri.substringAfterLast("/")
-                        val url = "https://bsky.app/profile/$authorHandle/post/$rkey"
-                        val sendIntent = Intent(Intent.ACTION_SEND).apply {
-                            putExtra(Intent.EXTRA_TEXT, url)
-                            type = "text/plain"
-                        }
-                        context.startActivity(Intent.createChooser(sendIntent, null))
-                    },
-                )
+                HorizontalDivider()
+                // Hide post (only for other users' posts)
+                if (onHidePost != null && !isOwnPost) {
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.post_hide)) },
+                        leadingIcon = {
+                            Icon(
+                                Icons.Outlined.VisibilityOff,
+                                contentDescription = null,
+                                modifier = Modifier.size(20.dp),
+                            )
+                        },
+                        onClick = {
+                            showMenu = false
+                            onHidePost(postUri)
+                        },
+                    )
+                }
+                // Report post
+                if (onReportPost != null) {
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.post_report_post)) },
+                        leadingIcon = {
+                            Icon(
+                                Icons.Outlined.Flag,
+                                contentDescription = null,
+                                modifier = Modifier.size(20.dp),
+                                tint = MaterialTheme.colorScheme.error,
+                            )
+                        },
+                        onClick = {
+                            showMenu = false
+                            onReportPost(postUri, postCid)
+                        },
+                    )
+                }
                 // Mute thread notifications
                 if (onMuteThread != null) {
                     DropdownMenuItem(
@@ -655,22 +741,9 @@ private fun ActionBar(
                         },
                     )
                 }
-                // Hide post (only for other users' posts)
-                if (onHidePost != null && !isOwnPost) {
-                    DropdownMenuItem(
-                        text = { Text(stringResource(R.string.post_hide)) },
-                        leadingIcon = {
-                            Icon(
-                                Icons.Outlined.VisibilityOff,
-                                contentDescription = null,
-                                modifier = Modifier.size(20.dp),
-                            )
-                        },
-                        onClick = {
-                            showMenu = false
-                            onHidePost(postUri)
-                        },
-                    )
+                // Separator before user actions
+                if (!isOwnPost && (onMuteUser != null || onBlockUser != null || onReportUser != null)) {
+                    HorizontalDivider()
                 }
                 // Mute user (only for other users' posts)
                 if (onMuteUser != null && !isOwnPost) {
@@ -704,25 +777,6 @@ private fun ActionBar(
                         onClick = {
                             showMenu = false
                             onBlockUser(authorDid, authorHandle)
-                        },
-                    )
-                }
-                // Report post
-                if (onReportPost != null) {
-                    HorizontalDivider()
-                    DropdownMenuItem(
-                        text = { Text(stringResource(R.string.post_report_post)) },
-                        leadingIcon = {
-                            Icon(
-                                Icons.Outlined.Flag,
-                                contentDescription = null,
-                                modifier = Modifier.size(20.dp),
-                                tint = MaterialTheme.colorScheme.error,
-                            )
-                        },
-                        onClick = {
-                            showMenu = false
-                            onReportPost(postUri, postCid)
                         },
                     )
                 }

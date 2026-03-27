@@ -75,6 +75,10 @@
     <string name="post_copy_link">Copy link</string>
     <string name="post_link_copied">Link copied</string>
     <string name="post_share">Share</string>
+    <string name="post_quote">Quote</string>
+    <string name="post_quote_post">Quote post</string>
+    <string name="post_view_quotes">View quotes</string>
+    <string name="post_quotes_title">Quotes</string>
 
     <!-- ALT text -->
     <string name="alt_image_prefix">Image </string>
@@ -215,6 +219,10 @@
     <string name="profile_unmute">Unmute</string>
     <string name="profile_block">Block</string>
     <string name="profile_unblock">Unblock</string>
+    <string name="profile_mute_user">Mute this user</string>
+    <string name="profile_unmute_user">Unmute this user</string>
+    <string name="profile_block_user">Block this user</string>
+    <string name="profile_unblock_user">Unblock this user</string>
     <string name="profile_report">Report this user</string>
     <string name="profile_add_to_list">Add to list</string>
     <string name="profile_add_to_list_title">Add to list</string>

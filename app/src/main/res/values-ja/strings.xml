@@ -67,6 +67,10 @@
     <string name="post_copy_link">リンクをコピー</string>
     <string name="post_link_copied">リンクをコピーしました</string>
     <string name="post_share">共有</string>
+    <string name="post_quote">引用</string>
+    <string name="post_quote_post">引用して投稿</string>
+    <string name="post_view_quotes">引用一覧を見る</string>
+    <string name="post_quotes_title">引用一覧</string>
     <string name="alt_image_prefix">画像</string>
     <string name="thread_title">スレッド</string>
     <string name="notification_title">通知</string>
@@ -181,6 +185,10 @@
     <string name="profile_unmute">ミュート解除</string>
     <string name="profile_block">ブロック</string>
     <string name="profile_unblock">ブロック解除</string>
+    <string name="profile_mute_user">このユーザーをミュート</string>
+    <string name="profile_unmute_user">このユーザーのミュートを解除</string>
+    <string name="profile_block_user">このユーザーをブロック</string>
+    <string name="profile_unblock_user">このユーザーのブロックを解除</string>
     <string name="profile_report">このユーザーを通報</string>
     <string name="profile_add_to_list">リストに追加</string>
     <string name="profile_add_to_list_title">リストに追加</string>

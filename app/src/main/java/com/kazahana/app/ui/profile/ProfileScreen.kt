@@ -103,6 +103,7 @@ fun ProfileScreen(
     onProfileClick: (did: String) -> Unit = {},
     onReply: (postUri: String, postCid: String, rootUri: String, rootCid: String, authorHandle: String, authorDisplayName: String, postText: String) -> Unit = { _, _, _, _, _, _, _ -> },
     onQuote: (postUri: String, postCid: String, authorHandle: String, authorDisplayName: String, postText: String) -> Unit = { _, _, _, _, _ -> },
+    onViewQuotes: (postUri: String) -> Unit = {},
     onSettingsClick: (() -> Unit)? = null,
     onHashtagClick: (String) -> Unit = {},
     onMentionClick: (String) -> Unit = {},
@@ -289,6 +290,10 @@ fun ProfileScreen(
                                             onLike = { uri, cid, likeUri -> viewModel.toggleLike(uri, cid, likeUri) },
                                             onRepost = { uri, cid, repostUri -> viewModel.toggleRepost(uri, cid, repostUri) },
                                             onBookmark = { uri, cid, bookmarkUri -> viewModel.toggleBookmark(uri, cid, bookmarkUri) },
+                                            onQuote = { uri, cid, handle, displayName, text ->
+                                                onQuote(uri, cid, handle, displayName, text)
+                                            },
+                                            onViewQuotes = { uri -> onViewQuotes(uri) },
                                             onHidePost = { uri -> viewModel.hidePost(uri) },
                                             onMuteThread = { uri, mute -> viewModel.muteThread(uri, mute) },
                                             onReportPost = { uri, cid -> reportTarget = Pair(uri, cid) },
@@ -347,6 +352,10 @@ fun ProfileScreen(
                                     onLike = { uri, cid, likeUri -> viewModel.toggleLike(uri, cid, likeUri) },
                                     onRepost = { uri, cid, repostUri -> viewModel.toggleRepost(uri, cid, repostUri) },
                                     onBookmark = { uri, cid, bookmarkUri -> viewModel.toggleBookmark(uri, cid, bookmarkUri) },
+                                    onQuote = { uri, cid, handle, displayName, text ->
+                                        onQuote(uri, cid, handle, displayName, text)
+                                    },
+                                    onViewQuotes = { uri -> onViewQuotes(uri) },
                                     onReportPost = { uri, cid -> reportTarget = Pair(uri, cid) },
                                     onReportUser = { did -> reportTarget = "user" },
                                     onMuteUser = { did, handle -> muteConfirmTarget = Pair(did, handle) },
@@ -764,14 +773,31 @@ private fun ProfileHeader(
                                 expanded = showMoreMenu,
                                 onDismissRequest = { showMoreMenu = false },
                             ) {
+                                if (onAddToList != null) {
+                                    DropdownMenuItem(
+                                        text = { Text(stringResource(R.string.profile_add_to_list)) },
+                                        leadingIcon = {
+                                            Icon(
+                                                Icons.Outlined.List,
+                                                contentDescription = null,
+                                                modifier = Modifier.size(20.dp),
+                                            )
+                                        },
+                                        onClick = {
+                                            showMoreMenu = false
+                                            onAddToList()
+                                        },
+                                    )
+                                }
+                                HorizontalDivider()
                                 if (onMuteToggle != null) {
                                     val isMuted = profile.viewer?.muted == true
                                     DropdownMenuItem(
                                         text = {
                                             Text(
                                                 stringResource(
-                                                    if (isMuted) R.string.profile_unmute
-                                                    else R.string.profile_mute
+                                                    if (isMuted) R.string.profile_unmute_user
+                                                    else R.string.profile_mute_user
                                                 )
                                             )
                                         },
@@ -789,30 +815,14 @@ private fun ProfileHeader(
                                         },
                                     )
                                 }
-                                if (onAddToList != null) {
-                                    DropdownMenuItem(
-                                        text = { Text(stringResource(R.string.profile_add_to_list)) },
-                                        leadingIcon = {
-                                            Icon(
-                                                Icons.Outlined.List,
-                                                contentDescription = null,
-                                                modifier = Modifier.size(20.dp),
-                                            )
-                                        },
-                                        onClick = {
-                                            showMoreMenu = false
-                                            onAddToList()
-                                        },
-                                    )
-                                }
                                 if (onBlockToggle != null) {
                                     val isBlocked = profile.viewer?.blocking != null
                                     DropdownMenuItem(
                                         text = {
                                             Text(
                                                 stringResource(
-                                                    if (isBlocked) R.string.profile_unblock
-                                                    else R.string.profile_block
+                                                    if (isBlocked) R.string.profile_unblock_user
+                                                    else R.string.profile_block_user
                                                 )
                                             )
                                         },
@@ -832,7 +842,6 @@ private fun ProfileHeader(
                                     )
                                 }
                                 if (onReport != null) {
-                                    HorizontalDivider()
                                     DropdownMenuItem(
                                         text = { Text(stringResource(R.string.profile_report)) },
                                         leadingIcon = {

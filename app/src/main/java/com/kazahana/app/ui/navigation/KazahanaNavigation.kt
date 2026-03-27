@@ -63,6 +63,7 @@ import com.kazahana.app.ui.settings.BsafBotsScreen
 import com.kazahana.app.ui.settings.FeedManagementScreen
 import com.kazahana.app.ui.settings.SettingsScreen
 import com.kazahana.app.ui.thread.ThreadScreen
+import com.kazahana.app.ui.timeline.QuotesListScreen
 import com.kazahana.app.ui.timeline.TimelineScreen
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -96,6 +97,7 @@ import kotlinx.serialization.Serializable
     val authorDisplayName: String = "",
     val postText: String = "",
 )
+@Serializable data class QuotesListRoute(val postUri: String)
 @Serializable data class ShareComposeRoute(val sharedText: String = "")
 @Serializable object SettingsRoute
 @Serializable object FeedManagementRoute
@@ -317,6 +319,11 @@ private fun MainScreen(
                 launchSingleTop = true
             }
         }
+        val navigateToQuotesList: (String) -> Unit = { postUri ->
+            navController.navigate(QuotesListRoute(postUri = postUri)) {
+                launchSingleTop = true
+            }
+        }
 
         NavHost(
             navController = navController,
@@ -362,6 +369,7 @@ private fun MainScreen(
                             )
                         ) { launchSingleTop = true }
                     },
+                    onViewQuotes = navigateToQuotesList,
                     onHashtagClick = navigateToHashtag,
                     onMentionClick = navigateToMention,
                 )
@@ -389,6 +397,7 @@ private fun MainScreen(
                             QuoteRoute(postUri = postUri, postCid = postCid, authorHandle = authorHandle, authorDisplayName = authorDisplayName, postText = postText)
                         ) { launchSingleTop = true }
                     },
+                    onViewQuotes = navigateToQuotesList,
                     onHashtagClick = navigateToHashtag,
                     onMentionClick = navigateToMention,
                 )
@@ -455,6 +464,7 @@ private fun MainScreen(
                             QuoteRoute(postUri = postUri, postCid = postCid, authorHandle = authorHandle, authorDisplayName = authorDisplayName, postText = postText)
                         ) { launchSingleTop = true }
                     },
+                    onViewQuotes = navigateToQuotesList,
                     onSettingsClick = {
                         navController.navigate(SettingsRoute) {
                             launchSingleTop = true
@@ -497,6 +507,7 @@ private fun MainScreen(
                             QuoteRoute(postUri = postUri, postCid = postCid, authorHandle = authorHandle, authorDisplayName = authorDisplayName, postText = postText)
                         ) { launchSingleTop = true }
                     },
+                    onViewQuotes = navigateToQuotesList,
                     onHashtagClick = navigateToHashtag,
                     onMentionClick = navigateToMention,
                     onCompose = { text ->
@@ -533,6 +544,12 @@ private fun MainScreen(
                             )
                         ) { launchSingleTop = true }
                     },
+                    onQuote = { postUri, postCid, authorHandle, authorDisplayName, postText ->
+                        navController.navigate(
+                            QuoteRoute(postUri = postUri, postCid = postCid, authorHandle = authorHandle, authorDisplayName = authorDisplayName, postText = postText)
+                        ) { launchSingleTop = true }
+                    },
+                    onViewQuotes = navigateToQuotesList,
                     onHashtagClick = navigateToHashtag,
                     onMentionClick = navigateToMention,
                 )
@@ -575,6 +592,27 @@ private fun MainScreen(
                         authorDisplayName = route.authorDisplayName.ifEmpty { null },
                         text = route.postText,
                     ),
+                )
+            }
+            composable<QuotesListRoute> { backStackEntry ->
+                val route = backStackEntry.toRoute<QuotesListRoute>()
+                QuotesListScreen(
+                    onNavigateBack = { navController.popBackStack() },
+                    onPostClick = { postUri ->
+                        navController.navigate(ThreadRoute(postUri = postUri)) {
+                            launchSingleTop = true
+                        }
+                    },
+                    onProfileClick = { did ->
+                        navController.navigate(ProfileDetailRoute(actorDid = did)) {
+                            launchSingleTop = true
+                        }
+                    },
+                    onQuote = { postUri, postCid, authorHandle, authorDisplayName, postText ->
+                        navController.navigate(
+                            QuoteRoute(postUri = postUri, postCid = postCid, authorHandle = authorHandle, authorDisplayName = authorDisplayName, postText = postText)
+                        ) { launchSingleTop = true }
+                    },
                 )
             }
             composable<SettingsRoute> {
@@ -657,6 +695,7 @@ private fun MainScreen(
                             QuoteRoute(postUri = postUri, postCid = postCid, authorHandle = authorHandle, authorDisplayName = authorDisplayName, postText = postText)
                         ) { launchSingleTop = true }
                     },
+                    onViewQuotes = navigateToQuotesList,
                     onHashtagClick = navigateToHashtag,
                     onMentionClick = navigateToMention,
                 )

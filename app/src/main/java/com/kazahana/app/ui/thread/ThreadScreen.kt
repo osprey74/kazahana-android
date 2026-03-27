@@ -67,6 +67,8 @@ fun ThreadScreen(
     onPostClick: (postUri: String) -> Unit = {},
     onProfileClick: (did: String) -> Unit = {},
     onReply: (postUri: String, postCid: String, rootUri: String, rootCid: String, authorHandle: String, authorDisplayName: String, postText: String) -> Unit = { _, _, _, _, _, _, _ -> },
+    onQuote: (postUri: String, postCid: String, authorHandle: String, authorDisplayName: String, postText: String) -> Unit = { _, _, _, _, _ -> },
+    onViewQuotes: (postUri: String) -> Unit = {},
     onHashtagClick: (String) -> Unit = {},
     onMentionClick: (String) -> Unit = {},
     viewModel: ThreadViewModel = hiltViewModel(),
@@ -167,6 +169,10 @@ fun ThreadScreen(
                                 onLike = { uri, cid, likeUri -> viewModel.toggleLike(uri, cid, likeUri) },
                                 onRepost = { uri, cid, repostUri -> viewModel.toggleRepost(uri, cid, repostUri) },
                                 onBookmark = { uri, cid, bookmarkUri -> viewModel.toggleBookmark(uri, cid, bookmarkUri) },
+                                onQuote = { uri, cid, handle, displayName, text ->
+                                    onQuote(uri, cid, handle, displayName, text)
+                                },
+                                onViewQuotes = { uri -> onViewQuotes(uri) },
                                 onHidePost = { uri -> viewModel.hidePost(uri) },
                                 onMuteThread = { uri, mute -> viewModel.muteThread(uri, mute) },
                                 onReportPost = { uri, cid -> reportTarget = Pair(uri, cid) },
@@ -193,6 +199,10 @@ fun ThreadScreen(
                                     onLike = { uri, cid, likeUri -> viewModel.toggleLike(uri, cid, likeUri) },
                                     onRepost = { uri, cid, repostUri -> viewModel.toggleRepost(uri, cid, repostUri) },
                                     onBookmark = { uri, cid, bookmarkUri -> viewModel.toggleBookmark(uri, cid, bookmarkUri) },
+                                    onQuote = { uri, cid, handle, displayName, text ->
+                                        onQuote(uri, cid, handle, displayName, text)
+                                    },
+                                    onViewQuotes = { uri -> onViewQuotes(uri) },
                                     onHidePost = { uri -> viewModel.hidePost(uri) },
                                     onMuteThread = { uri, mute -> viewModel.muteThread(uri, mute) },
                                     onReportPost = { uri, cid -> reportTarget = Pair(uri, cid) },
@@ -234,6 +244,10 @@ fun ThreadScreen(
                                     onLike = { uri, cid, likeUri -> viewModel.toggleLike(uri, cid, likeUri) },
                                     onRepost = { uri, cid, repostUri -> viewModel.toggleRepost(uri, cid, repostUri) },
                                     onBookmark = { uri, cid, bookmarkUri -> viewModel.toggleBookmark(uri, cid, bookmarkUri) },
+                                    onQuote = { uri, cid, handle, displayName, text ->
+                                        onQuote(uri, cid, handle, displayName, text)
+                                    },
+                                    onViewQuotes = { uri -> onViewQuotes(uri) },
                                     onHidePost = { uri -> viewModel.hidePost(uri) },
                                     onMuteThread = { uri, mute -> viewModel.muteThread(uri, mute) },
                                     onReportPost = { uri, cid -> reportTarget = Pair(uri, cid) },
@@ -352,6 +366,8 @@ private fun ThreadPostItem(
     onLike: (String, String, String?) -> Unit,
     onRepost: (String, String, String?) -> Unit,
     onBookmark: (String, String, String?) -> Unit,
+    onQuote: ((String, String, String, String, String) -> Unit)? = null,
+    onViewQuotes: ((String) -> Unit)? = null,
     onHidePost: ((String) -> Unit)? = null,
     onMuteThread: ((String, Boolean) -> Unit)? = null,
     onReportPost: ((String, String) -> Unit)? = null,
@@ -399,6 +415,8 @@ private fun ThreadPostItem(
             onLike = onLike,
             onRepost = onRepost,
             onBookmark = onBookmark,
+            onQuote = onQuote,
+            onViewQuotes = onViewQuotes,
             onHidePost = onHidePost,
             onMuteThread = onMuteThread,
             onReportPost = onReportPost,
