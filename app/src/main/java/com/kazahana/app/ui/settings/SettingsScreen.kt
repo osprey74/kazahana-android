@@ -458,7 +458,7 @@ private fun PollingIntervalDropdown(
     onSelect: (Int) -> Unit,
 ) {
     var expanded by remember { mutableStateOf(false) }
-    val options = listOf(30, 60, 90, 120)
+    val options = listOf(0, 30, 60, 90, 120)
 
     Column(
         modifier = Modifier
@@ -519,6 +519,7 @@ private fun PollingIntervalDropdown(
 @Composable
 private fun pollingIntervalLabel(seconds: Int): String {
     return when (seconds) {
+        0 -> stringResource(R.string.settings_polling_off)
         30 -> stringResource(R.string.settings_polling_30s)
         60 -> stringResource(R.string.settings_polling_60s)
         90 -> stringResource(R.string.settings_polling_90s)

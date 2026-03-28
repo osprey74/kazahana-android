@@ -171,6 +171,7 @@
     <string name="settings_pref_warn">Warn</string>
     <string name="settings_pref_show">Show</string>
     <string name="settings_polling_interval">Auto-refresh interval</string>
+    <string name="settings_polling_off">Off</string>
     <string name="settings_polling_30s">30 seconds</string>
     <string name="settings_polling_60s">60 seconds</string>
     <string name="settings_polling_90s">90 seconds</string>

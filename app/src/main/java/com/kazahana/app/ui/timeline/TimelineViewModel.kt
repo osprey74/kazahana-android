@@ -93,6 +93,7 @@ class TimelineViewModel @Inject constructor(
 
     private fun startPolling(intervalSeconds: Int) {
         pollingJob?.cancel()
+        if (intervalSeconds <= 0) return
         pollingJob = viewModelScope.launch {
             while (true) {
                 delay(intervalSeconds * 1000L)
