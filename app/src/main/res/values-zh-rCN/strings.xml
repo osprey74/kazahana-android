@@ -48,6 +48,9 @@
     <string name="post_report_user">举报此用户</string>
     <string name="post_mute_user">静音此用户</string>
     <string name="post_block_user">屏蔽此用户</string>
+    <string name="post_save_media">保存图片/视频</string>
+    <string name="post_media_saved">媒体已保存</string>
+    <string name="post_media_save_failed">保存媒体失败</string>
     <string name="alt_image_prefix">图片</string>
     <string name="thread_title">话题</string>
     <string name="notification_title">通知</string>
@@ -59,6 +62,7 @@
     <string name="notification_mentioned">提到了你</string>
     <string name="notification_replied">回复了你的帖子</string>
     <string name="notification_quoted">引用了你的帖子</string>
+    <string name="notification_group_label">%1$s 等%2$d人</string>
     <string name="notification_empty">暂无通知</string>
     <string name="profile_following">正在关注</string>
     <string name="profile_followers">粉丝</string>

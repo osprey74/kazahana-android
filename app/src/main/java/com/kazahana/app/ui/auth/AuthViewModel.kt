@@ -2,10 +2,12 @@ package com.kazahana.app.ui.auth
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.kazahana.app.data.local.SettingsStore
 import com.kazahana.app.data.model.DIDDocument
 import com.kazahana.app.data.model.ResolveHandleResponse
 import com.kazahana.app.data.model.Session
 import com.kazahana.app.data.remote.ATProtoClient
+import com.kazahana.app.data.repository.FeedRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import io.ktor.client.call.body
 import io.ktor.client.statement.bodyAsText
@@ -26,6 +28,8 @@ data class LoginUiState(
 @HiltViewModel
 class AuthViewModel @Inject constructor(
     private val client: ATProtoClient,
+    private val feedRepository: FeedRepository,
+    private val settingsStore: SettingsStore,
 ) : ViewModel() {
 
     // null = still resolving PDS, true = logged in, false = not logged in
@@ -42,6 +46,7 @@ class AuthViewModel @Inject constructor(
             viewModelScope.launch {
                 resolvePds(session.did)
                 _isLoggedIn.value = true
+                loadPostLanguages()
             }
         } else {
             _isLoggedIn.value = false
@@ -81,6 +86,7 @@ class AuthViewModel @Inject constructor(
                     resolvePds(session.did)
                     _isLoggedIn.value = true
                     _uiState.value = LoginUiState()
+                    loadPostLanguages()
                 } else {
                     val statusCode = response.status.value
                     val errorMsg = when {
@@ -102,6 +108,20 @@ class AuthViewModel @Inject constructor(
     fun logout() {
         client.clearSession()
         _isLoggedIn.value = false
+    }
+
+    /** Fetch Bluesky account post language preferences and cache them locally. */
+    private fun loadPostLanguages() {
+        viewModelScope.launch {
+            try {
+                feedRepository.getPostLanguages()
+                    .onSuccess { langs ->
+                        settingsStore.setBlueskyPostLanguages(langs)
+                    }
+            } catch (_: Exception) {
+                // Silently ignore — non-critical, will retry on next login
+            }
+        }
     }
 
     private suspend fun resolveDid(handle: String): String? {

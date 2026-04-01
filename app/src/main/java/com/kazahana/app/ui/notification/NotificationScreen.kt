@@ -1,5 +1,6 @@
 package com.kazahana.app.ui.notification
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -15,10 +16,12 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FormatQuote
 import androidx.compose.material.icons.filled.PersonAdd
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Repeat
 import androidx.compose.material.icons.filled.Reply
 import androidx.compose.material.icons.outlined.AlternateEmail
@@ -37,25 +40,26 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import coil3.compose.AsyncImage
 import com.kazahana.app.R
-import com.kazahana.app.data.model.FeedViewPost
 import com.kazahana.app.data.model.NotificationItem
 import com.kazahana.app.data.model.PostRecord
 import com.kazahana.app.data.model.PostView
+import com.kazahana.app.data.model.ProfileViewBasic
 import androidx.compose.ui.unit.sp
 import com.kazahana.app.ui.common.AvatarImage
 import com.kazahana.app.ui.common.BotBadge
 import com.kazahana.app.ui.common.isBotAccount
-import com.kazahana.app.ui.common.LocalModerationSettings
-import com.kazahana.app.ui.common.checkModeration
 import com.kazahana.app.ui.common.relativeTime
-import com.kazahana.app.ui.timeline.PostCard
+import com.kazahana.app.ui.common.RichTextContent
 import kotlinx.coroutines.flow.SharedFlow
 import com.kazahana.app.data.AppJson
 import kotlinx.serialization.json.decodeFromJsonElement
@@ -115,7 +119,7 @@ fun NotificationScreen(
                     Text(uiState.error ?: "", color = MaterialTheme.colorScheme.error)
                 }
             }
-            uiState.notifications.isEmpty() -> {
+            uiState.groupedNotifications.isEmpty() && uiState.notifications.isEmpty() -> {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Text(stringResource(R.string.notification_empty), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f))
                 }
@@ -126,31 +130,31 @@ fun NotificationScreen(
                     modifier = Modifier.fillMaxSize(),
                 ) {
                     items(
-                        items = uiState.notifications,
+                        items = uiState.groupedNotifications,
                         key = { "${it.uri}_${it.reason}" },
-                    ) { notification ->
-                        val subjectPostUri = when (notification.reason) {
-                            "like", "repost" -> notification.reasonSubject
+                    ) { group ->
+                        val subjectPostUri = when (group.reason) {
+                            "like", "repost" -> group.reasonSubject
                             "like-via-repost", "repost-via-repost" ->
-                                notification.reasonSubject?.let { uiState.resolvedRepostURIs[it] }
-                            "reply", "mention", "quote" -> notification.uri
+                                group.reasonSubject?.let { uiState.resolvedRepostURIs[it] }
+                            "reply", "mention", "quote" -> group.uri
                             else -> null
                         }
                         val subjectPost = subjectPostUri?.let { uiState.subjectPosts[it] }
 
-                        NotificationRow(
-                            notification = notification,
+                        GroupedNotificationRow(
+                            group = group,
                             subjectPost = subjectPost,
                             onClick = {
-                                when (notification.reason) {
-                                    "follow" -> onProfileClick(notification.author.did)
-                                    "like", "repost" -> notification.reasonSubject?.let { onPostClick(it) }
+                                when (group.reason) {
+                                    "follow" -> onProfileClick(group.authors.first().did)
+                                    "like", "repost" -> group.reasonSubject?.let { onPostClick(it) }
                                     "like-via-repost", "repost-via-repost" ->
                                         subjectPostUri?.let { onPostClick(it) }
-                                    else -> onPostClick(notification.uri)
+                                    else -> onPostClick(group.uri)
                                 }
                             },
-                            onAvatarClick = { onProfileClick(notification.author.did) },
+                            onAvatarClick = { did -> onProfileClick(did) },
                             onPostClick = { uri -> onPostClick(uri) },
                             onPostAuthorClick = { did -> onProfileClick(did) },
                             onLike = { uri, cid, likeUri -> viewModel.toggleLike(uri, cid, likeUri) },
@@ -179,11 +183,11 @@ fun NotificationScreen(
 }
 
 @Composable
-private fun NotificationRow(
-    notification: NotificationItem,
+private fun GroupedNotificationRow(
+    group: NotificationGroup,
     subjectPost: PostView?,
     onClick: () -> Unit,
-    onAvatarClick: () -> Unit = {},
+    onAvatarClick: (did: String) -> Unit = {},
     onPostClick: (postUri: String) -> Unit = {},
     onPostAuthorClick: (did: String) -> Unit = {},
     onLike: (postUri: String, postCid: String, currentLikeUri: String?) -> Unit = { _, _, _ -> },
@@ -192,8 +196,8 @@ private fun NotificationRow(
     onHashtagClick: (String) -> Unit = {},
     onMentionClick: (String) -> Unit = {},
 ) {
-    val (icon, iconColor) = remember(notification.reason) {
-        when (notification.reason) {
+    val (icon, iconColor) = remember(group.reason) {
+        when (group.reason) {
             "like", "like-via-repost" -> Pair(Icons.Filled.Favorite, LikeRed)
             "repost", "repost-via-repost" -> Pair(Icons.Filled.Repeat, RepostGreen)
             "follow" -> Pair(Icons.Filled.PersonAdd, FollowBlue)
@@ -203,7 +207,10 @@ private fun NotificationRow(
             else -> Pair(Icons.Filled.Favorite, Color.Gray)
         }
     }
-    val label = when (notification.reason) {
+    val firstAuthor = group.authors.first()
+    val othersCount = group.authors.size - 1
+
+    val label = when (group.reason) {
         "like" -> stringResource(R.string.notification_liked)
         "like-via-repost" -> stringResource(R.string.notification_liked_repost)
         "repost" -> stringResource(R.string.notification_reposted)
@@ -212,7 +219,7 @@ private fun NotificationRow(
         "mention" -> stringResource(R.string.notification_mentioned)
         "reply" -> stringResource(R.string.notification_replied)
         "quote" -> stringResource(R.string.notification_quoted)
-        else -> notification.reason
+        else -> group.reason
     }
 
     Column(modifier = Modifier.fillMaxWidth()) {
@@ -231,21 +238,64 @@ private fun NotificationRow(
             )
             Spacer(modifier = Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
+                // Multiple avatars row for grouped notifications
+                if (group.authors.size > 1) {
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy((-4).dp),
+                        modifier = Modifier.padding(bottom = 6.dp),
+                    ) {
+                        group.authors.take(5).forEach { author ->
+                            AvatarImage(
+                                url = author.avatar,
+                                size = 28.dp,
+                                onClick = { onAvatarClick(author.did) },
+                            )
+                        }
+                        if (group.authors.size > 5) {
+                            Box(
+                                modifier = Modifier
+                                    .size(28.dp)
+                                    .background(
+                                        MaterialTheme.colorScheme.surfaceVariant,
+                                        androidx.compose.foundation.shape.CircleShape,
+                                    ),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Text(
+                                    text = "+${group.authors.size - 5}",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                        }
+                    }
+                }
+
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    AvatarImage(url = notification.author.avatar, size = 32.dp, onClick = onAvatarClick)
+                    if (group.authors.size == 1) {
+                        AvatarImage(url = firstAuthor.avatar, size = 32.dp, onClick = { onAvatarClick(firstAuthor.did) })
+                    }
                     Column(modifier = Modifier.weight(1f)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(
-                                text = notification.author.displayName ?: notification.author.handle,
+                                text = if (othersCount > 0) {
+                                    stringResource(
+                                        R.string.notification_group_label,
+                                        firstAuthor.displayName ?: firstAuthor.handle,
+                                        othersCount,
+                                    )
+                                } else {
+                                    firstAuthor.displayName ?: firstAuthor.handle
+                                },
                                 style = MaterialTheme.typography.bodyMedium,
-                                fontWeight = if (!notification.isRead) FontWeight.Bold else FontWeight.Normal,
+                                fontWeight = if (!group.isRead) FontWeight.Bold else FontWeight.Normal,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
                             )
-                            if (isBotAccount(notification.author.did, notification.author.labels)) {
+                            if (group.authors.size == 1 && isBotAccount(firstAuthor.did, firstAuthor.labels)) {
                                 Spacer(modifier = Modifier.width(3.dp))
                                 BotBadge(size = 13.sp)
                             }
@@ -257,52 +307,122 @@ private fun NotificationRow(
                         )
                     }
                     Text(
-                        text = relativeTime(notification.indexedAt),
+                        text = relativeTime(group.indexedAt),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
                     )
                 }
 
-                // For reply/mention/quote without a fetched subject post, show inline record text
-                if (subjectPost == null && notification.reason in listOf("reply", "mention", "quote")) {
-                    val recordText = remember(notification.record) {
-                        try {
-                            AppJson.decodeFromJsonElement<PostRecord>(notification.record).text
-                        } catch (_: Exception) { null }
-                    }
-                    if (recordText != null) {
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = recordText,
-                            style = MaterialTheme.typography.bodyMedium,
-                            maxLines = 3,
-                            overflow = TextOverflow.Ellipsis,
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
-                        )
-                    }
+                // Inline post content (text + media thumbnails)
+                if (group.reason != "follow") {
+                    NotificationPostContent(
+                        subjectPost = subjectPost,
+                        fallbackRecord = group.record,
+                        reason = group.reason,
+                        onHashtagClick = onHashtagClick,
+                        onMentionClick = onMentionClick,
+                    )
                 }
             }
         }
+    }
+}
 
-        // Subject post card (for like/repost: the liked/reposted post; for reply/mention/quote: the notification post itself)
-        if (subjectPost != null && notification.reason != "follow") {
-            val feedPost = remember(subjectPost) { FeedViewPost(post = subjectPost) }
-            val modSettings = LocalModerationSettings.current
-            val modDecision = remember(subjectPost.labels, modSettings) {
-                checkModeration(subjectPost.labels, modSettings)
-            }
-            PostCard(
-                feedPost = feedPost,
-                onClick = { uri -> onPostClick(uri) },
-                onAuthorClick = { did -> onPostAuthorClick(did) },
-                onReply = { _, _ -> },
-                onLike = onLike,
-                onRepost = onRepost,
-                onBookmark = onBookmark,
-                modifier = Modifier.padding(start = 32.dp),
-                moderationDecision = modDecision,
+/** Compact inline post content for notifications: full text + square thumbnails + video capture. */
+@Composable
+private fun NotificationPostContent(
+    subjectPost: PostView?,
+    fallbackRecord: kotlinx.serialization.json.JsonElement,
+    reason: String,
+    onHashtagClick: (String) -> Unit = {},
+    onMentionClick: (String) -> Unit = {},
+) {
+    // Determine text source: fetched post record, or fallback from notification record
+    val postRecord = remember(subjectPost?.record) {
+        subjectPost?.record?.let {
+            try { AppJson.decodeFromJsonElement<PostRecord>(it) } catch (_: Exception) { null }
+        }
+    }
+    val fallbackPostRecord = remember(fallbackRecord) {
+        if (reason in listOf("reply", "mention", "quote")) {
+            try { AppJson.decodeFromJsonElement<PostRecord>(fallbackRecord) } catch (_: Exception) { null }
+        } else null
+    }
+    val record = postRecord ?: fallbackPostRecord
+
+    val postText = record?.text
+    val images = subjectPost?.embed?.images ?: subjectPost?.embed?.media?.images
+    val videoThumbnail = subjectPost?.embed?.thumbnail
+
+    if (postText.isNullOrEmpty() && images.isNullOrEmpty() && videoThumbnail == null) return
+
+    Spacer(modifier = Modifier.height(6.dp))
+
+    // Post text (full)
+    if (!postText.isNullOrEmpty()) {
+        val facets = record?.facets?.ifEmpty { null }
+        if (facets != null) {
+            RichTextContent(
+                text = postText,
+                facets = facets,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
                 onHashtagClick = onHashtagClick,
                 onMentionClick = onMentionClick,
+            )
+        } else {
+            Text(
+                text = postText,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
+            )
+        }
+    }
+
+    // Square image thumbnails
+    if (!images.isNullOrEmpty()) {
+        Spacer(modifier = Modifier.height(6.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            images.forEach { image ->
+                AsyncImage(
+                    model = image.thumb,
+                    contentDescription = image.alt.ifEmpty { null },
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .size(64.dp)
+                        .clip(RoundedCornerShape(8.dp)),
+                )
+            }
+        }
+    }
+
+    // Video thumbnail (square with play indicator)
+    if (videoThumbnail != null) {
+        Spacer(modifier = Modifier.height(6.dp))
+        Box(
+            modifier = Modifier
+                .size(64.dp)
+                .clip(RoundedCornerShape(8.dp)),
+        ) {
+            AsyncImage(
+                model = videoThumbnail,
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.matchParentSize(),
+            )
+            // Play icon overlay
+            Icon(
+                Icons.Filled.PlayArrow,
+                contentDescription = null,
+                tint = Color.White,
+                modifier = Modifier
+                    .size(28.dp)
+                    .align(Alignment.Center)
+                    .background(
+                        Color.Black.copy(alpha = 0.5f),
+                        RoundedCornerShape(14.dp),
+                    )
+                    .padding(2.dp),
             )
         }
     }

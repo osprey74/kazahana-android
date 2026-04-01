@@ -48,6 +48,9 @@
     <string name="post_report_user">Пожаловаться на пользователя</string>
     <string name="post_mute_user">Заглушить пользователя</string>
     <string name="post_block_user">Заблокировать пользователя</string>
+    <string name="post_save_media">Сохранить изображения/видео</string>
+    <string name="post_media_saved">Медиа сохранены</string>
+    <string name="post_media_save_failed">Не удалось сохранить медиа</string>
     <string name="alt_image_prefix">Изображение </string>
     <string name="thread_title">Тред</string>
     <string name="notification_title">Уведомления</string>
@@ -59,6 +62,7 @@
     <string name="notification_mentioned">упомянул вас</string>
     <string name="notification_replied">ответил на ваш пост</string>
     <string name="notification_quoted">процитировал ваш пост</string>
+    <string name="notification_group_label">%1$s и ещё %2$d</string>
     <string name="notification_empty">Пока нет уведомлений</string>
     <string name="profile_following">Подписки</string>
     <string name="profile_followers">Подписчики</string>

@@ -48,6 +48,9 @@
     <string name="post_report_user">Signaler cet utilisateur</string>
     <string name="post_mute_user">Masquer cet utilisateur</string>
     <string name="post_block_user">Bloquer cet utilisateur</string>
+    <string name="post_save_media">Enregistrer images/vidéos</string>
+    <string name="post_media_saved">Médias enregistrés</string>
+    <string name="post_media_save_failed">Échec de l\'enregistrement des médias</string>
     <string name="alt_image_prefix">Image </string>
     <string name="thread_title">Fil de discussion</string>
     <string name="notification_title">Notifications</string>
@@ -59,6 +62,7 @@
     <string name="notification_mentioned">vous a mentionné</string>
     <string name="notification_replied">a répondu à votre publication</string>
     <string name="notification_quoted">a cité votre publication</string>
+    <string name="notification_group_label">%1$s et %2$d autres</string>
     <string name="notification_empty">Pas encore de notifications</string>
     <string name="profile_following">Abonnements</string>
     <string name="profile_followers">Abonnés</string>

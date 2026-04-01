@@ -304,6 +304,9 @@ fun ProfileScreen(
                                             moderationDecision = modDecision,
                                             onHashtagClick = onHashtagClick,
                                             onMentionClick = onMentionClick,
+                                            onSaveMedia = { imageUrls, videoUrl, videoThumbnail ->
+                                                viewModel.saveMedia(context, imageUrls, videoUrl, videoThumbnail)
+                                            },
                                         )
                                     }
                                 }
@@ -363,6 +366,9 @@ fun ProfileScreen(
                                     moderationDecision = modDecision,
                                     onHashtagClick = onHashtagClick,
                                     onMentionClick = onMentionClick,
+                                    onSaveMedia = { imageUrls, videoUrl, videoThumbnail ->
+                                        viewModel.saveMedia(context, imageUrls, videoUrl, videoThumbnail)
+                                    },
                                 )
                             }
 

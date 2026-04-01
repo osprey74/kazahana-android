@@ -528,4 +528,28 @@ class TimelineViewModel @Inject constructor(
         }
         return filtered
     }
+
+    fun saveMedia(
+        context: android.content.Context,
+        imageUrls: List<String>,
+        videoUrl: String?,
+        videoThumbnail: String?,
+    ) {
+        viewModelScope.launch {
+            var success = true
+            imageUrls.forEachIndexed { index, url ->
+                if (!com.kazahana.app.data.util.MediaSaver.saveImage(context, url, index)) {
+                    success = false
+                }
+            }
+            if (videoUrl != null) {
+                if (!com.kazahana.app.data.util.MediaSaver.saveVideo(context, videoUrl, videoThumbnail)) {
+                    success = false
+                }
+            }
+            val msgRes = if (success) com.kazahana.app.R.string.post_media_saved
+                else com.kazahana.app.R.string.post_media_save_failed
+            android.widget.Toast.makeText(context, context.getString(msgRes), android.widget.Toast.LENGTH_SHORT).show()
+        }
+    }
 }

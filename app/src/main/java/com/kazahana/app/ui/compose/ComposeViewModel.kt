@@ -462,6 +462,7 @@ class ComposeViewModel @Inject constructor(
 
                 // Create post
                 val via = if (settingsStore.showVia.first()) VIA_NAME else null
+                val langs = settingsStore.resolvePostLanguages()
                 postRepository.createPost(
                     text = state.text,
                     facets = facets,
@@ -471,6 +472,7 @@ class ComposeViewModel @Inject constructor(
                     quoteCid = quoteCid,
                     externalEmbed = externalEmbed,
                     videoEmbed = videoEmbed,
+                    langs = langs,
                     via = via,
                 ).onSuccess { response ->
                     // Threadgate — only for new posts (not replies)

@@ -72,6 +72,7 @@ import com.kazahana.app.data.model.BsafParsedTags
 import com.kazahana.app.ui.common.ModerationDecision
 import com.kazahana.app.ui.common.relativeTime
 import com.kazahana.app.data.AppJson
+import androidx.compose.material.icons.outlined.SaveAlt
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -101,6 +102,7 @@ fun PostCard(
     onViewQuotes: ((postUri: String) -> Unit)? = null,
     onHashtagClick: ((String) -> Unit)? = null,
     onMentionClick: ((String) -> Unit)? = null,
+    onSaveMedia: ((images: List<String>, videoUrl: String?, videoThumbnail: String?) -> Unit)? = null,
     isOwnPost: Boolean = false,
     moderationDecision: ModerationDecision = ModerationDecision(),
     bsafTags: BsafParsedTags? = null,
@@ -418,6 +420,17 @@ fun PostCard(
             onReportUser = onReportUser,
             onMuteUser = onMuteUser,
             onBlockUser = onBlockUser,
+            hasMedia = !post.embed?.images.isNullOrEmpty() || post.embed?.playlist != null ||
+                !post.embed?.media?.images.isNullOrEmpty(),
+            onSaveMedia = if (onSaveMedia != null) {
+                {
+                    val imageUrls = (post.embed?.images ?: post.embed?.media?.images)
+                        ?.map { it.fullsize } ?: emptyList()
+                    val videoUrl = post.embed?.playlist
+                    val videoThumbnail = post.embed?.thumbnail
+                    onSaveMedia(imageUrls, videoUrl, videoThumbnail)
+                }
+            } else null,
             modifier = Modifier.padding(start = 66.dp, end = 16.dp, bottom = 8.dp),
         )
 
@@ -535,6 +548,8 @@ private fun ActionBar(
     onReportUser: ((authorDid: String) -> Unit)? = null,
     onMuteUser: ((authorDid: String, authorHandle: String) -> Unit)? = null,
     onBlockUser: ((authorDid: String, authorHandle: String) -> Unit)? = null,
+    hasMedia: Boolean = false,
+    onSaveMedia: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
@@ -680,6 +695,23 @@ private fun ActionBar(
                         }
                     },
                 )
+                // Save media
+                if (hasMedia && onSaveMedia != null) {
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.post_save_media)) },
+                        leadingIcon = {
+                            Icon(
+                                Icons.Outlined.SaveAlt,
+                                contentDescription = null,
+                                modifier = Modifier.size(20.dp),
+                            )
+                        },
+                        onClick = {
+                            showMenu = false
+                            onSaveMedia()
+                        },
+                    )
+                }
                 HorizontalDivider()
                 // Hide post (only for other users' posts)
                 if (onHidePost != null && !isOwnPost) {

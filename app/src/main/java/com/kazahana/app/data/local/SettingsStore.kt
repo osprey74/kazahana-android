@@ -9,6 +9,7 @@ import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 
 private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "kazahana_settings")
@@ -59,6 +60,7 @@ class SettingsStore(private val context: Context) {
         val BSAF_ENABLED = booleanPreferencesKey("bsaf_enabled")
         val BSAF_REGISTERED_BOTS = stringPreferencesKey("bsaf_registered_bots")
         val CLAUDE_API_KEY = stringPreferencesKey("claude_api_key")
+        val BLUESKY_POST_LANGUAGES = stringPreferencesKey("bluesky_post_languages")
     }
 
     val themeMode: Flow<ThemeMode> = context.dataStore.data.map { prefs ->
@@ -249,6 +251,36 @@ class SettingsStore(private val context: Context) {
         context.dataStore.edit { prefs ->
             prefs[Keys.SHOW_VIA] = enabled
         }
+    }
+
+    // ── Bluesky Post Languages (cached from account preferences) ──
+
+    val blueskyPostLanguages: Flow<List<String>> = context.dataStore.data.map { prefs ->
+        parseStringList(prefs[Keys.BLUESKY_POST_LANGUAGES])
+    }
+
+    suspend fun setBlueskyPostLanguages(langs: List<String>) {
+        context.dataStore.edit { prefs ->
+            prefs[Keys.BLUESKY_POST_LANGUAGES] = encodeStringList(langs)
+        }
+    }
+
+    /**
+     * Resolve post languages with 3-tier priority:
+     * 1. User-selected app locale (if not "system")
+     * 2. Bluesky account language preferences
+     * 3. Device locale
+     */
+    suspend fun resolvePostLanguages(): List<String> {
+        val appLocaleTag = appLocale.first()
+        if (appLocaleTag.isNotEmpty()) {
+            return listOf(appLocaleTag)
+        }
+        val blueskyLangs = blueskyPostLanguages.first()
+        if (blueskyLangs.isNotEmpty()) {
+            return blueskyLangs
+        }
+        return listOf(java.util.Locale.getDefault().language)
     }
 
     // ── Claude API ──

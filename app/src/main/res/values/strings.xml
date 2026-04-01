@@ -74,6 +74,9 @@
     <string name="post_block_user">Block this user</string>
     <string name="post_copy_link">Copy link</string>
     <string name="post_link_copied">Link copied</string>
+    <string name="post_save_media">Save images/videos</string>
+    <string name="post_media_saved">Media saved</string>
+    <string name="post_media_save_failed">Failed to save media</string>
     <string name="post_share">Share</string>
     <string name="post_quote">Quote</string>
     <string name="post_quote_post">Quote post</string>
@@ -96,6 +99,7 @@
     <string name="notification_mentioned">mentioned you</string>
     <string name="notification_replied">replied to your post</string>
     <string name="notification_quoted">quoted your post</string>
+    <string name="notification_group_label">%1$s and %2$d others</string>
     <string name="notification_empty">No notifications yet</string>
 
     <!-- Profile -->

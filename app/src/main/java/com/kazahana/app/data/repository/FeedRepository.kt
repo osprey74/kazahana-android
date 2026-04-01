@@ -240,6 +240,25 @@ class FeedRepository(
         }
     }
 
+    /**
+     * Fetch the user's post language preferences from Bluesky account settings.
+     * Returns the postLanguages list from app.bsky.actor.defs#languagesPref.
+     */
+    suspend fun getPostLanguages(): Result<List<String>> {
+        return try {
+            val response = client.get(nsid = "app.bsky.actor.getPreferences")
+            if (!response.status.isSuccess()) {
+                return Result.failure(Exception(response.atprotoError()))
+            }
+            val prefs = response.body<PreferencesResponse>()
+            val langPref = prefs.preferences
+                .firstOrNull { it.type == "app.bsky.actor.defs#languagesPref" }
+            Result.success(langPref?.postLanguages ?: emptyList())
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
     suspend fun getListFeed(
         listUri: String,
         cursor: String? = null,

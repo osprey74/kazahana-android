@@ -33,6 +33,7 @@ data class PreferenceItem(
     val pinned: List<String>? = null,   // savedFeedsPrefV1
     val saved: List<String>? = null,
     val items: JsonElement? = null,      // savedFeedsPrefV2: List<SavedFeedItem>; hiddenPostsPref: List<String>
+    val postLanguages: List<String>? = null,  // languagesPref
 )
 
 @Serializable

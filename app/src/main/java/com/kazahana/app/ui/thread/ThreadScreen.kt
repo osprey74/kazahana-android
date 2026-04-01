@@ -181,6 +181,9 @@ fun ThreadScreen(
                                 onBlockUser = { did, handle -> blockConfirmTarget = Pair(did, handle) },
                                 onHashtagClick = onHashtagClick,
                                 onMentionClick = onMentionClick,
+                                onSaveMedia = { imageUrls, videoUrl, videoThumbnail ->
+                                    viewModel.saveMedia(context, imageUrls, videoUrl, videoThumbnail)
+                                },
                             )
                         }
 
@@ -211,6 +214,9 @@ fun ThreadScreen(
                                     onBlockUser = { did, handle -> blockConfirmTarget = Pair(did, handle) },
                                     onHashtagClick = onHashtagClick,
                                     onMentionClick = onMentionClick,
+                                    onSaveMedia = { imageUrls, videoUrl, videoThumbnail ->
+                                        viewModel.saveMedia(context, imageUrls, videoUrl, videoThumbnail)
+                                    },
                                 )
                             }
                         }
@@ -257,6 +263,9 @@ fun ThreadScreen(
                                     moderationDecision = modDecision,
                                     onHashtagClick = onHashtagClick,
                                     onMentionClick = onMentionClick,
+                                    onSaveMedia = { imageUrls, videoUrl, videoThumbnail ->
+                                        viewModel.saveMedia(context, imageUrls, videoUrl, videoThumbnail)
+                                    },
                                 )
                             }
                         }
@@ -376,6 +385,7 @@ private fun ThreadPostItem(
     onBlockUser: ((String, String) -> Unit)? = null,
     onHashtagClick: ((String) -> Unit)? = null,
     onMentionClick: ((String) -> Unit)? = null,
+    onSaveMedia: ((images: List<String>, videoUrl: String?, videoThumbnail: String?) -> Unit)? = null,
     isOwnPost: Boolean = false,
 ) {
     val highlightColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.08f)
@@ -427,6 +437,7 @@ private fun ThreadPostItem(
             moderationDecision = modDecision,
             onHashtagClick = onHashtagClick,
             onMentionClick = onMentionClick,
+            onSaveMedia = onSaveMedia,
         )
     }
 }

@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.kazahana.app.data.model.NotificationItem
 import com.kazahana.app.data.model.PostView
 import com.kazahana.app.data.model.PostViewerState
+import com.kazahana.app.data.model.ProfileViewBasic
 import com.kazahana.app.data.repository.InteractionRepository
 import com.kazahana.app.data.repository.NotificationRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -15,8 +16,25 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+/**
+ * A grouped notification representing one or more notifications of the same type
+ * targeting the same post. For like/repost, multiple users are grouped together.
+ */
+data class NotificationGroup(
+    val reason: String,
+    val reasonSubject: String?,
+    val authors: List<ProfileViewBasic>,
+    val indexedAt: String,
+    val isRead: Boolean,
+    /** The first notification's URI (used as key) */
+    val uri: String,
+    /** The first notification's record (for reply/mention/quote text) */
+    val record: kotlinx.serialization.json.JsonElement,
+)
+
 data class NotificationUiState(
     val notifications: List<NotificationItem> = emptyList(),
+    val groupedNotifications: List<NotificationGroup> = emptyList(),
     val subjectPosts: Map<String, PostView> = emptyMap(),
     val resolvedRepostURIs: Map<String, String> = emptyMap(),
     val isLoading: Boolean = false,
@@ -66,6 +84,7 @@ class NotificationViewModel @Inject constructor(
                             isLoading = false,
                         )
                     }
+                    updateGroupedNotifications()
                     fetchSubjectPosts(response.notifications)
                     repository.updateSeen()
                     _unreadCount.value = 0
@@ -92,6 +111,7 @@ class NotificationViewModel @Inject constructor(
                             resolvedRepostURIs = emptyMap(),
                         )
                     }
+                    updateGroupedNotifications()
                     fetchSubjectPosts(response.notifications)
                     repository.updateSeen()
                     _unreadCount.value = 0
@@ -119,6 +139,7 @@ class NotificationViewModel @Inject constructor(
                             isLoadingMore = false,
                         )
                     }
+                    updateGroupedNotifications()
                     fetchSubjectPosts(response.notifications)
                 }
                 .onFailure {
@@ -131,6 +152,70 @@ class NotificationViewModel @Inject constructor(
         viewModelScope.launch {
             repository.getUnreadCount()
                 .onSuccess { count -> _unreadCount.value = count }
+        }
+    }
+
+    /**
+     * Group notifications by (reasonSubject + reason) for like/repost types.
+     * reply/mention/quote/follow remain as individual items.
+     */
+    private fun groupNotifications(notifications: List<NotificationItem>): List<NotificationGroup> {
+        val groups = mutableListOf<NotificationGroup>()
+        val groupableReasons = setOf("like", "repost", "like-via-repost", "repost-via-repost")
+
+        // Use a map to aggregate groupable notifications by key
+        val groupMap = linkedMapOf<String, MutableList<NotificationItem>>()
+        val nonGroupable = mutableListOf<NotificationItem>()
+
+        for (notif in notifications) {
+            if (notif.reason in groupableReasons && notif.reasonSubject != null) {
+                val key = "${notif.reason}::${notif.reasonSubject}"
+                groupMap.getOrPut(key) { mutableListOf() }.add(notif)
+            } else {
+                nonGroupable.add(notif)
+            }
+        }
+
+        // Merge into a single ordered list maintaining relative order by first occurrence
+        val processed = mutableSetOf<String>()
+        for (notif in notifications) {
+            if (notif.reason in groupableReasons && notif.reasonSubject != null) {
+                val key = "${notif.reason}::${notif.reasonSubject}"
+                if (key in processed) continue
+                processed.add(key)
+                val items = groupMap[key]!!
+                groups.add(
+                    NotificationGroup(
+                        reason = items.first().reason,
+                        reasonSubject = items.first().reasonSubject,
+                        authors = items.map { it.author },
+                        indexedAt = items.first().indexedAt,
+                        isRead = items.all { it.isRead },
+                        uri = items.first().uri,
+                        record = items.first().record,
+                    )
+                )
+            } else {
+                groups.add(
+                    NotificationGroup(
+                        reason = notif.reason,
+                        reasonSubject = notif.reasonSubject,
+                        authors = listOf(notif.author),
+                        indexedAt = notif.indexedAt,
+                        isRead = notif.isRead,
+                        uri = notif.uri,
+                        record = notif.record,
+                    )
+                )
+            }
+        }
+
+        return groups
+    }
+
+    private fun updateGroupedNotifications() {
+        _uiState.update { state ->
+            state.copy(groupedNotifications = groupNotifications(state.notifications))
         }
     }
 

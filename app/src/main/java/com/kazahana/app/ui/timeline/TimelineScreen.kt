@@ -244,6 +244,9 @@ fun TimelineScreen(
                                 bsafDuplicate = uiState.bsafDuplicates[feedPost.post.uri],
                                 onHashtagClick = onHashtagClick,
                                 onMentionClick = onMentionClick,
+                                onSaveMedia = { imageUrls, videoUrl, videoThumbnail ->
+                                    viewModel.saveMedia(context, imageUrls, videoUrl, videoThumbnail)
+                                },
                             )
                         }
 
