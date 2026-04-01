@@ -135,6 +135,7 @@ fun KazahanaNavHost(
     val sexualPref by settingsStore?.sexualPref?.collectAsState(initial = ModerationPref.WARN) ?: remember { mutableStateOf(ModerationPref.WARN) }
     val pornPref by settingsStore?.pornPref?.collectAsState(initial = ModerationPref.WARN) ?: remember { mutableStateOf(ModerationPref.WARN) }
     val graphicMediaPref by settingsStore?.graphicMediaPref?.collectAsState(initial = ModerationPref.WARN) ?: remember { mutableStateOf(ModerationPref.WARN) }
+    val gorePref by settingsStore?.gorePref?.collectAsState(initial = ModerationPref.WARN) ?: remember { mutableStateOf(ModerationPref.WARN) }
 
     val moderationSettings = ModerationSettings(
         adultContentEnabled = adultEnabled,
@@ -142,6 +143,7 @@ fun KazahanaNavHost(
         sexualPref = sexualPref,
         pornPref = pornPref,
         graphicMediaPref = graphicMediaPref,
+        gorePref = gorePref,
     )
 
     CompositionLocalProvider(LocalModerationSettings provides moderationSettings) {

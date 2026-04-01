@@ -166,11 +166,14 @@
     <string name="settings_version">Version</string>
     <string name="settings_logout">Logout</string>
     <string name="settings_moderation">Content Moderation</string>
+    <string name="settings_moderation_adult">Adult Content</string>
+    <string name="settings_moderation_graphic">Graphic Content</string>
     <string name="settings_adult_content">Enable adult content</string>
     <string name="settings_label_nudity">Nudity</string>
     <string name="settings_label_sexual">Sexually Suggestive</string>
     <string name="settings_label_porn">Pornography</string>
     <string name="settings_label_graphic_media">Graphic Media</string>
+    <string name="settings_label_gore">Violence / Gore</string>
     <string name="settings_pref_hide">Hide</string>
     <string name="settings_pref_warn">Warn</string>
     <string name="settings_pref_show">Show</string>

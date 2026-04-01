@@ -136,11 +136,14 @@
     <string name="settings_language">言語設定</string>
     <string name="settings_logout">ログアウト</string>
     <string name="settings_moderation">コンテンツモデレーション</string>
+    <string name="settings_moderation_adult">成人向けコンテンツ</string>
+    <string name="settings_moderation_graphic">過激コンテンツ</string>
     <string name="settings_adult_content">成人向けコンテンツを有効にする</string>
     <string name="settings_label_nudity">ヌード</string>
     <string name="settings_label_sexual">性的示唆</string>
     <string name="settings_label_porn">ポルノ</string>
     <string name="settings_label_graphic_media">過激なメディア</string>
+    <string name="settings_label_gore">暴力</string>
     <string name="settings_pref_hide">非表示</string>
     <string name="settings_pref_warn">警告</string>
     <string name="settings_pref_show">表示</string>

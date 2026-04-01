@@ -24,6 +24,7 @@ data class SettingsUiState(
     val sexualPref: ModerationPref = ModerationPref.WARN,
     val pornPref: ModerationPref = ModerationPref.WARN,
     val graphicMediaPref: ModerationPref = ModerationPref.WARN,
+    val gorePref: ModerationPref = ModerationPref.WARN,
     val pollIntervalSeconds: Int = 60,
     val showVia: Boolean = false,
     val bsafEnabled: Boolean = false,
@@ -54,24 +55,26 @@ class SettingsViewModel @Inject constructor(
         combine(
             settingsStore.pornPref,
             settingsStore.graphicMediaPref,
+            settingsStore.gorePref,
             settingsStore.pollIntervalSeconds,
             settingsStore.showVia,
             settingsStore.bsafEnabled,
             settingsStore.claudeApiKey,
         ) { values ->
             Triple(
-                Triple(values[0] as ModerationPref, values[1] as ModerationPref, values[2] as Int),
-                Pair(values[3] as Boolean, values[4] as Boolean),
-                values[5] as String,
+                Triple(values[0] as ModerationPref, values[1] as ModerationPref, values[2] as ModerationPref),
+                Triple(values[3] as Int, values[4] as Boolean, values[5] as Boolean),
+                values[6] as String,
             )
         },
     ) { base, extra ->
         base.copy(
             pornPref = extra.first.first,
             graphicMediaPref = extra.first.second,
-            pollIntervalSeconds = extra.first.third,
-            showVia = extra.second.first,
-            bsafEnabled = extra.second.second,
+            gorePref = extra.first.third,
+            pollIntervalSeconds = extra.second.first,
+            showVia = extra.second.second,
+            bsafEnabled = extra.second.third,
             claudeApiKey = extra.third,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), SettingsUiState())

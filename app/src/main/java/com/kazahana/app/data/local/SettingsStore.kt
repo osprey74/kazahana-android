@@ -50,6 +50,7 @@ class SettingsStore(private val context: Context) {
         val SEXUAL_PREF = stringPreferencesKey("moderation_sexual")
         val PORN_PREF = stringPreferencesKey("moderation_porn")
         val GRAPHIC_MEDIA_PREF = stringPreferencesKey("moderation_graphic_media")
+        val GORE_PREF = stringPreferencesKey("moderation_gore")
         val POLL_INTERVAL = intPreferencesKey("poll_interval_seconds")
         val PINNED_FEED_URIS = stringPreferencesKey("pinned_feed_uris")
         val HIDDEN_FEED_URIS = stringPreferencesKey("hidden_feed_uris")
@@ -100,6 +101,10 @@ class SettingsStore(private val context: Context) {
         parseModerationPref(prefs[Keys.GRAPHIC_MEDIA_PREF])
     }
 
+    val gorePref: Flow<ModerationPref> = context.dataStore.data.map { prefs ->
+        parseModerationPref(prefs[Keys.GORE_PREF])
+    }
+
     val pollIntervalSeconds: Flow<Int> = context.dataStore.data.map { prefs ->
         prefs[Keys.POLL_INTERVAL] ?: 60
     }
@@ -146,6 +151,7 @@ class SettingsStore(private val context: Context) {
             "sexual" -> Keys.SEXUAL_PREF
             "porn" -> Keys.PORN_PREF
             "graphic-media" -> Keys.GRAPHIC_MEDIA_PREF
+            "gore" -> Keys.GORE_PREF
             else -> return
         }
         context.dataStore.edit { prefs ->

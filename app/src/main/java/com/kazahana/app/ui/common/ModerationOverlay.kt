@@ -27,6 +27,7 @@ data class ModerationSettings(
     val sexualPref: ModerationPref = ModerationPref.WARN,
     val pornPref: ModerationPref = ModerationPref.WARN,
     val graphicMediaPref: ModerationPref = ModerationPref.WARN,
+    val gorePref: ModerationPref = ModerationPref.WARN,
 )
 
 val LocalModerationSettings = compositionLocalOf { ModerationSettings() }
@@ -50,6 +51,7 @@ fun checkModeration(
             "sexual" -> if (!settings.adultContentEnabled) ModerationPref.HIDE else settings.sexualPref
             "porn" -> if (!settings.adultContentEnabled) ModerationPref.HIDE else settings.pornPref
             "graphic-media" -> settings.graphicMediaPref
+            "gore" -> settings.gorePref
             else -> null
         }
 
@@ -69,9 +71,10 @@ fun checkModeration(
     sexualPref: ModerationPref,
     pornPref: ModerationPref,
     graphicMediaPref: ModerationPref,
+    gorePref: ModerationPref = ModerationPref.WARN,
 ): ModerationDecision = checkModeration(
     labels = labels,
-    settings = ModerationSettings(adultContentEnabled, nudityPref, sexualPref, pornPref, graphicMediaPref),
+    settings = ModerationSettings(adultContentEnabled, nudityPref, sexualPref, pornPref, graphicMediaPref, gorePref),
 )
 
 @Composable

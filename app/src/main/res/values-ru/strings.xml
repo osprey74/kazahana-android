@@ -97,11 +97,14 @@
     <string name="settings_language">Язык</string>
     <string name="settings_logout">Выйти</string>
     <string name="settings_moderation">Модерация контента</string>
+    <string name="settings_moderation_adult">Контент для взрослых</string>
+    <string name="settings_moderation_graphic">Шокирующий контент</string>
     <string name="settings_adult_content">Включить контент для взрослых</string>
     <string name="settings_label_nudity">Нагота</string>
     <string name="settings_label_sexual">Сексуально провокационное</string>
     <string name="settings_label_porn">Порнография</string>
     <string name="settings_label_graphic_media">Шокирующий контент</string>
+    <string name="settings_label_gore">Насилие / Жестокость</string>
     <string name="settings_pref_hide">Скрыть</string>
     <string name="settings_pref_warn">Предупредить</string>
     <string name="settings_pref_show">Показать</string>

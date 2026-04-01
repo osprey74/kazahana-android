@@ -97,11 +97,14 @@
     <string name="settings_language">Idioma</string>
     <string name="settings_logout">Sair</string>
     <string name="settings_moderation">Moderação de conteúdo</string>
+    <string name="settings_moderation_adult">Conteúdo adulto</string>
+    <string name="settings_moderation_graphic">Conteúdo gráfico</string>
     <string name="settings_adult_content">Habilitar conteúdo adulto</string>
     <string name="settings_label_nudity">Nudez</string>
     <string name="settings_label_sexual">Sexualmente sugestivo</string>
     <string name="settings_label_porn">Pornografia</string>
     <string name="settings_label_graphic_media">Mídia gráfica</string>
+    <string name="settings_label_gore">Violência / Gore</string>
     <string name="settings_pref_hide">Ocultar</string>
     <string name="settings_pref_warn">Avisar</string>
     <string name="settings_pref_show">Mostrar</string>

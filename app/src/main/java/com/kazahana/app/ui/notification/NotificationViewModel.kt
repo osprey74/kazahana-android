@@ -9,6 +9,9 @@ import com.kazahana.app.data.model.ProfileViewBasic
 import com.kazahana.app.data.repository.InteractionRepository
 import com.kazahana.app.data.repository.NotificationRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -219,28 +222,61 @@ class NotificationViewModel @Inject constructor(
         }
     }
 
-    /** Fetch subject posts for notifications, resolving repost URIs when needed */
-    private suspend fun fetchSubjectPosts(notifications: List<NotificationItem>) {
-        val currentState = _uiState.value
+    companion object {
+        /** Number of notifications to process per batch for progressive loading. */
+        private const val BATCH_SIZE = 10
+    }
 
-        // Step 1: Resolve like-via-repost / repost-via-repost URIs
-        val viaRepostNotifs = notifications.filter { notif ->
+    /**
+     * Fetch subject posts for notifications using progressive batched loading.
+     *
+     * Notifications are split into batches of [BATCH_SIZE]. Each batch is processed
+     * as follows:
+     *   1. Resolve via-repost URIs **in parallel** (async per URI)
+     *   2. Collect all post URIs needed for the batch
+     *   3. Fetch posts via getPosts (up to 25 per API call)
+     *   4. Update UI state → user sees content for this batch immediately
+     *   5. Move on to the next batch
+     *
+     * This ensures the first ~10 notifications render within 1-2 seconds while the
+     * rest load progressively in the background.
+     */
+    private suspend fun fetchSubjectPosts(notifications: List<NotificationItem>) {
+        val batches = notifications.chunked(BATCH_SIZE)
+
+        for (batch in batches) {
+            fetchSubjectPostsBatch(batch)
+        }
+    }
+
+    /** Process a single batch: resolve via-repost URIs in parallel, then fetch posts. */
+    private suspend fun fetchSubjectPostsBatch(batch: List<NotificationItem>) {
+        // Step 1: Resolve like-via-repost / repost-via-repost URIs in parallel
+        val viaRepostNotifs = batch.filter { notif ->
             notif.reason in listOf("like-via-repost", "repost-via-repost") &&
                 notif.reasonSubject != null &&
-                notif.reasonSubject !in currentState.resolvedRepostURIs
+                notif.reasonSubject !in _uiState.value.resolvedRepostURIs
         }
-        for (notif in viaRepostNotifs) {
-            val repostUri = notif.reasonSubject ?: continue
-            resolveRepostURI(repostUri)?.let { postUri ->
+
+        if (viaRepostNotifs.isNotEmpty()) {
+            val resolvedPairs = coroutineScope {
+                viaRepostNotifs.map { notif ->
+                    async {
+                        val repostUri = notif.reasonSubject ?: return@async null
+                        resolveRepostURI(repostUri)?.let { postUri -> repostUri to postUri }
+                    }
+                }.awaitAll().filterNotNull()
+            }
+            if (resolvedPairs.isNotEmpty()) {
                 _uiState.update {
-                    it.copy(resolvedRepostURIs = it.resolvedRepostURIs + (repostUri to postUri))
+                    it.copy(resolvedRepostURIs = it.resolvedRepostURIs + resolvedPairs)
                 }
             }
         }
 
-        // Step 2: Collect post URIs to fetch
+        // Step 2: Collect post URIs to fetch for this batch
         val resolved = _uiState.value.resolvedRepostURIs
-        val uris = notifications.mapNotNull { notification ->
+        val uris = batch.mapNotNull { notification ->
             when (notification.reason) {
                 "like", "repost" -> notification.reasonSubject
                 "like-via-repost", "repost-via-repost" ->
@@ -252,7 +288,7 @@ class NotificationViewModel @Inject constructor(
 
         if (uris.isEmpty()) return
 
-        // getPosts supports up to 25 URIs per call
+        // Step 3: Fetch posts (up to 25 per API call)
         uris.chunked(25).forEach { chunk ->
             repository.getPosts(chunk)
                 .onSuccess { posts ->

@@ -97,11 +97,14 @@
     <string name="settings_language">语言</string>
     <string name="settings_logout">退出登录</string>
     <string name="settings_moderation">内容审核</string>
+    <string name="settings_moderation_adult">成人内容</string>
+    <string name="settings_moderation_graphic">过激内容</string>
     <string name="settings_adult_content">启用成人内容</string>
     <string name="settings_label_nudity">裸露</string>
     <string name="settings_label_sexual">性暗示</string>
     <string name="settings_label_porn">色情</string>
     <string name="settings_label_graphic_media">血腥媒体</string>
+    <string name="settings_label_gore">暴力/血腥</string>
     <string name="settings_pref_hide">隐藏</string>
     <string name="settings_pref_warn">警告</string>
     <string name="settings_pref_show">显示</string>

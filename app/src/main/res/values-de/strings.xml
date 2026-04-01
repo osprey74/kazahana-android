@@ -97,11 +97,14 @@
     <string name="settings_language">Sprache</string>
     <string name="settings_logout">Abmelden</string>
     <string name="settings_moderation">Inhaltsmoderation</string>
+    <string name="settings_moderation_adult">Erwachseneninhalte</string>
+    <string name="settings_moderation_graphic">Verstörende Inhalte</string>
     <string name="settings_adult_content">Inhalte für Erwachsene aktivieren</string>
     <string name="settings_label_nudity">Nacktheit</string>
     <string name="settings_label_sexual">Sexuell anzüglich</string>
     <string name="settings_label_porn">Pornografie</string>
     <string name="settings_label_graphic_media">Explizite Medien</string>
+    <string name="settings_label_gore">Gewalt / Gore</string>
     <string name="settings_pref_hide">Verbergen</string>
     <string name="settings_pref_warn">Warnen</string>
     <string name="settings_pref_show">Anzeigen</string>

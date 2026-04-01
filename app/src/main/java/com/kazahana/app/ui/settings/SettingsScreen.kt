@@ -257,6 +257,14 @@ fun SettingsScreen(
             // ── Section 4: Content Moderation ──
             SectionHeader(stringResource(R.string.settings_moderation))
 
+            // ── Adult Content category ──
+            Text(
+                text = stringResource(R.string.settings_moderation_adult),
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+            )
+
             // Adult content toggle
             Row(
                 modifier = Modifier
@@ -279,9 +287,9 @@ fun SettingsScreen(
             // Adult content labels (conditional)
             if (uiState.adultContentEnabled) {
                 ModerationRow(
-                    label = stringResource(R.string.settings_label_nudity),
-                    pref = uiState.nudityPref,
-                    onPrefChange = { viewModel.setModerationPref("nudity", it) },
+                    label = stringResource(R.string.settings_label_porn),
+                    pref = uiState.pornPref,
+                    onPrefChange = { viewModel.setModerationPref("porn", it) },
                 )
                 ModerationRow(
                     label = stringResource(R.string.settings_label_sexual),
@@ -289,17 +297,31 @@ fun SettingsScreen(
                     onPrefChange = { viewModel.setModerationPref("sexual", it) },
                 )
                 ModerationRow(
-                    label = stringResource(R.string.settings_label_porn),
-                    pref = uiState.pornPref,
-                    onPrefChange = { viewModel.setModerationPref("porn", it) },
+                    label = stringResource(R.string.settings_label_nudity),
+                    pref = uiState.nudityPref,
+                    onPrefChange = { viewModel.setModerationPref("nudity", it) },
                 )
             }
 
-            // Graphic media (always shown)
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // ── Graphic Content category ──
+            Text(
+                text = stringResource(R.string.settings_moderation_graphic),
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+            )
+
             ModerationRow(
                 label = stringResource(R.string.settings_label_graphic_media),
                 pref = uiState.graphicMediaPref,
                 onPrefChange = { viewModel.setModerationPref("graphic-media", it) },
+            )
+            ModerationRow(
+                label = stringResource(R.string.settings_label_gore),
+                pref = uiState.gorePref,
+                onPrefChange = { viewModel.setModerationPref("gore", it) },
             )
 
             HorizontalDivider()

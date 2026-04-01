@@ -1,5 +1,7 @@
 package com.kazahana.app.ui.auth
 
+import android.graphics.Bitmap
+import android.graphics.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -28,7 +30,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.res.painterResource
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.runtime.remember
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import com.kazahana.app.R
@@ -41,6 +47,8 @@ fun LoginScreen(
     var handle by rememberSaveable { mutableStateOf("") }
     var password by rememberSaveable { mutableStateOf("") }
 
+    val context = LocalContext.current
+
     Scaffold { innerPadding ->
         Column(
             modifier = Modifier
@@ -50,10 +58,24 @@ fun LoginScreen(
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
+            val appIcon = remember {
+                val drawable = context.packageManager.getApplicationIcon(context.applicationInfo)
+                val bitmap = Bitmap.createBitmap(
+                    drawable.intrinsicWidth,
+                    drawable.intrinsicHeight,
+                    Bitmap.Config.ARGB_8888,
+                )
+                val canvas = Canvas(bitmap)
+                drawable.setBounds(0, 0, canvas.width, canvas.height)
+                drawable.draw(canvas)
+                bitmap.asImageBitmap()
+            }
             Image(
-                painter = painterResource(R.drawable.ic_launcher_foreground),
+                bitmap = appIcon,
                 contentDescription = null,
-                modifier = Modifier.size(120.dp),
+                modifier = Modifier
+                    .size(96.dp)
+                    .clip(CircleShape),
             )
 
             Spacer(modifier = Modifier.height(8.dp))
