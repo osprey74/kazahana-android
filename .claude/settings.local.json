@@ -46,7 +46,17 @@
       "Bash(python3:*)",
       "Bash(find /mnt/g/dev/kazahana-android -name strings*.xml -o -name *i18n* -o -name *locale*)",
       "Bash(wc -l /mnt/g/dev/kazahana-android/app/src/main/java/com/kazahana/app/ui/**/*.kt)",
-      "Bash(find /mnt/g/dev/kazahana-android/app/src -type f -name *Module.kt -o -name *Provide*)"
+      "Bash(find /mnt/g/dev/kazahana-android/app/src -type f -name *Module.kt -o -name *Provide*)",
+      "Bash(ls -la /mnt/g/dev/kazahana-android/app/src/main/res/mipmap-*/ic_launcher*)",
+      "Bash(ls /mnt/c/Users/ospre/AppData/Local/Android/Sdk/jdk*)",
+      "Bash(./gradlew bundleRelease 2>&1)",
+      "Bash(JAVA_HOME=\"/mnt/c/Program Files/Android/Android Studio/jbr\" ./gradlew bundleRelease 2>&1)",
+      "WebFetch(domain:osprey74.github.io)",
+      "Bash(find /mnt/g/dev -name *appstore* -o -name *app_store* -o -name *metadata*)",
+      "Bash(find /mnt/g/dev/kazahana -maxdepth 2 -name *store* -o -name *metadata*)",
+      "Bash(./gradlew bundleRelease)",
+      "Bash(find:*)",
+      "Bash(ls:*)"
     ]
   }
 }

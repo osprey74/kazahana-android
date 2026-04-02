@@ -10,3 +10,6 @@
 # Ktor
 -keep class io.ktor.** { *; }
 -dontwarn io.ktor.**
+
+# SLF4J
+-dontwarn org.slf4j.**
