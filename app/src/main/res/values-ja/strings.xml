@@ -14,6 +14,11 @@
     <string name="auth_error_invalid">ハンドルまたはパスワードが無効です</string>
     <string name="auth_error_network">ネットワークエラー。再試行してください。</string>
     <string name="auth_error_rate_limit">試行回数が多すぎます。しばらくお待ちください。</string>
+    <string name="auth_account_picker_title">アカウントを選択</string>
+    <string name="auth_account_picker_add">別のアカウントを追加</string>
+    <string name="auth_account_picker_remove">アカウントを削除</string>
+    <string name="auth_account_picker_remove_title">アカウントを削除しますか？</string>
+    <string name="auth_account_picker_remove_message">このデバイスからアカウント情報が削除されます。再度ログインすることで追加できます。</string>
     <string name="compose_title">新しい投稿</string>
     <string name="compose_post">投稿する</string>
     <string name="compose_placeholder">いまどうしてる？</string>
@@ -134,7 +139,10 @@
     <string name="settings_dark">ダーク</string>
     <string name="settings_system">システム</string>
     <string name="settings_language">言語設定</string>
-    <string name="settings_logout">ログアウト</string>
+    <string name="settings_logout">アカウントを削除</string>
+    <string name="settings_accounts">アカウント</string>
+    <string name="settings_add_account">アカウントを追加</string>
+    <string name="settings_active_account">使用中</string>
     <string name="settings_moderation">コンテンツモデレーション</string>
     <string name="settings_moderation_adult">成人向けコンテンツ</string>
     <string name="settings_moderation_graphic">過激コンテンツ</string>

@@ -68,6 +68,11 @@ class ATProtoClient(
         pdsEndpoint = endpoint.trimEnd('/')
     }
 
+    /** Replace the active session (for account switching). */
+    fun updateSession(session: Session) {
+        sessionStore.activeAccountDID = session.did
+    }
+
     /** Unauthenticated GET */
     suspend fun getUnauthenticated(
         baseUrl: String,
@@ -247,7 +252,8 @@ class ATProtoClient(
                 lastRefreshedAt = System.currentTimeMillis()
                 true
             } else {
-                sessionStore.clear()
+                // Only remove the failed session, not all sessions
+                sessionStore.delete(currentSession.did)
                 false
             }
         } catch (_: Exception) {
@@ -338,6 +344,11 @@ class ATProtoClient(
     fun pdsDid(): String {
         val host = pdsEndpoint.removePrefix("https://").removePrefix("http://").trimEnd('/')
         return "did:web:$host"
+    }
+
+    /** Delete a specific account's session. */
+    fun deleteSession(did: String) {
+        sessionStore.delete(did)
     }
 
     fun clearSession() {

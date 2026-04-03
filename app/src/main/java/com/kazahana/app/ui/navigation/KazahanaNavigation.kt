@@ -1,8 +1,11 @@
 package com.kazahana.app.ui.navigation
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.Alignment
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
@@ -16,6 +19,7 @@ import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.Search
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.FloatingActionButton
@@ -30,6 +34,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.rememberCoroutineScope
 import kotlinx.coroutines.launch
 import androidx.compose.ui.Modifier
@@ -49,6 +54,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import com.kazahana.app.R
+import com.kazahana.app.ui.auth.AccountPickerScreen
 import com.kazahana.app.ui.auth.LoginScreen
 import com.kazahana.app.ui.auth.AuthViewModel
 import com.kazahana.app.ui.compose.ComposeScreen
@@ -128,6 +134,9 @@ fun KazahanaNavHost(
     deepLinkFlow: Flow<DeepLink>? = null,
 ) {
     val isLoggedIn by authViewModel.isLoggedIn.collectAsState()
+    val savedAccounts by authViewModel.savedAccounts.collectAsState()
+    val activeAccountDID by authViewModel.activeAccountDID.collectAsState()
+    val showAddAccountLogin by authViewModel.showAddAccountLogin.collectAsState()
 
     // Collect moderation settings
     val adultEnabled by settingsStore?.adultContentEnabled?.collectAsState(initial = false) ?: remember { mutableStateOf(false) }
@@ -156,12 +165,33 @@ fun KazahanaNavHost(
                     androidx.compose.material3.CircularProgressIndicator()
                 }
             }
-            true -> MainScreen(authViewModel = authViewModel, deepLinkFlow = deepLinkFlow)
-            false -> LoginScreen(authViewModel = authViewModel)
+            true -> {
+                // key() forces full recomposition (all child ViewModels recreated) on account switch
+                androidx.compose.runtime.key(activeAccountDID) {
+                    MainScreen(authViewModel = authViewModel, deepLinkFlow = deepLinkFlow)
+                }
+            }
+            false -> {
+                if (savedAccounts.isNotEmpty()) {
+                    // Multiple accounts saved but none active yet → account picker
+                    AccountPickerScreen(authViewModel = authViewModel)
+                } else {
+                    LoginScreen(authViewModel = authViewModel)
+                }
+            }
+        }
+
+        // Add-account login shown as a full-screen dialog over the current screen
+        if (showAddAccountLogin) {
+            LoginScreen(
+                authViewModel = authViewModel,
+                onDismiss = { authViewModel.dismissAddAccountLogin() },
+            )
         }
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun MainScreen(
     authViewModel: AuthViewModel,
@@ -198,6 +228,13 @@ private fun MainScreen(
 
     // Current user DID for messages
     val myDid = authViewModel.currentDid
+
+    // Active handle for account switcher button
+    val savedAccounts by authViewModel.savedAccounts.collectAsState()
+    val activeHandle = remember(myDid, savedAccounts) {
+        savedAccounts.find { it.did == myDid }?.handle
+    }
+    var showAccountSwitcher by remember { mutableStateOf(false) }
 
     // Tab re-tap events for refresh + scroll to top (keyed by route label)
     val homeRetap = remember { MutableSharedFlow<Unit>() }
@@ -374,6 +411,10 @@ private fun MainScreen(
                     onViewQuotes = navigateToQuotesList,
                     onHashtagClick = navigateToHashtag,
                     onMentionClick = navigateToMention,
+                    activeHandle = if (savedAccounts.size >= 2) activeHandle else null,
+                    onAccountSwitcherClick = if (savedAccounts.size >= 2) {
+                        { showAccountSwitcher = true }
+                    } else null,
                 )
             }
             composable<SearchRoute> {
@@ -618,6 +659,8 @@ private fun MainScreen(
                 )
             }
             composable<SettingsRoute> {
+                val savedAccounts by authViewModel.savedAccounts.collectAsState()
+                val activeAccountDID by authViewModel.activeAccountDID.collectAsState()
                 SettingsScreen(
                     onNavigateBack = { navController.popBackStack() },
                     onLogout = {
@@ -633,6 +676,11 @@ private fun MainScreen(
                             launchSingleTop = true
                         }
                     },
+                    savedAccounts = savedAccounts,
+                    activeAccountDID = activeAccountDID,
+                    onSwitchAccount = { session -> authViewModel.switchAccount(session) },
+                    onRemoveAccount = { did -> authViewModel.removeAccount(did) },
+                    onAddAccount = { authViewModel.showAddAccountLogin() },
                 )
             }
             composable<FeedManagementRoute> {
@@ -703,5 +751,83 @@ private fun MainScreen(
                 )
             }
         }
+    }
+
+    // Account switcher modal bottom sheet
+    if (showAccountSwitcher) {
+        androidx.compose.material3.ModalBottomSheet(
+            onDismissRequest = { showAccountSwitcher = false },
+        ) {
+            AccountSwitcherSheet(
+                accounts = savedAccounts,
+                activeAccountDID = myDid,
+                onSwitchAccount = { session ->
+                    showAccountSwitcher = false
+                    authViewModel.switchAccount(session)
+                },
+                onAddAccount = {
+                    showAccountSwitcher = false
+                    authViewModel.showAddAccountLogin()
+                },
+            )
+        }
+    }
+}
+
+@Composable
+private fun AccountSwitcherSheet(
+    accounts: List<com.kazahana.app.data.model.Session>,
+    activeAccountDID: String,
+    onSwitchAccount: (com.kazahana.app.data.model.Session) -> Unit,
+    onAddAccount: () -> Unit,
+) {
+    androidx.compose.foundation.layout.Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(bottom = 32.dp),
+    ) {
+        Text(
+            text = stringResource(R.string.auth_account_picker_title),
+            style = androidx.compose.material3.MaterialTheme.typography.titleMedium,
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+        )
+        accounts.forEach { account ->
+            val isActive = account.did == activeAccountDID
+            androidx.compose.foundation.layout.Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .then(
+                        if (!isActive) Modifier.clickable { onSwitchAccount(account) }
+                        else Modifier
+                    )
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                horizontalArrangement = androidx.compose.foundation.layout.Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = "@${account.handle}",
+                    style = androidx.compose.material3.MaterialTheme.typography.bodyLarge,
+                    fontWeight = if (isActive) androidx.compose.ui.text.font.FontWeight.Bold
+                    else androidx.compose.ui.text.font.FontWeight.Normal,
+                )
+                if (isActive) {
+                    Text(
+                        text = stringResource(R.string.settings_active_account),
+                        style = androidx.compose.material3.MaterialTheme.typography.bodySmall,
+                        color = androidx.compose.material3.MaterialTheme.colorScheme.primary,
+                    )
+                }
+            }
+            androidx.compose.material3.HorizontalDivider()
+        }
+        Text(
+            text = stringResource(R.string.settings_add_account),
+            style = androidx.compose.material3.MaterialTheme.typography.bodyLarge,
+            color = androidx.compose.material3.MaterialTheme.colorScheme.primary,
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable(onClick = onAddAccount)
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+        )
     }
 }

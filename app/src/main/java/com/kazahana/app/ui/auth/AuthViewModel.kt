@@ -2,6 +2,7 @@ package com.kazahana.app.ui.auth
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.kazahana.app.data.local.SessionStore
 import com.kazahana.app.data.local.SettingsStore
 import com.kazahana.app.data.model.DIDDocument
 import com.kazahana.app.data.model.ResolveHandleResponse
@@ -28,6 +29,7 @@ data class LoginUiState(
 @HiltViewModel
 class AuthViewModel @Inject constructor(
     private val client: ATProtoClient,
+    private val sessionStore: SessionStore,
     private val feedRepository: FeedRepository,
     private val settingsStore: SettingsStore,
 ) : ViewModel() {
@@ -39,15 +41,33 @@ class AuthViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(LoginUiState())
     val uiState: StateFlow<LoginUiState> = _uiState.asStateFlow()
 
+    /** All saved accounts (for account picker / settings) */
+    private val _savedAccounts = MutableStateFlow<List<Session>>(emptyList())
+    val savedAccounts: StateFlow<List<Session>> = _savedAccounts.asStateFlow()
+
+    /** Currently active account DID — used as key to force recomposition */
+    private val _activeAccountDID = MutableStateFlow<String?>(null)
+    val activeAccountDID: StateFlow<String?> = _activeAccountDID.asStateFlow()
+
+    /** Whether the login screen is shown as an "add account" sheet */
+    private val _showAddAccountLogin = MutableStateFlow(false)
+    val showAddAccountLogin: StateFlow<Boolean> = _showAddAccountLogin.asStateFlow()
+
     init {
-        // Restore PDS endpoint from saved session, then signal ready
+        refreshAccountList()
+        val accounts = _savedAccounts.value
         val session = client.session
-        if (session != null) {
+        if (session != null && accounts.size <= 1) {
+            // Single account: auto-login (no change from v1.0 experience)
+            _activeAccountDID.value = session.did
             viewModelScope.launch {
                 resolvePds(session.did)
                 _isLoggedIn.value = true
                 loadPostLanguages()
             }
+        } else if (accounts.size >= 2) {
+            // Multiple accounts saved: show account picker
+            _isLoggedIn.value = false
         } else {
             _isLoggedIn.value = false
         }
@@ -84,7 +104,10 @@ class AuthViewModel @Inject constructor(
                     client.saveSession(session)
                     // Re-resolve PDS with actual DID
                     resolvePds(session.did)
+                    _activeAccountDID.value = session.did
+                    refreshAccountList()
                     _isLoggedIn.value = true
+                    _showAddAccountLogin.value = false
                     _uiState.value = LoginUiState()
                     loadPostLanguages()
                 } else {
@@ -105,9 +128,86 @@ class AuthViewModel @Inject constructor(
     val currentDid: String
         get() = client.session?.did ?: ""
 
+    /** Switch to a different saved account. */
+    fun switchAccount(session: Session) {
+        viewModelScope.launch {
+            // 1. Persist active DID first (race condition prevention — see iOS handoff doc)
+            sessionStore.activeAccountDID = session.did
+            // 2. Update client session
+            client.updateSession(session)
+            // 3. Clear feed settings so they reload from the new account's prefs
+            settingsStore.clearFeedSettings()
+            // 4. Resolve PDS for the new account
+            resolvePds(session.did)
+            // 5. Update UI state
+            _activeAccountDID.value = session.did
+            refreshAccountList()
+            _isLoggedIn.value = true
+            // 6. Silent token refresh
+            viewModelScope.launch {
+                client.refreshToken()
+                refreshAccountList()
+            }
+            loadPostLanguages()
+        }
+    }
+
+    /** Remove an account from this device. */
+    fun removeAccount(did: String) {
+        viewModelScope.launch {
+            // Best-effort server-side session deletion
+            val session = sessionStore.loadByDid(did)
+            if (session != null) {
+                try {
+                    client.postUnauthenticated(
+                        baseUrl = client.pdsEndpoint,
+                        nsid = "com.atproto.server.deleteSession",
+                        body = buildJsonObject {
+                            put("refreshJwt", session.refreshJwt)
+                        },
+                    )
+                } catch (_: Exception) {
+                    // Best-effort — ignore failures
+                }
+            }
+
+            val wasActive = sessionStore.delete(did)
+            refreshAccountList()
+
+            if (wasActive) {
+                val remaining = sessionStore.loadAll()
+                if (remaining.isNotEmpty()) {
+                    // Switch to the first remaining account
+                    val next = remaining.first()
+                    switchAccount(next)
+                } else {
+                    // No accounts left → login screen
+                    _activeAccountDID.value = null
+                    _isLoggedIn.value = false
+                    client.updatePds(ATProtoClient.DEFAULT_PDS)
+                }
+            }
+        }
+    }
+
+    /** Legacy logout: removes the active account. */
     fun logout() {
-        client.clearSession()
-        _isLoggedIn.value = false
+        val did = _activeAccountDID.value ?: return
+        removeAccount(did)
+    }
+
+    fun showAddAccountLogin() {
+        _showAddAccountLogin.value = true
+        _uiState.value = LoginUiState()
+    }
+
+    fun dismissAddAccountLogin() {
+        _showAddAccountLogin.value = false
+        _uiState.value = LoginUiState()
+    }
+
+    private fun refreshAccountList() {
+        _savedAccounts.value = sessionStore.loadAll()
     }
 
     /** Fetch Bluesky account post language preferences and cache them locally. */

@@ -70,6 +70,8 @@ fun TimelineScreen(
     onViewQuotes: (postUri: String) -> Unit = {},
     onHashtagClick: (String) -> Unit = {},
     onMentionClick: (String) -> Unit = {},
+    activeHandle: String? = null,
+    onAccountSwitcherClick: (() -> Unit)? = null,
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val listState = rememberLazyListState()
@@ -116,8 +118,8 @@ fun TimelineScreen(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            // Feed dropdown selector (left side) — shows hidden feeds only
-            if (uiState.hiddenFeeds.isNotEmpty()) {
+            // Feed dropdown selector (left side) — shows hidden feeds only when "show all" is on
+            if (uiState.showAllInSelector && uiState.hiddenFeeds.isNotEmpty()) {
                 FeedDropdown(
                     feeds = uiState.hiddenFeeds,
                     selectedFeed = uiState.selectedFeed,
@@ -161,6 +163,21 @@ fun TimelineScreen(
                         )
                     }
                 }
+            } else {
+                Spacer(modifier = Modifier.weight(1f))
+            }
+
+            // Account handle button (right side)
+            if (activeHandle != null && onAccountSwitcherClick != null) {
+                Text(
+                    text = abbreviatedHandle(activeHandle),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                    modifier = Modifier
+                        .clickable(onClick = onAccountSwitcherClick)
+                        .padding(horizontal = 12.dp, vertical = 8.dp),
+                    maxLines = 1,
+                )
             }
         }
 
@@ -415,4 +432,10 @@ private fun FeedDropdown(
             }
         }
     }
+}
+
+/** Abbreviate handle: "@handle" truncated to 22 chars max. */
+private fun abbreviatedHandle(handle: String): String {
+    val full = "@$handle"
+    return if (full.length > 22) full.take(21) + "\u2026" else full
 }

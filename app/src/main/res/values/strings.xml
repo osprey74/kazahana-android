@@ -18,6 +18,11 @@
     <string name="auth_error_invalid">Invalid handle or password</string>
     <string name="auth_error_network">Network error. Please try again.</string>
     <string name="auth_error_rate_limit">Too many attempts. Please wait.</string>
+    <string name="auth_account_picker_title">Select Account</string>
+    <string name="auth_account_picker_add">Add Another Account</string>
+    <string name="auth_account_picker_remove">Remove Account</string>
+    <string name="auth_account_picker_remove_title">Remove this account?</string>
+    <string name="auth_account_picker_remove_message">Account data will be removed from this device. You can add it again by logging in.</string>
 
     <!-- Compose -->
     <string name="compose_title">New Post</string>
@@ -158,13 +163,16 @@
     <string name="settings_dark">Dark</string>
     <string name="settings_system">System</string>
     <string name="settings_language">Language</string>
+    <string name="settings_accounts">Accounts</string>
     <string name="settings_account">Account</string>
+    <string name="settings_add_account">Add Account</string>
+    <string name="settings_active_account">Active</string>
     <string name="settings_support">Support</string>
     <string name="settings_support_message">If you enjoy kazahana, please consider supporting its development ☕</string>
     <string name="settings_support_kofi">Support on Ko-fi</string>
     <string name="settings_app_info">App Info</string>
     <string name="settings_version">Version</string>
-    <string name="settings_logout">Logout</string>
+    <string name="settings_logout">Remove Account</string>
     <string name="settings_moderation">Content Moderation</string>
     <string name="settings_moderation_adult">Adult Content</string>
     <string name="settings_moderation_graphic">Graphic Content</string>

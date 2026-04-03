@@ -27,6 +27,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -64,6 +65,11 @@ fun SettingsScreen(
     onLogout: () -> Unit = {},
     onFeedManagement: () -> Unit = {},
     onBsafBots: () -> Unit = {},
+    savedAccounts: List<com.kazahana.app.data.model.Session> = emptyList(),
+    activeAccountDID: String? = null,
+    onSwitchAccount: (com.kazahana.app.data.model.Session) -> Unit = {},
+    onRemoveAccount: (String) -> Unit = {},
+    onAddAccount: () -> Unit = {},
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
@@ -326,17 +332,97 @@ fun SettingsScreen(
 
             HorizontalDivider()
 
-            // ── Section 4: Account ──
-            SectionHeader(stringResource(R.string.settings_account))
-            Text(
-                text = stringResource(R.string.settings_logout),
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.error,
+            // ── Section 4: Accounts ──
+            SectionHeader(stringResource(R.string.settings_accounts))
+
+            var removeTargetDid by remember { mutableStateOf<String?>(null) }
+
+            savedAccounts.forEach { account ->
+                val isActive = account.did == activeAccountDID
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable {
+                            if (!isActive) onSwitchAccount(account)
+                        }
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "@${account.handle}",
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = if (isActive) FontWeight.Bold else FontWeight.Normal,
+                        )
+                    }
+                    if (isActive) {
+                        Text(
+                            text = stringResource(R.string.settings_active_account),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.primary,
+                        )
+                    }
+                }
+                // Swipe-to-delete: simplified as a delete text button under each row
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = 32.dp, bottom = 4.dp),
+                ) {
+                    Text(
+                        text = stringResource(R.string.settings_logout),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error,
+                        modifier = Modifier
+                            .clickable { removeTargetDid = account.did }
+                            .padding(horizontal = 4.dp, vertical = 4.dp),
+                    )
+                }
+                HorizontalDivider()
+            }
+
+            // Add account button
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clickable(onClick = onLogout)
+                    .clickable(onClick = onAddAccount)
                     .padding(horizontal = 16.dp, vertical = 12.dp),
-            )
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = stringResource(R.string.settings_add_account),
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+            }
+
+            // Remove confirmation dialog
+            removeTargetDid?.let { did ->
+                androidx.compose.material3.AlertDialog(
+                    onDismissRequest = { removeTargetDid = null },
+                    title = { Text(stringResource(R.string.auth_account_picker_remove_title)) },
+                    text = { Text(stringResource(R.string.auth_account_picker_remove_message)) },
+                    confirmButton = {
+                        TextButton(
+                            onClick = {
+                                onRemoveAccount(did)
+                                removeTargetDid = null
+                            },
+                        ) {
+                            Text(
+                                stringResource(R.string.auth_account_picker_remove),
+                                color = MaterialTheme.colorScheme.error,
+                            )
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { removeTargetDid = null }) {
+                            Text(stringResource(R.string.common_cancel))
+                        }
+                    },
+                )
+            }
 
             // ── Section 5: Support ──
             HorizontalDivider()

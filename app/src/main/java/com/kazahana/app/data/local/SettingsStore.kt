@@ -181,6 +181,14 @@ class SettingsStore(private val context: Context) {
         }
     }
 
+    /** Clear feed-related settings (used on account switch). */
+    suspend fun clearFeedSettings() {
+        context.dataStore.edit { prefs ->
+            prefs.remove(Keys.PINNED_FEED_URIS)
+            prefs.remove(Keys.HIDDEN_FEED_URIS)
+        }
+    }
+
     companion object {
         private const val MAX_SEARCH_HISTORY = 20
     }
