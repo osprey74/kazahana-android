@@ -451,7 +451,7 @@ fun SettingsScreen(
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                 )
                 Text(
-                    text = "0.1.0",
+                    text = "1.1.0",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                 )
