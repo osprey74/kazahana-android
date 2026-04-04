@@ -23,6 +23,8 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -72,16 +74,29 @@ class TimelineViewModel @Inject constructor(
 
     private var pollingJob: Job? = null
 
+    /** Cached feed list from API (before local visibility/order settings applied). */
+    private var rawFeedInfos: MutableList<FeedInfo> = mutableListOf()
+
     val currentDid: String
         get() = client.session?.did ?: ""
 
     init {
+        val did = currentDid
         loadTimeline()
         loadSavedFeeds()
         viewModelScope.launch {
-            settingsStore.showAllFeedsInSelector.collect { enabled ->
+            settingsStore.showAllFeedsInSelector(did).collect { enabled ->
                 _uiState.update { it.copy(showAllInSelector = enabled) }
             }
+        }
+        // Re-apply feed settings reactively when visibility/order changes
+        viewModelScope.launch {
+            combine(
+                settingsStore.hiddenFeedURIs(did),
+                settingsStore.pinnedFeedURIs(did),
+            ) { _, _ -> Unit }
+                .drop(1) // skip initial emission (already applied in loadSavedFeeds)
+                .collect { applyFeedSettings() }
         }
         // Auto-polling: restart whenever the interval setting changes
         viewModelScope.launch {
@@ -154,40 +169,9 @@ class TimelineViewModel @Inject constructor(
                         )
                     }
 
-                    // Apply visibility and order settings from local store
-                    val hiddenURIs = settingsStore.hiddenFeedURIs.first().toSet()
-                    val pinnedURIs = settingsStore.pinnedFeedURIs.first()
-
-                    val visible = feedInfos.filter { it.uri == null || it.uri !in hiddenURIs }
-
-                    val sorted = if (pinnedURIs.isNotEmpty()) {
-                        val orderMap = pinnedURIs.withIndex().associate { (i, uri) -> uri to i }
-                        visible.sortedBy { orderMap[it.uri] ?: Int.MAX_VALUE }
-                    } else {
-                        visible
-                    }
-
-                    // "Following" is always first
-                    val following = FeedInfo(
-                        id = "following",
-                        displayName = "Following",
-                        uri = null,
-                        type = "timeline",
-                        labelRes = com.kazahana.app.R.string.feed_following,
-                    )
-                    val visibleResult = listOf(following) + sorted
-
-                    // All feeds (for dropdown when showAllInSelector is on)
-                    val allSorted = if (pinnedURIs.isNotEmpty()) {
-                        val orderMap = pinnedURIs.withIndex().associate { (i, uri) -> uri to i }
-                        feedInfos.sortedBy { orderMap[it.uri] ?: Int.MAX_VALUE }
-                    } else {
-                        feedInfos
-                    }
-                    val allResult = listOf(following) + allSorted
-
-                    // Hidden feeds only (for dropdown selector)
                     // Resolve any hidden URIs that were not returned by the API
+                    val did = currentDid
+                    val hiddenURIs = settingsStore.hiddenFeedURIs(did).first().toSet()
                     val knownUris = feedInfos.map { it.uri }.toSet()
                     val missingHiddenUris = hiddenURIs.filter { it !in knownUris }
                     for (uri in missingHiddenUris) {
@@ -205,21 +189,63 @@ class TimelineViewModel @Inject constructor(
                             }
                         } catch (_: Exception) { /* skip unresolvable */ }
                     }
-                    val hidden = feedInfos.filter { it.uri != null && it.uri in hiddenURIs }
 
-                    _uiState.update {
-                        it.copy(
-                            feeds = visibleResult,
-                            allFeeds = allResult,
-                            hiddenFeeds = hidden,
-                            selectedFeed = it.selectedFeed ?: visibleResult.first(),
-                            isFeedsLoading = false,
-                        )
-                    }
+                    rawFeedInfos = feedInfos
+                    applyFeedSettings()
+                    _uiState.update { it.copy(isFeedsLoading = false) }
                 }
                 .onFailure {
                     _uiState.update { it.copy(isFeedsLoading = false) }
                 }
+        }
+    }
+
+    /** Apply local visibility/order settings to cached feed list without re-fetching from API. */
+    private suspend fun applyFeedSettings() {
+        val feedInfos = rawFeedInfos
+        if (feedInfos.isEmpty()) return
+
+        val did = currentDid
+        val hiddenURIs = settingsStore.hiddenFeedURIs(did).first().toSet()
+        val pinnedURIs = settingsStore.pinnedFeedURIs(did).first()
+
+        val visible = feedInfos.filter { it.uri == null || it.uri !in hiddenURIs }
+
+        val sorted = if (pinnedURIs.isNotEmpty()) {
+            val orderMap = pinnedURIs.withIndex().associate { (i, uri) -> uri to i }
+            visible.sortedBy { orderMap[it.uri] ?: Int.MAX_VALUE }
+        } else {
+            visible
+        }
+
+        // "Following" is always first
+        val following = FeedInfo(
+            id = "following",
+            displayName = "Following",
+            uri = null,
+            type = "timeline",
+            labelRes = com.kazahana.app.R.string.feed_following,
+        )
+        val visibleResult = listOf(following) + sorted
+
+        // All feeds (for dropdown when showAllInSelector is on)
+        val allSorted = if (pinnedURIs.isNotEmpty()) {
+            val orderMap = pinnedURIs.withIndex().associate { (i, uri) -> uri to i }
+            feedInfos.sortedBy { orderMap[it.uri] ?: Int.MAX_VALUE }
+        } else {
+            feedInfos
+        }
+        val allResult = listOf(following) + allSorted
+
+        val hidden = feedInfos.filter { it.uri != null && it.uri in hiddenURIs }
+
+        _uiState.update {
+            it.copy(
+                feeds = visibleResult,
+                allFeeds = allResult,
+                hiddenFeeds = hidden,
+                selectedFeed = it.selectedFeed ?: visibleResult.first(),
+            )
         }
     }
 

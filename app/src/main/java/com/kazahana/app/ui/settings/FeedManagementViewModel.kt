@@ -3,6 +3,7 @@ package com.kazahana.app.ui.settings
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.kazahana.app.data.local.SettingsStore
+import com.kazahana.app.data.remote.ATProtoClient
 import com.kazahana.app.data.repository.FeedRepository
 import com.kazahana.app.ui.timeline.FeedInfo
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -25,6 +26,7 @@ data class FeedManagementUiState(
 class FeedManagementViewModel @Inject constructor(
     private val feedRepository: FeedRepository,
     private val settingsStore: SettingsStore,
+    private val client: ATProtoClient,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(FeedManagementUiState())
@@ -32,10 +34,12 @@ class FeedManagementViewModel @Inject constructor(
 
     private var allFeeds: List<FeedInfo> = emptyList()
 
+    private val did: String get() = client.session?.did ?: ""
+
     init {
         loadFeeds()
         viewModelScope.launch {
-            settingsStore.showAllFeedsInSelector.collect { enabled ->
+            settingsStore.showAllFeedsInSelector(did).collect { enabled ->
                 _uiState.update { it.copy(showAllInSelector = enabled) }
             }
         }
@@ -83,8 +87,8 @@ class FeedManagementViewModel @Inject constructor(
     }
 
     private suspend fun applySettings() {
-        val pinnedURIs = settingsStore.pinnedFeedURIs.first()
-        val hiddenURIs = settingsStore.hiddenFeedURIs.first().toSet()
+        val pinnedURIs = settingsStore.pinnedFeedURIs(did).first()
+        val hiddenURIs = settingsStore.hiddenFeedURIs(did).first().toSet()
 
         val visible = mutableListOf<FeedInfo>()
         val hidden = mutableListOf<FeedInfo>()
@@ -115,13 +119,13 @@ class FeedManagementViewModel @Inject constructor(
 
     fun setShowAllInSelector(enabled: Boolean) {
         viewModelScope.launch {
-            settingsStore.setShowAllFeedsInSelector(enabled)
+            settingsStore.setShowAllFeedsInSelector(did, enabled)
         }
     }
 
     fun toggleVisibility(feed: FeedInfo) {
         viewModelScope.launch {
-            val currentHidden = settingsStore.hiddenFeedURIs.first().toMutableList()
+            val currentHidden = settingsStore.hiddenFeedURIs(did).first().toMutableList()
             val uri = feed.uri ?: return@launch
 
             if (uri in currentHidden) {
@@ -129,7 +133,7 @@ class FeedManagementViewModel @Inject constructor(
             } else {
                 currentHidden.add(uri)
             }
-            settingsStore.setHiddenFeedURIs(currentHidden)
+            settingsStore.setHiddenFeedURIs(did, currentHidden)
             applySettings()
             saveOrder()
         }
@@ -169,7 +173,7 @@ class FeedManagementViewModel @Inject constructor(
             val state = _uiState.value
             val allOrdered = state.visibleFeeds + state.hiddenFeeds
             val uris = allOrdered.mapNotNull { it.uri }
-            settingsStore.setPinnedFeedURIs(uris)
+            settingsStore.setPinnedFeedURIs(did, uris)
         }
     }
 }

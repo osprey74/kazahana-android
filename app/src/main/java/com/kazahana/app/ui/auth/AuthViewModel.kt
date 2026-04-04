@@ -135,15 +135,13 @@ class AuthViewModel @Inject constructor(
             sessionStore.activeAccountDID = session.did
             // 2. Update client session
             client.updateSession(session)
-            // 3. Clear feed settings so they reload from the new account's prefs
-            settingsStore.clearFeedSettings()
-            // 4. Resolve PDS for the new account
+            // 3. Resolve PDS for the new account
             resolvePds(session.did)
-            // 5. Update UI state
+            // 4. Update UI state
             _activeAccountDID.value = session.did
             refreshAccountList()
             _isLoggedIn.value = true
-            // 6. Silent token refresh
+            // 5. Silent token refresh
             viewModelScope.launch {
                 client.refreshToken()
                 refreshAccountList()

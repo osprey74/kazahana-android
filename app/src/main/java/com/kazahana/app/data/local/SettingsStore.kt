@@ -42,6 +42,11 @@ enum class AppLocale(val tag: String, val labelKey: String) {
 
 class SettingsStore(private val context: Context) {
 
+    // Account-scoped key helpers for feed settings
+    private fun pinnedFeedKey(did: String) = stringPreferencesKey("pinned_feed_uris_$did")
+    private fun hiddenFeedKey(did: String) = stringPreferencesKey("hidden_feed_uris_$did")
+    private fun showAllFeedsKey(did: String) = booleanPreferencesKey("show_all_feeds_in_selector_$did")
+
     private object Keys {
         val THEME = stringPreferencesKey("theme")
         val LOCALE = stringPreferencesKey("app_locale")
@@ -52,9 +57,7 @@ class SettingsStore(private val context: Context) {
         val GRAPHIC_MEDIA_PREF = stringPreferencesKey("moderation_graphic_media")
         val GORE_PREF = stringPreferencesKey("moderation_gore")
         val POLL_INTERVAL = intPreferencesKey("poll_interval_seconds")
-        val PINNED_FEED_URIS = stringPreferencesKey("pinned_feed_uris")
-        val HIDDEN_FEED_URIS = stringPreferencesKey("hidden_feed_uris")
-        val SHOW_ALL_FEEDS_IN_SELECTOR = booleanPreferencesKey("show_all_feeds_in_selector")
+        // Feed settings use account-scoped keys (see helper functions below)
         val SEARCH_HISTORY = stringPreferencesKey("search_history")
         val DM_SEARCH_HISTORY = stringPreferencesKey("dm_search_history")
         val SHOW_VIA = booleanPreferencesKey("show_via")
@@ -109,18 +112,18 @@ class SettingsStore(private val context: Context) {
         prefs[Keys.POLL_INTERVAL] ?: 60
     }
 
-    /** JSON-encoded list of feed URIs in display order */
-    val pinnedFeedURIs: Flow<List<String>> = context.dataStore.data.map { prefs ->
-        parseStringList(prefs[Keys.PINNED_FEED_URIS])
+    /** JSON-encoded list of feed URIs in display order (per-account). */
+    fun pinnedFeedURIs(did: String): Flow<List<String>> = context.dataStore.data.map { prefs ->
+        parseStringList(prefs[pinnedFeedKey(did)])
     }
 
-    /** JSON-encoded list of hidden feed URIs */
-    val hiddenFeedURIs: Flow<List<String>> = context.dataStore.data.map { prefs ->
-        parseStringList(prefs[Keys.HIDDEN_FEED_URIS])
+    /** JSON-encoded list of hidden feed URIs (per-account). */
+    fun hiddenFeedURIs(did: String): Flow<List<String>> = context.dataStore.data.map { prefs ->
+        parseStringList(prefs[hiddenFeedKey(did)])
     }
 
-    val showAllFeedsInSelector: Flow<Boolean> = context.dataStore.data.map { prefs ->
-        prefs[Keys.SHOW_ALL_FEEDS_IN_SELECTOR] ?: true
+    fun showAllFeedsInSelector(did: String): Flow<Boolean> = context.dataStore.data.map { prefs ->
+        prefs[showAllFeedsKey(did)] ?: true
     }
 
     suspend fun setTheme(mode: ThemeMode) {
@@ -169,23 +172,15 @@ class SettingsStore(private val context: Context) {
         }
     }
 
-    suspend fun setPinnedFeedURIs(uris: List<String>) {
+    suspend fun setPinnedFeedURIs(did: String, uris: List<String>) {
         context.dataStore.edit { prefs ->
-            prefs[Keys.PINNED_FEED_URIS] = encodeStringList(uris)
+            prefs[pinnedFeedKey(did)] = encodeStringList(uris)
         }
     }
 
-    suspend fun setShowAllFeedsInSelector(enabled: Boolean) {
+    suspend fun setShowAllFeedsInSelector(did: String, enabled: Boolean) {
         context.dataStore.edit { prefs ->
-            prefs[Keys.SHOW_ALL_FEEDS_IN_SELECTOR] = enabled
-        }
-    }
-
-    /** Clear feed-related settings (used on account switch). */
-    suspend fun clearFeedSettings() {
-        context.dataStore.edit { prefs ->
-            prefs.remove(Keys.PINNED_FEED_URIS)
-            prefs.remove(Keys.HIDDEN_FEED_URIS)
+            prefs[showAllFeedsKey(did)] = enabled
         }
     }
 
@@ -387,9 +382,9 @@ class SettingsStore(private val context: Context) {
         }
     }
 
-    suspend fun setHiddenFeedURIs(uris: List<String>) {
+    suspend fun setHiddenFeedURIs(did: String, uris: List<String>) {
         context.dataStore.edit { prefs ->
-            prefs[Keys.HIDDEN_FEED_URIS] = encodeStringList(uris)
+            prefs[hiddenFeedKey(did)] = encodeStringList(uris)
         }
     }
 
