@@ -35,6 +35,7 @@ Kazahana is designed as a **lightweight companion app** — not a full-featured 
 - **Moderation** — Content labels, filtering, blur, and reporting
 - **BSAF support** — Structured alert feed with bot badge and severity color border
 - **Sharing** — Share sheet integration (Intent Filter) and deep links (App Links)
+- **Multi-account** — Account picker, in-app switcher, per-account feed settings
 - **Settings** — Theme (light / dark / system), via label toggle, support section (Ko-fi)
 - **i18n** — 11 languages (EN, JA, DE, ES, FR, ID, KO, PT, RU, ZH-CN, ZH-TW)
 
