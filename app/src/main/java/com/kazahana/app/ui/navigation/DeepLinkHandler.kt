@@ -2,6 +2,7 @@ package com.kazahana.app.ui.navigation
 
 import android.content.Intent
 import android.net.Uri
+import com.kazahana.app.service.PushNotificationService
 
 /**
  * Represents a parsed deep link or share intent that maps to an in-app navigation action.
@@ -18,6 +19,9 @@ sealed class DeepLink {
 
     /** Open search with a query. */
     data class Search(val query: String) : DeepLink()
+
+    /** Navigate to notifications tab, optionally switching to a target account. */
+    data class Notification(val targetDid: String?) : DeepLink()
 }
 
 /**
@@ -28,6 +32,10 @@ object DeepLinkHandler {
 
     fun parse(intent: Intent): DeepLink? {
         return when (intent.action) {
+            PushNotificationService.ACTION_PUSH_NOTIFICATION -> {
+                val targetDid = intent.getStringExtra(PushNotificationService.EXTRA_TARGET_DID)
+                DeepLink.Notification(targetDid)
+            }
             Intent.ACTION_SEND -> parseShareIntent(intent)
             Intent.ACTION_VIEW -> intent.data?.let { parseViewUri(it) }
             else -> null

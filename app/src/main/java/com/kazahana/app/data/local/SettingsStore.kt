@@ -65,6 +65,7 @@ class SettingsStore(private val context: Context) {
         val BSAF_REGISTERED_BOTS = stringPreferencesKey("bsaf_registered_bots")
         val CLAUDE_API_KEY = stringPreferencesKey("claude_api_key")
         val BLUESKY_POST_LANGUAGES = stringPreferencesKey("bluesky_post_languages")
+        val PUSH_NOTIFICATIONS_ENABLED = booleanPreferencesKey("push_notifications_enabled")
     }
 
     val themeMode: Flow<ThemeMode> = context.dataStore.data.map { prefs ->
@@ -110,6 +111,16 @@ class SettingsStore(private val context: Context) {
 
     val pollIntervalSeconds: Flow<Int> = context.dataStore.data.map { prefs ->
         prefs[Keys.POLL_INTERVAL] ?: 60
+    }
+
+    val pushNotificationsEnabled: Flow<Boolean> = context.dataStore.data.map { prefs ->
+        prefs[Keys.PUSH_NOTIFICATIONS_ENABLED] ?: false
+    }
+
+    suspend fun setPushNotificationsEnabled(enabled: Boolean) {
+        context.dataStore.edit { prefs ->
+            prefs[Keys.PUSH_NOTIFICATIONS_ENABLED] = enabled
+        }
     }
 
     /** JSON-encoded list of feed URIs in display order (per-account). */

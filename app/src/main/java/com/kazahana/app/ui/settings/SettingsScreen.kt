@@ -35,14 +35,20 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import android.Manifest
 import android.annotation.SuppressLint
+import android.content.pm.PackageManager
 import android.net.Uri
+import android.os.Build
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.core.content.ContextCompat
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.viewinterop.AndroidView
@@ -147,6 +153,61 @@ fun SettingsScreen(
                     tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
                 )
             }
+
+            HorizontalDivider()
+
+            // ── Section: Push Notifications ──
+            SectionHeader(stringResource(R.string.settings_push_notifications))
+
+            val context = LocalContext.current
+            val notificationPermissionLauncher = rememberLauncherForActivityResult(
+                ActivityResultContracts.RequestPermission()
+            ) { granted ->
+                if (granted) {
+                    viewModel.setPushNotificationsEnabled(true)
+                }
+                // If denied, leave toggle OFF
+            }
+
+            val onTogglePush: (Boolean) -> Unit = { enabled ->
+                if (enabled) {
+                    // Check if notification permission is needed (Android 13+)
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+                        ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS)
+                        != PackageManager.PERMISSION_GRANTED
+                    ) {
+                        notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                    } else {
+                        viewModel.setPushNotificationsEnabled(true)
+                    }
+                } else {
+                    viewModel.setPushNotificationsEnabled(false)
+                }
+            }
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onTogglePush(!uiState.pushNotificationsEnabled) }
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = stringResource(R.string.settings_push_notifications_enable),
+                    style = MaterialTheme.typography.bodyLarge,
+                )
+                Switch(
+                    checked = uiState.pushNotificationsEnabled,
+                    onCheckedChange = onTogglePush,
+                )
+            }
+            Text(
+                text = stringResource(R.string.settings_push_notifications_description),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+            )
 
             HorizontalDivider()
 

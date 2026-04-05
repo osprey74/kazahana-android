@@ -4,10 +4,12 @@ import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.os.LocaleListCompat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.google.firebase.messaging.FirebaseMessaging
 import com.kazahana.app.data.local.AppLocale
 import com.kazahana.app.data.local.ModerationPref
 import com.kazahana.app.data.local.SettingsStore
 import com.kazahana.app.data.local.ThemeMode
+import com.kazahana.app.data.remote.PushTokenManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -29,11 +31,13 @@ data class SettingsUiState(
     val showVia: Boolean = false,
     val bsafEnabled: Boolean = false,
     val claudeApiKey: String = "",
+    val pushNotificationsEnabled: Boolean = false,
 )
 
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
     private val settingsStore: SettingsStore,
+    private val pushTokenManager: PushTokenManager,
 ) : ViewModel() {
 
     val uiState: StateFlow<SettingsUiState> = combine(
@@ -60,11 +64,12 @@ class SettingsViewModel @Inject constructor(
             settingsStore.showVia,
             settingsStore.bsafEnabled,
             settingsStore.claudeApiKey,
+            settingsStore.pushNotificationsEnabled,
         ) { values ->
             Triple(
                 Triple(values[0] as ModerationPref, values[1] as ModerationPref, values[2] as ModerationPref),
                 Triple(values[3] as Int, values[4] as Boolean, values[5] as Boolean),
-                values[6] as String,
+                Pair(values[6] as String, values[7] as Boolean),
             )
         },
     ) { base, extra ->
@@ -75,7 +80,8 @@ class SettingsViewModel @Inject constructor(
             pollIntervalSeconds = extra.second.first,
             showVia = extra.second.second,
             bsafEnabled = extra.second.third,
-            claudeApiKey = extra.third,
+            claudeApiKey = extra.third.first,
+            pushNotificationsEnabled = extra.third.second,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), SettingsUiState())
 
@@ -123,5 +129,20 @@ class SettingsViewModel @Inject constructor(
 
     fun clearClaudeApiKey() {
         viewModelScope.launch { settingsStore.setClaudeApiKey("") }
+    }
+
+    fun setPushNotificationsEnabled(enabled: Boolean) {
+        viewModelScope.launch {
+            settingsStore.setPushNotificationsEnabled(enabled)
+            if (enabled) {
+                FirebaseMessaging.getInstance().token.addOnSuccessListener { token ->
+                    viewModelScope.launch {
+                        pushTokenManager.registerTokenForAllAccounts(token)
+                    }
+                }
+            } else {
+                pushTokenManager.unregisterTokenForAllAccounts()
+            }
+        }
     }
 }

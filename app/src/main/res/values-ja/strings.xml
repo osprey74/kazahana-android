@@ -234,6 +234,11 @@
     <string name="bsaf_unregister">登録解除</string>
     <string name="bsaf_duplicate_indicator">他%1$d件のBotも報告</string>
 
+    <!-- Push Notifications -->
+    <string name="settings_push_notifications">プッシュ通知</string>
+    <string name="settings_push_notifications_enable">プッシュ通知を有効にする</string>
+    <string name="settings_push_notifications_description">いいね、リポスト、フォロー、返信、メンション、引用のリアルタイム通知を受け取ります。</string>
+
     <!-- Claude API -->
     <string name="settings_claude_api">Claude API</string>
     <string name="settings_claude_api_revoke">APIキーを削除</string>

@@ -269,6 +269,11 @@
     <string name="bsaf_unregister">Unregister</string>
     <string name="bsaf_duplicate_indicator">Also reported by %1$d other bot(s)</string>
 
+    <!-- Push Notifications -->
+    <string name="settings_push_notifications">Push Notifications</string>
+    <string name="settings_push_notifications_enable">Enable push notifications</string>
+    <string name="settings_push_notifications_description">Receive real-time notifications for likes, reposts, follows, replies, mentions, and quotes.</string>
+
     <!-- Claude API -->
     <string name="settings_claude_api">Claude API</string>
     <string name="settings_claude_api_revoke">Revoke API key</string>

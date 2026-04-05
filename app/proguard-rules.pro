@@ -13,3 +13,7 @@
 
 # SLF4J
 -dontwarn org.slf4j.**
+
+# Firebase Messaging
+-keep class com.google.firebase.messaging.** { *; }
+-dontwarn com.google.firebase.messaging.**

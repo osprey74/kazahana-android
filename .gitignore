@@ -36,3 +36,6 @@ app/release/
 
 # Secrets
 secrets.properties
+
+# Firebase
+app/google-services.json

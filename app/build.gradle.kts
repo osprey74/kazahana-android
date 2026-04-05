@@ -7,6 +7,7 @@ plugins {
     alias(libs.plugins.compose.compiler)
     alias(libs.plugins.hilt)
     alias(libs.plugins.ksp)
+    alias(libs.plugins.google.services)
 }
 
 android {
@@ -21,6 +22,15 @@ android {
         versionName = "1.1.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        // Push notification backend API secret
+        val secretsFile = rootProject.file("secrets.properties")
+        val pushApiSecret = if (secretsFile.exists()) {
+            val secrets = Properties()
+            secrets.load(secretsFile.inputStream())
+            secrets.getProperty("PUSH_API_SECRET", "")
+        } else ""
+        buildConfigField("String", "PUSH_API_SECRET", "\"$pushApiSecret\"")
     }
 
     signingConfigs {
@@ -60,6 +70,7 @@ android {
 
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 
@@ -112,4 +123,7 @@ dependencies {
     implementation(libs.media3.exoplayer)
     implementation(libs.media3.exoplayer.hls)
     implementation(libs.media3.ui)
+
+    // Firebase
+    implementation(libs.firebase.messaging)
 }

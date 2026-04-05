@@ -10,6 +10,7 @@ import com.kazahana.app.data.repository.InteractionRepository
 import com.kazahana.app.data.repository.NotificationRepository
 import com.kazahana.app.data.repository.PostRepository
 import com.kazahana.app.data.repository.ProfileRepository
+import com.kazahana.app.data.remote.PushTokenManager
 import com.kazahana.app.data.repository.ReportRepository
 import com.kazahana.app.data.repository.SearchRepository
 import com.kazahana.app.data.repository.ThreadRepository
@@ -102,5 +103,11 @@ object AppModule {
     fun provideReportRepository(
         client: ATProtoClient,
     ): ReportRepository = ReportRepository(client)
+
+    @Provides
+    @Singleton
+    fun providePushTokenManager(
+        sessionStore: SessionStore,
+    ): PushTokenManager = PushTokenManager(sessionStore)
 
 }

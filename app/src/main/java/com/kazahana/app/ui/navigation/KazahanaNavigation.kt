@@ -202,6 +202,20 @@ private fun MainScreen(
     val currentDestination = navBackStackEntry?.destination
     val scope = rememberCoroutineScope()
 
+    // Shared NotificationViewModel for unread badge
+    val notificationViewModel: NotificationViewModel = hiltViewModel()
+    val unreadCount by notificationViewModel.unreadCount.collectAsState()
+
+    // Current user DID for messages
+    val myDid = authViewModel.currentDid
+
+    // Active handle for account switcher button
+    val savedAccounts by authViewModel.savedAccounts.collectAsState()
+    val activeHandle = remember(myDid, savedAccounts) {
+        savedAccounts.find { it.did == myDid }?.handle
+    }
+    var showAccountSwitcher by remember { mutableStateOf(false) }
+
     // Handle deep link / share intent navigation
     androidx.compose.runtime.LaunchedEffect(deepLinkFlow) {
         deepLinkFlow?.collect { deepLink ->
@@ -218,23 +232,26 @@ private fun MainScreen(
                 is DeepLink.Search -> navController.navigate(
                     SearchWithQueryRoute(query = deepLink.query)
                 ) { launchSingleTop = true }
+                is DeepLink.Notification -> {
+                    // Switch account if target_did differs from current active
+                    val targetDid = deepLink.targetDid
+                    if (targetDid != null && targetDid != myDid) {
+                        val targetSession = savedAccounts.find { it.did == targetDid }
+                        if (targetSession != null) {
+                            authViewModel.switchAccount(targetSession)
+                        }
+                    }
+                    // Navigate to notifications tab
+                    navController.navigate(NotificationsRoute) {
+                        popUpTo(navController.graph.findStartDestination().id) {
+                            inclusive = false
+                        }
+                        launchSingleTop = true
+                    }
+                }
             }
         }
     }
-
-    // Shared NotificationViewModel for unread badge
-    val notificationViewModel: NotificationViewModel = hiltViewModel()
-    val unreadCount by notificationViewModel.unreadCount.collectAsState()
-
-    // Current user DID for messages
-    val myDid = authViewModel.currentDid
-
-    // Active handle for account switcher button
-    val savedAccounts by authViewModel.savedAccounts.collectAsState()
-    val activeHandle = remember(myDid, savedAccounts) {
-        savedAccounts.find { it.did == myDid }?.handle
-    }
-    var showAccountSwitcher by remember { mutableStateOf(false) }
 
     // Tab re-tap events for refresh + scroll to top (keyed by route label)
     val homeRetap = remember { MutableSharedFlow<Unit>() }

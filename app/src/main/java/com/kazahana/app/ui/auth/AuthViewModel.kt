@@ -2,12 +2,14 @@ package com.kazahana.app.ui.auth
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.google.firebase.messaging.FirebaseMessaging
 import com.kazahana.app.data.local.SessionStore
 import com.kazahana.app.data.local.SettingsStore
 import com.kazahana.app.data.model.DIDDocument
 import com.kazahana.app.data.model.ResolveHandleResponse
 import com.kazahana.app.data.model.Session
 import com.kazahana.app.data.remote.ATProtoClient
+import com.kazahana.app.data.remote.PushTokenManager
 import com.kazahana.app.data.repository.FeedRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import io.ktor.client.call.body
@@ -18,6 +20,7 @@ import kotlinx.serialization.json.put
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -32,6 +35,7 @@ class AuthViewModel @Inject constructor(
     private val sessionStore: SessionStore,
     private val feedRepository: FeedRepository,
     private val settingsStore: SettingsStore,
+    private val pushTokenManager: PushTokenManager,
 ) : ViewModel() {
 
     // null = still resolving PDS, true = logged in, false = not logged in
@@ -110,6 +114,7 @@ class AuthViewModel @Inject constructor(
                     _showAddAccountLogin.value = false
                     _uiState.value = LoginUiState()
                     loadPostLanguages()
+                    registerPushTokenForDid(session.did)
                 } else {
                     val statusCode = response.status.value
                     val errorMsg = when {
@@ -168,6 +173,9 @@ class AuthViewModel @Inject constructor(
                     // Best-effort — ignore failures
                 }
             }
+
+            // Unregister push token for this account
+            unregisterPushTokenForDid(did)
 
             val wasActive = sessionStore.delete(did)
             refreshAccountList()
@@ -234,6 +242,27 @@ class AuthViewModel @Inject constructor(
             } else null
         } catch (_: Exception) {
             null
+        }
+    }
+
+    private fun registerPushTokenForDid(did: String) {
+        viewModelScope.launch {
+            try {
+                if (!settingsStore.pushNotificationsEnabled.first()) return@launch
+                FirebaseMessaging.getInstance().token.addOnSuccessListener { token ->
+                    viewModelScope.launch {
+                        pushTokenManager.registerToken(did, token)
+                    }
+                }
+            } catch (_: Exception) { /* silent */ }
+        }
+    }
+
+    private fun unregisterPushTokenForDid(did: String) {
+        viewModelScope.launch {
+            try {
+                pushTokenManager.unregisterToken(did)
+            } catch (_: Exception) { /* silent */ }
         }
     }
 
