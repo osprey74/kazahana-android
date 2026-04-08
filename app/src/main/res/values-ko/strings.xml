@@ -185,4 +185,150 @@
     <string name="feed_type_feed">피드</string>
     <string name="feed_type_list">리스트</string>
     <string name="bot_label">이 계정은 자동화되어 있습니다</string>
+    <!-- Watermark -->
+    <string name="watermark_title">워터마크</string>
+    <string name="watermark_enable">이미지에 워터마크를 자동으로 추가</string>
+    <string name="watermark_preview">미리보기</string>
+    <string name="watermark_preset">텍스트 프리셋</string>
+    <string name="watermark_preset_copyright">무단 전재 금지</string>
+    <string name="watermark_preset_ai_ja">AI/전재 금지 (JP)</string>
+    <string name="watermark_preset_ai_en">No AI Training</string>
+    <string name="watermark_preset_ai_both">AI + 무단 전재 금지</string>
+    <string name="watermark_preset_photo">촬영/편집</string>
+    <string name="watermark_preset_custom">사용자 정의</string>
+    <string name="watermark_custom_placeholder">사용자 정의 텍스트 입력 (최대 50자)</string>
+    <string name="watermark_custom_hint">줄 바꿈으로 여러 줄 입력이 가능합니다.</string>
+    <string name="watermark_position">위치</string>
+    <string name="watermark_pos_top_left">왼쪽 상단</string>
+    <string name="watermark_pos_top_center">중앙 상단</string>
+    <string name="watermark_pos_top_right">오른쪽 상단</string>
+    <string name="watermark_pos_bottom_left">왼쪽 하단</string>
+    <string name="watermark_pos_bottom_center">중앙 하단</string>
+    <string name="watermark_pos_bottom_right">오른쪽 하단</string>
+    <string name="watermark_pos_random">랜덤</string>
+    <string name="watermark_pos_tile">타일링</string>
+    <string name="watermark_opacity">불투명도</string>
+    <string name="watermark_font_size">글꼴 크기</string>
+    <string name="watermark_font_size_hint">최소 크기는 이미지 너비에 따라 자동으로 설정됩니다.</string>
+    <string name="watermark_text_color">텍스트 색상</string>
+    <string name="watermark_confirm_before_post">게시 전 워터마크 미리보기</string>
+    <string name="watermark_skip_video">동영상에는 적용하지 않음</string>
+    <string name="watermark_hint">워터마크는 게시 전 이미지에 합성됩니다. AI 학습 거부 문구는 의사 표시로서의 효과입니다.</string>
+    <string name="watermark_confirm_title">워터마크 미리보기</string>
+    <string name="watermark_confirm_message">워터마크가 합성된 이미지를 확인해 주세요.</string>
+    <string name="watermark_post_without">WM 없이 게시</string>
+    <string name="watermark_status_on">ON</string>
+    <string name="watermark_label_copyright">무단 전재 금지</string>
+    <string name="watermark_label_ai_ja">AI 학습·전재 금지</string>
+    <string name="watermark_label_photo">촬영·편집</string>
+    <!-- Draft Image Warning -->
+    <string name="settings_draft_image_warning">임시 저장 확인</string>
+    <string name="settings_enable_draft_image_warning">이미지가 포함된 임시 저장 전 경고 표시</string>
+    <string name="draft_image_warning_title">이미지 품질 안내</string>
+    <string name="draft_image_warning_message">이미지가 포함된 게시물을 임시 저장하면 이미지 품질이 크게 저하될 수 있습니다.</string>
+    <string name="draft_save_anyway">그래도 임시 저장</string>
+
+    <!-- Account Picker -->
+    <string name="auth_account_picker_title">계정 선택</string>
+    <string name="auth_account_picker_add">다른 계정 추가</string>
+    <string name="auth_account_picker_remove">계정 삭제</string>
+    <string name="auth_account_picker_remove_title">이 계정을 삭제하시겠습니까?</string>
+    <string name="auth_account_picker_remove_message">이 기기에서 계정 데이터가 삭제됩니다. 다시 로그인하여 추가할 수 있습니다.</string>
+    <string name="auth_handle_placeholder">user.bsky.social</string>
+
+    <!-- BSAF -->
+    <string name="bsaf_enable">BSAF (구조화된 알림 피드) 활성화</string>
+    <string name="bsaf_manage_bots">BSAF Bot 관리</string>
+    <string name="bsaf_title">BSAF Bot</string>
+    <string name="bsaf_register_title">Bot 등록</string>
+    <string name="bsaf_register_description">Bot 정의 JSON 파일의 URL을 입력하세요</string>
+    <string name="bsaf_url_label">Bot 정의 URL</string>
+    <string name="bsaf_register_button">등록</string>
+    <string name="bsaf_register_success">Bot이 성공적으로 등록되었습니다</string>
+    <string name="bsaf_registered_bots">등록된 Bot</string>
+    <string name="bsaf_no_bots">등록된 Bot이 없습니다</string>
+    <string name="bsaf_select_all">모두 선택</string>
+    <string name="bsaf_deselect_all">모두 선택 해제</string>
+    <string name="bsaf_unregister">등록 해제</string>
+    <string name="bsaf_duplicate_indicator">다른 %1$d개의 Bot에서도 보고됨</string>
+
+    <!-- Compose extras -->
+    <string name="compose_drafts">임시 저장</string>
+    <string name="compose_save_draft">임시 저장</string>
+    <string name="compose_draft_saved">임시 저장됨</string>
+    <string name="compose_draft_discard">버리기</string>
+    <string name="compose_draft_delete_all">모두 삭제</string>
+    <string name="compose_draft_images">이미지 %1$d개</string>
+    <string name="compose_draft_video">동영상</string>
+    <string name="compose_unsaved_title">임시 저장하시겠습니까?</string>
+    <string name="compose_unsaved_message">저장되지 않은 변경 사항이 있습니다.</string>
+    <string name="compose_generate_alt">ALT 텍스트 생성</string>
+    <string name="compose_generating_alt">생성 중…</string>
+
+    <!-- DM Search -->
+    <string name="dm_search_history">최근</string>
+    <string name="dm_search_history_clear">모두 삭제</string>
+
+    <!-- Image Edit -->
+    <string name="image_edit_title">이미지 편집</string>
+    <string name="image_edit_crop_original">원본</string>
+    <string name="image_edit_crop_square">정사각형</string>
+    <string name="image_edit_crop_free">자유</string>
+    <string name="image_edit_rotate">회전</string>
+    <string name="image_edit_done">완료</string>
+
+    <!-- Messages extras -->
+    <string name="messages_accept">수락</string>
+    <string name="messages_delete_confirm">메시지 삭제</string>
+    <string name="messages_new_conversation">새 대화</string>
+    <string name="messages_request">메시지 요청</string>
+    <string name="messages_search_user">사용자 검색…</string>
+
+    <!-- Post extras -->
+    <string name="post_copy_link">링크 복사</string>
+    <string name="post_link_copied">링크가 복사되었습니다</string>
+    <string name="post_share">공유</string>
+    <string name="post_quote">인용</string>
+    <string name="post_quote_post">게시물 인용</string>
+    <string name="post_quotes_title">인용</string>
+    <string name="post_view_quotes">인용 보기</string>
+
+    <!-- Profile extras -->
+    <string name="profile_tab_feeds">피드</string>
+    <string name="profile_tab_lists">리스트</string>
+    <string name="profile_tab_starter_packs">스타터 팩</string>
+    <string name="profile_no_feeds">아직 피드가 없습니다</string>
+    <string name="profile_no_lists">아직 리스트가 없습니다</string>
+    <string name="profile_no_starter_packs">아직 스타터 팩이 없습니다</string>
+    <string name="profile_feed_likes">좋아요 %1$s개</string>
+    <string name="profile_list_items">%1$s개 항목</string>
+    <string name="profile_starter_pack_members">멤버 %1$s명</string>
+    <string name="profile_add_to_list">리스트에 추가</string>
+    <string name="profile_add_to_list_title">리스트에 추가</string>
+    <string name="profile_no_curate_lists">리스트가 없습니다. Bluesky에서 리스트를 만들어 시작하세요.</string>
+    <string name="profile_list_add_success">리스트에 추가되었습니다</string>
+    <string name="profile_list_remove_success">리스트에서 삭제되었습니다</string>
+    <string name="profile_list_error">리스트 업데이트에 실패했습니다</string>
+    <string name="profile_mention">멘션</string>
+    <string name="profile_mute_user">이 사용자 음소거</string>
+    <string name="profile_unmute_user">이 사용자 음소거 해제</string>
+    <string name="profile_block_user">이 사용자 차단</string>
+    <string name="profile_unblock_user">이 사용자 차단 해제</string>
+
+    <!-- Settings extras -->
+    <string name="settings_accounts">계정</string>
+    <string name="settings_active_account">활성</string>
+    <string name="settings_add_account">계정 추가</string>
+    <string name="settings_polling_interval">자동 새로고침 간격</string>
+    <string name="settings_polling_off">끄기</string>
+    <string name="settings_polling_30s">30초</string>
+    <string name="settings_polling_60s">60초</string>
+    <string name="settings_polling_90s">90초</string>
+    <string name="settings_polling_120s">120초</string>
+    <string name="settings_push_notifications">푸시 알림</string>
+    <string name="settings_push_notifications_enable">푸시 알림 활성화</string>
+    <string name="settings_push_notifications_description">좋아요, 리포스트, 팔로우, 답글, 멘션, 인용에 대한 실시간 알림을 받습니다.</string>
+    <string name="settings_claude_api">Claude API</string>
+    <string name="settings_claude_api_revoke">API 키 삭제</string>
+    <string name="settings_claude_api_footer">이미지의 ALT 텍스트 자동 생성에 사용됩니다.</string>
 </resources>

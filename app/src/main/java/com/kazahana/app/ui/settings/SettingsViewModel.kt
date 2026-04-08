@@ -5,12 +5,15 @@ import androidx.core.os.LocaleListCompat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.messaging.FirebaseMessaging
+import com.kazahana.app.data.WatermarkSettings
 import com.kazahana.app.data.local.AppLocale
 import com.kazahana.app.data.local.ModerationPref
+import com.kazahana.app.data.local.SessionStore
 import com.kazahana.app.data.local.SettingsStore
 import com.kazahana.app.data.local.ThemeMode
 import com.kazahana.app.data.remote.PushTokenManager
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
@@ -38,7 +41,26 @@ data class SettingsUiState(
 class SettingsViewModel @Inject constructor(
     private val settingsStore: SettingsStore,
     private val pushTokenManager: PushTokenManager,
+    private val sessionStore: SessionStore,
 ) : ViewModel() {
+
+    val watermarkSettings: StateFlow<WatermarkSettings> = settingsStore.watermarkSettings
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), WatermarkSettings())
+
+    val currentHandle: StateFlow<String> = MutableStateFlow(
+        sessionStore.load()?.handle ?: "example.bsky.social"
+    )
+
+    fun updateWatermark(settings: WatermarkSettings) {
+        viewModelScope.launch { settingsStore.setWatermarkSettings(settings) }
+    }
+
+    val confirmDraftImageQuality: StateFlow<Boolean> = settingsStore.confirmDraftImageQuality
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), true)
+
+    fun setConfirmDraftImageQuality(enabled: Boolean) {
+        viewModelScope.launch { settingsStore.setConfirmDraftImageQuality(enabled) }
+    }
 
     val uiState: StateFlow<SettingsUiState> = combine(
         combine(

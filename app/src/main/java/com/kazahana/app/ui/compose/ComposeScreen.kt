@@ -1,6 +1,8 @@
 package com.kazahana.app.ui.compose
 
+import android.graphics.Bitmap
 import android.net.Uri
+import androidx.compose.foundation.Image
 import android.text.format.DateUtils
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -63,8 +65,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -84,8 +88,16 @@ fun ComposeScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val draftsList by viewModel.drafts.collectAsState()
+    val wmSettings by viewModel.watermarkSettings.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     var showUnsavedDialog by remember { mutableStateOf(false) }
+
+    // Watermark confirmation state
+    var wmConfirmData by remember { mutableStateOf<List<Pair<Bitmap, ByteArray>>?>(null) }
+
+    // Draft image quality warning state
+    val confirmDraftImageQuality by viewModel.confirmDraftImageQuality.collectAsState()
+    var showDraftImageWarning by remember { mutableStateOf(false) }
 
     // Set reply/quote targets once
     LaunchedEffect(replyTarget) {
@@ -368,6 +380,29 @@ fun ComposeScreen(
         )
     }
 
+    // Draft image quality warning dialog
+    if (showDraftImageWarning) {
+        AlertDialog(
+            onDismissRequest = { showDraftImageWarning = false },
+            title = { Text(stringResource(R.string.draft_image_warning_title)) },
+            text = { Text(stringResource(R.string.draft_image_warning_message)) },
+            confirmButton = {
+                TextButton(onClick = {
+                    showDraftImageWarning = false
+                    viewModel.saveDraft()
+                    onNavigateBack()
+                }) {
+                    Text(stringResource(R.string.draft_save_anyway))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDraftImageWarning = false }) {
+                    Text(stringResource(R.string.common_cancel))
+                }
+            },
+        )
+    }
+
     // Unsaved content dialog
     if (showUnsavedDialog) {
         AlertDialog(
@@ -377,8 +412,13 @@ fun ComposeScreen(
             confirmButton = {
                 TextButton(onClick = {
                     showUnsavedDialog = false
-                    viewModel.saveDraft()
-                    onNavigateBack()
+                    // Check if images are present and warning is enabled
+                    if (uiState.images.isNotEmpty() && confirmDraftImageQuality) {
+                        showDraftImageWarning = true
+                    } else {
+                        viewModel.saveDraft()
+                        onNavigateBack()
+                    }
                 }) {
                     Text(stringResource(R.string.compose_save_draft))
                 }
@@ -454,6 +494,93 @@ fun ComposeScreen(
         }
     }
 
+    // Watermark confirm modal
+    wmConfirmData?.let { confirmImages ->
+        AlertDialog(
+            onDismissRequest = {
+                confirmImages.forEach { (bmp, _) -> bmp.recycle() }
+                wmConfirmData = null
+            },
+            title = { Text(stringResource(R.string.watermark_confirm_title)) },
+            text = {
+                Column(
+                    modifier = Modifier.verticalScroll(rememberScrollState()),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    Text(
+                        text = stringResource(R.string.watermark_confirm_message),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    if (confirmImages.size == 1) {
+                        Image(
+                            bitmap = confirmImages[0].first.asImageBitmap(),
+                            contentDescription = null,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(8.dp)),
+                            contentScale = ContentScale.FillWidth,
+                        )
+                    } else {
+                        // 2-column grid
+                        val rows = confirmImages.chunked(2)
+                        rows.forEach { row ->
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                modifier = Modifier.fillMaxWidth(),
+                            ) {
+                                row.forEach { (bmp, _) ->
+                                    Image(
+                                        bitmap = bmp.asImageBitmap(),
+                                        contentDescription = null,
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .clip(RoundedCornerShape(8.dp)),
+                                        contentScale = ContentScale.FillWidth,
+                                    )
+                                }
+                                if (row.size == 1) {
+                                    Spacer(modifier = Modifier.weight(1f))
+                                }
+                            }
+                            Spacer(modifier = Modifier.height(8.dp))
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        val wmBytes = confirmImages.map { (_, bytes) -> Pair(bytes, "image/jpeg") }
+                        confirmImages.forEach { (bmp, _) -> bmp.recycle() }
+                        wmConfirmData = null
+                        viewModel.post(preComputedWmImages = wmBytes)
+                    },
+                ) {
+                    Text(stringResource(R.string.compose_post), fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                Row {
+                    TextButton(onClick = {
+                        confirmImages.forEach { (bmp, _) -> bmp.recycle() }
+                        wmConfirmData = null
+                    }) {
+                        Text(stringResource(R.string.common_cancel))
+                    }
+                    TextButton(onClick = {
+                        confirmImages.forEach { (bmp, _) -> bmp.recycle() }
+                        wmConfirmData = null
+                        viewModel.post(skipWatermark = true)
+                    }) {
+                        Text(stringResource(R.string.watermark_post_without))
+                    }
+                }
+            },
+        )
+    }
+
     Box(modifier = Modifier.fillMaxSize()) {
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
@@ -490,6 +617,19 @@ fun ComposeScreen(
                             )
                         }
                     }
+                    // "WMなし" button — only when watermark enabled and images attached
+                    if (wmSettings.enabled && uiState.images.isNotEmpty()) {
+                        TextButton(
+                            onClick = { viewModel.post(skipWatermark = true) },
+                            enabled = uiState.canPost && !uiState.isOverLimit && !uiState.isPosting,
+                        ) {
+                            Text(
+                                stringResource(R.string.watermark_post_without),
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
                     if (uiState.isPosting) {
                         CircularProgressIndicator(
                             modifier = Modifier
@@ -499,7 +639,20 @@ fun ComposeScreen(
                         )
                     } else {
                         TextButton(
-                            onClick = { viewModel.post() },
+                            onClick = {
+                                // Check if watermark should be applied
+                                if (wmSettings.enabled && uiState.images.isNotEmpty()) {
+                                    if (wmSettings.confirmBeforePost) {
+                                        // Show confirmation modal with preview
+                                        wmConfirmData = viewModel.prepareWatermarkedImages()
+                                    } else {
+                                        // Apply watermark directly
+                                        viewModel.post()
+                                    }
+                                } else {
+                                    viewModel.post()
+                                }
+                            },
                             enabled = uiState.canPost && !uiState.isOverLimit,
                         ) {
                             Text(stringResource(R.string.compose_post))

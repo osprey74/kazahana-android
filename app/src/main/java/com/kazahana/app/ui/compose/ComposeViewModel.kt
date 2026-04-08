@@ -15,8 +15,13 @@ import com.kazahana.app.data.remote.ATProtoClient
 import com.kazahana.app.data.repository.ExternalEmbedData
 import com.kazahana.app.data.util.ImageHelper
 import com.kazahana.app.data.richtext.RichTextParser
+import com.kazahana.app.R
+import com.kazahana.app.data.WatermarkPreset
+import com.kazahana.app.data.WatermarkService
+import com.kazahana.app.data.WatermarkSettings
 import com.kazahana.app.data.local.DraftStore
 import com.kazahana.app.data.local.PostDraft
+import com.kazahana.app.data.local.SessionStore
 import com.kazahana.app.data.local.SettingsStore
 import com.kazahana.app.data.remote.ClaudeService
 import com.kazahana.app.data.repository.PostRepository
@@ -153,6 +158,7 @@ class ComposeViewModel @Inject constructor(
     val imageHelper: ImageHelper,
     private val settingsStore: SettingsStore,
     private val draftStore: DraftStore,
+    private val sessionStore: SessionStore,
     @ApplicationContext private val context: Context,
 ) : ViewModel() {
 
@@ -165,6 +171,15 @@ class ComposeViewModel @Inject constructor(
     val uiState: StateFlow<ComposeUiState> = _uiState.asStateFlow()
 
     val claudeApiKeyFlow = settingsStore.claudeApiKey
+
+    val watermarkSettings: StateFlow<WatermarkSettings> = settingsStore.watermarkSettings
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), WatermarkSettings())
+
+    val confirmDraftImageQuality: StateFlow<Boolean> = settingsStore.confirmDraftImageQuality
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
+
+    val currentHandle: String
+        get() = sessionStore.load()?.handle ?: "example.bsky.social"
 
     val drafts: StateFlow<List<PostDraft>> = draftStore.loadAll()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
@@ -364,7 +379,33 @@ class ComposeViewModel @Inject constructor(
         }
     }
 
-    fun post() {
+    /**
+     * Build localized label map for watermark burn-in text.
+     */
+    private fun buildWatermarkLabels(): Map<WatermarkPreset, String> {
+        return WatermarkService.buildLabelMap(
+            copyrightLabel = context.getString(R.string.watermark_label_copyright),
+            aiJaLabel = context.getString(R.string.watermark_label_ai_ja),
+            photoLabel = context.getString(R.string.watermark_label_photo),
+        )
+    }
+
+    /**
+     * Apply watermark to image bytes, returning JPEG bytes.
+     */
+    private fun applyWatermarkToBytes(imageBytes: ByteArray, wmSettings: WatermarkSettings, handle: String): ByteArray {
+        val bitmap = android.graphics.BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size)
+            ?: return imageBytes
+        val labels = buildWatermarkLabels()
+        val result = WatermarkService.apply(bitmap, wmSettings, handle, labels)
+        if (result !== bitmap) bitmap.recycle()
+        val out = java.io.ByteArrayOutputStream()
+        result.compress(android.graphics.Bitmap.CompressFormat.JPEG, 92, out)
+        result.recycle()
+        return out.toByteArray()
+    }
+
+    fun post(skipWatermark: Boolean = false, preComputedWmImages: List<Pair<ByteArray, String>>? = null) {
         val state = _uiState.value
         if (!state.canPost || state.isOverLimit) return
 
@@ -372,29 +413,72 @@ class ComposeViewModel @Inject constructor(
             _uiState.update { it.copy(isPosting = true, error = null) }
 
             try {
+                val wmSettings = watermarkSettings.value
+                val shouldApplyWm = !skipWatermark && wmSettings.enabled && state.images.isNotEmpty()
+
                 // Upload images first
                 val imageEmbeds = mutableListOf<ImageEmbedItem>()
-                for (image in state.images) {
-                    val (bytes, compressedMime) = imageHelper.readAndCompressImage(image.uri, image.mimeType) ?: continue
-                    val uploadResult = postRepository.uploadBlob(bytes, compressedMime)
-                    uploadResult.onSuccess { blob ->
-                        val aspectRatio = imageHelper.getAspectRatio(image.uri)
-                        imageEmbeds.add(
-                            ImageEmbedItem(
-                                blobRef = BlobRef(
-                                    link = blob.blob.ref.link,
-                                    mimeType = blob.blob.mimeType,
-                                    size = blob.blob.size,
-                                ),
-                                alt = image.alt,
-                                aspectRatio = aspectRatio,
+                if (preComputedWmImages != null) {
+                    // Use pre-computed watermarked images (from confirm modal)
+                    for ((index, wmData) in preComputedWmImages.withIndex()) {
+                        val (bytes, mime) = wmData
+                        // Compress if needed
+                        val finalBytes = if (bytes.size > 950_000) {
+                            compressBytes(bytes)
+                        } else bytes
+                        val uploadResult = postRepository.uploadBlob(finalBytes, mime)
+                        uploadResult.onSuccess { blob ->
+                            val image = state.images.getOrNull(index)
+                            val aspectRatio = image?.let { imageHelper.getAspectRatio(it.uri) }
+                            imageEmbeds.add(
+                                ImageEmbedItem(
+                                    blobRef = BlobRef(
+                                        link = blob.blob.ref.link,
+                                        mimeType = blob.blob.mimeType,
+                                        size = blob.blob.size,
+                                    ),
+                                    alt = image?.alt ?: "",
+                                    aspectRatio = aspectRatio,
+                                )
                             )
-                        )
-                    }.onFailure { e ->
-                        _uiState.update {
-                            it.copy(isPosting = false, error = "Image upload failed: ${e.message}")
+                        }.onFailure { e ->
+                            _uiState.update {
+                                it.copy(isPosting = false, error = "Image upload failed: ${e.message}")
+                            }
+                            return@launch
                         }
-                        return@launch
+                    }
+                } else {
+                    for (image in state.images) {
+                        var (bytes, compressedMime) = imageHelper.readAndCompressImage(image.uri, image.mimeType) ?: continue
+                        if (shouldApplyWm) {
+                            bytes = applyWatermarkToBytes(bytes, wmSettings, currentHandle)
+                            compressedMime = "image/jpeg"
+                            // Compress after watermark if needed
+                            if (bytes.size > 950_000) {
+                                bytes = compressBytes(bytes)
+                            }
+                        }
+                        val uploadResult = postRepository.uploadBlob(bytes, compressedMime)
+                        uploadResult.onSuccess { blob ->
+                            val aspectRatio = imageHelper.getAspectRatio(image.uri)
+                            imageEmbeds.add(
+                                ImageEmbedItem(
+                                    blobRef = BlobRef(
+                                        link = blob.blob.ref.link,
+                                        mimeType = blob.blob.mimeType,
+                                        size = blob.blob.size,
+                                    ),
+                                    alt = image.alt,
+                                    aspectRatio = aspectRatio,
+                                )
+                            )
+                        }.onFailure { e ->
+                            _uiState.update {
+                                it.copy(isPosting = false, error = "Image upload failed: ${e.message}")
+                            }
+                            return@launch
+                        }
                     }
                 }
 
@@ -632,6 +716,44 @@ class ComposeViewModel @Inject constructor(
     fun deleteAllDrafts() {
         viewModelScope.launch {
             draftStore.deleteAll()
+        }
+    }
+
+    /**
+     * Compress JPEG bytes to fit under Bluesky's 950KB limit.
+     */
+    private fun compressBytes(bytes: ByteArray): ByteArray {
+        val bitmap = android.graphics.BitmapFactory.decodeByteArray(bytes, 0, bytes.size) ?: return bytes
+        var quality = 85
+        while (quality >= 30) {
+            val out = java.io.ByteArrayOutputStream()
+            bitmap.compress(android.graphics.Bitmap.CompressFormat.JPEG, quality, out)
+            if (out.toByteArray().size <= 950_000) {
+                bitmap.recycle()
+                return out.toByteArray()
+            }
+            quality -= 10
+        }
+        val out = java.io.ByteArrayOutputStream()
+        bitmap.compress(android.graphics.Bitmap.CompressFormat.JPEG, 20, out)
+        bitmap.recycle()
+        return out.toByteArray()
+    }
+
+    /**
+     * Prepare watermarked images for preview in the confirmation modal.
+     * Returns list of (bitmap, jpegBytes) pairs.
+     */
+    fun prepareWatermarkedImages(): List<Pair<android.graphics.Bitmap, ByteArray>> {
+        val state = _uiState.value
+        val wmSettings = watermarkSettings.value
+        val handle = currentHandle
+        return state.images.mapNotNull { image ->
+            val originalBytes = imageHelper.readBytes(image.uri) ?: return@mapNotNull null
+            val wmBytes = applyWatermarkToBytes(originalBytes, wmSettings, handle)
+            val bitmap = android.graphics.BitmapFactory.decodeByteArray(wmBytes, 0, wmBytes.size)
+                ?: return@mapNotNull null
+            Pair(bitmap, wmBytes)
         }
     }
 

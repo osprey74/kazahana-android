@@ -185,4 +185,150 @@
     <string name="feed_type_feed">信息流</string>
     <string name="feed_type_list">列表</string>
     <string name="bot_label">此账户已自动化</string>
+    <!-- Watermark -->
+    <string name="watermark_title">水印</string>
+    <string name="watermark_enable">自动为图片添加水印</string>
+    <string name="watermark_preview">预览</string>
+    <string name="watermark_preset">文字预设</string>
+    <string name="watermark_preset_copyright">禁止转载</string>
+    <string name="watermark_preset_ai_ja">禁止AI/转载 (JP)</string>
+    <string name="watermark_preset_ai_en">No AI Training</string>
+    <string name="watermark_preset_ai_both">AI + 禁止转载</string>
+    <string name="watermark_preset_photo">拍摄/编辑</string>
+    <string name="watermark_preset_custom">自定义</string>
+    <string name="watermark_custom_placeholder">输入自定义文字（最多50个字符）</string>
+    <string name="watermark_custom_hint">可通过换行输入多行文字。</string>
+    <string name="watermark_position">位置</string>
+    <string name="watermark_pos_top_left">左上</string>
+    <string name="watermark_pos_top_center">上方居中</string>
+    <string name="watermark_pos_top_right">右上</string>
+    <string name="watermark_pos_bottom_left">左下</string>
+    <string name="watermark_pos_bottom_center">下方居中</string>
+    <string name="watermark_pos_bottom_right">右下</string>
+    <string name="watermark_pos_random">随机</string>
+    <string name="watermark_pos_tile">平铺</string>
+    <string name="watermark_opacity">不透明度</string>
+    <string name="watermark_font_size">字体大小</string>
+    <string name="watermark_font_size_hint">最小字号根据图片宽度自动设定。</string>
+    <string name="watermark_text_color">文字颜色</string>
+    <string name="watermark_confirm_before_post">发布前预览水印</string>
+    <string name="watermark_skip_video">不应用于视频</string>
+    <string name="watermark_hint">水印在发布前合成到图片上。AI训练拒绝文字作为意向声明。</string>
+    <string name="watermark_confirm_title">水印预览</string>
+    <string name="watermark_confirm_message">请在发布前确认水印效果。</string>
+    <string name="watermark_post_without">不加水印发布</string>
+    <string name="watermark_status_on">开</string>
+    <string name="watermark_label_copyright">禁止未经授权转载</string>
+    <string name="watermark_label_ai_ja">禁止AI训练/转载</string>
+    <string name="watermark_label_photo">拍摄/编辑</string>
+    <!-- Draft Image Warning -->
+    <string name="settings_draft_image_warning">保存草稿确认</string>
+    <string name="settings_enable_draft_image_warning">保存含图片的草稿前发出警告</string>
+    <string name="draft_image_warning_title">图片质量提醒</string>
+    <string name="draft_image_warning_message">将含有图片的帖子保存为草稿时，图片质量可能会显著下降。</string>
+    <string name="draft_save_anyway">仍然保存草稿</string>
+
+    <!-- Account Picker -->
+    <string name="auth_account_picker_title">选择账号</string>
+    <string name="auth_account_picker_add">添加其他账号</string>
+    <string name="auth_account_picker_remove">移除账号</string>
+    <string name="auth_account_picker_remove_title">移除此账号？</string>
+    <string name="auth_account_picker_remove_message">账号数据将从此设备中移除。你可以重新登录来再次添加。</string>
+    <string name="auth_handle_placeholder">user.bsky.social</string>
+
+    <!-- BSAF -->
+    <string name="bsaf_enable">启用 BSAF（结构化警报信息流）</string>
+    <string name="bsaf_manage_bots">管理 BSAF Bot</string>
+    <string name="bsaf_title">BSAF Bot</string>
+    <string name="bsaf_register_title">注册 Bot</string>
+    <string name="bsaf_register_description">输入 Bot 定义 JSON 文件的 URL</string>
+    <string name="bsaf_url_label">Bot 定义 URL</string>
+    <string name="bsaf_register_button">注册</string>
+    <string name="bsaf_register_success">Bot 注册成功</string>
+    <string name="bsaf_registered_bots">已注册的 Bot</string>
+    <string name="bsaf_no_bots">尚无已注册的 Bot</string>
+    <string name="bsaf_select_all">全选</string>
+    <string name="bsaf_deselect_all">取消全选</string>
+    <string name="bsaf_unregister">取消注册</string>
+    <string name="bsaf_duplicate_indicator">另有 %1$d 个 Bot 也报告了此信息</string>
+
+    <!-- Compose extras -->
+    <string name="compose_drafts">草稿</string>
+    <string name="compose_save_draft">保存草稿</string>
+    <string name="compose_draft_saved">草稿已保存</string>
+    <string name="compose_draft_discard">丢弃</string>
+    <string name="compose_draft_delete_all">删除全部</string>
+    <string name="compose_draft_images">%1$d 张图片</string>
+    <string name="compose_draft_video">视频</string>
+    <string name="compose_unsaved_title">保存草稿？</string>
+    <string name="compose_unsaved_message">你有未保存的更改。</string>
+    <string name="compose_generate_alt">生成 ALT 文本</string>
+    <string name="compose_generating_alt">生成中…</string>
+
+    <!-- DM Search -->
+    <string name="dm_search_history">最近</string>
+    <string name="dm_search_history_clear">全部清除</string>
+
+    <!-- Image Edit -->
+    <string name="image_edit_title">编辑图片</string>
+    <string name="image_edit_crop_original">原始比例</string>
+    <string name="image_edit_crop_square">正方形</string>
+    <string name="image_edit_crop_free">自由裁剪</string>
+    <string name="image_edit_rotate">旋转</string>
+    <string name="image_edit_done">完成</string>
+
+    <!-- Messages extras -->
+    <string name="messages_accept">接受</string>
+    <string name="messages_delete_confirm">删除消息</string>
+    <string name="messages_new_conversation">新对话</string>
+    <string name="messages_request">消息请求</string>
+    <string name="messages_search_user">搜索用户…</string>
+
+    <!-- Post extras -->
+    <string name="post_copy_link">复制链接</string>
+    <string name="post_link_copied">链接已复制</string>
+    <string name="post_share">分享</string>
+    <string name="post_quote">引用</string>
+    <string name="post_quote_post">引用帖子</string>
+    <string name="post_quotes_title">引用</string>
+    <string name="post_view_quotes">查看引用</string>
+
+    <!-- Profile extras -->
+    <string name="profile_tab_feeds">信息流</string>
+    <string name="profile_tab_lists">列表</string>
+    <string name="profile_tab_starter_packs">新手包</string>
+    <string name="profile_no_feeds">暂无信息流</string>
+    <string name="profile_no_lists">暂无列表</string>
+    <string name="profile_no_starter_packs">暂无新手包</string>
+    <string name="profile_feed_likes">%1$s 个赞</string>
+    <string name="profile_list_items">%1$s 个项目</string>
+    <string name="profile_starter_pack_members">%1$s 位成员</string>
+    <string name="profile_add_to_list">添加到列表</string>
+    <string name="profile_add_to_list_title">添加到列表</string>
+    <string name="profile_no_curate_lists">没有列表。请在 Bluesky 中创建列表以开始。</string>
+    <string name="profile_list_add_success">已添加到列表</string>
+    <string name="profile_list_remove_success">已从列表中移除</string>
+    <string name="profile_list_error">更新列表失败</string>
+    <string name="profile_mention">提及</string>
+    <string name="profile_mute_user">静音此用户</string>
+    <string name="profile_unmute_user">取消静音此用户</string>
+    <string name="profile_block_user">屏蔽此用户</string>
+    <string name="profile_unblock_user">取消屏蔽此用户</string>
+
+    <!-- Settings extras -->
+    <string name="settings_accounts">账号</string>
+    <string name="settings_active_account">当前使用</string>
+    <string name="settings_add_account">添加账号</string>
+    <string name="settings_polling_interval">自动刷新间隔</string>
+    <string name="settings_polling_off">关闭</string>
+    <string name="settings_polling_30s">30 秒</string>
+    <string name="settings_polling_60s">60 秒</string>
+    <string name="settings_polling_90s">90 秒</string>
+    <string name="settings_polling_120s">120 秒</string>
+    <string name="settings_push_notifications">推送通知</string>
+    <string name="settings_push_notifications_enable">启用推送通知</string>
+    <string name="settings_push_notifications_description">实时接收点赞、转发、关注、回复、提及和引用的通知。</string>
+    <string name="settings_claude_api">Claude API</string>
+    <string name="settings_claude_api_revoke">撤销 API 密钥</string>
+    <string name="settings_claude_api_footer">用于自动生成图片的 ALT 文本。</string>
 </resources>

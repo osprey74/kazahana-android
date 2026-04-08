@@ -71,6 +71,7 @@ fun SettingsScreen(
     onLogout: () -> Unit = {},
     onFeedManagement: () -> Unit = {},
     onBsafBots: () -> Unit = {},
+    onWatermarkSettings: () -> Unit = {},
     savedAccounts: List<com.kazahana.app.data.model.Session> = emptyList(),
     activeAccountDID: String? = null,
     onSwitchAccount: (com.kazahana.app.data.model.Session) -> Unit = {},
@@ -317,6 +318,64 @@ fun SettingsScreen(
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                 )
                 Spacer(modifier = Modifier.height(8.dp))
+            }
+
+            HorizontalDivider()
+
+            // ── Section: Watermark ──
+            SectionHeader(stringResource(R.string.watermark_title))
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable(onClick = onWatermarkSettings)
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = stringResource(R.string.watermark_title),
+                    style = MaterialTheme.typography.bodyLarge,
+                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    val wmSettings by viewModel.watermarkSettings.collectAsState()
+                    if (wmSettings.enabled) {
+                        Text(
+                            text = stringResource(R.string.watermark_status_on),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                    }
+                    Icon(
+                        Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                    )
+                }
+            }
+
+            HorizontalDivider()
+
+            // ── Section: Draft Image Warning ──
+            SectionHeader(stringResource(R.string.settings_draft_image_warning))
+            val confirmDraftImageQuality by viewModel.confirmDraftImageQuality.collectAsState()
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { viewModel.setConfirmDraftImageQuality(!confirmDraftImageQuality) }
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = stringResource(R.string.settings_enable_draft_image_warning),
+                    style = MaterialTheme.typography.bodyLarge,
+                    modifier = Modifier.weight(1f),
+                )
+                Switch(
+                    checked = confirmDraftImageQuality,
+                    onCheckedChange = { viewModel.setConfirmDraftImageQuality(it) },
+                )
             }
 
             HorizontalDivider()

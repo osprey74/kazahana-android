@@ -185,4 +185,150 @@
     <string name="feed_type_feed">Лента</string>
     <string name="feed_type_list">Список</string>
     <string name="bot_label">Этот аккаунт автоматизирован</string>
+    <!-- Watermark -->
+    <string name="watermark_title">Водяной знак</string>
+    <string name="watermark_enable">Автоматически добавлять водяной знак к изображениям</string>
+    <string name="watermark_preview">Предпросмотр</string>
+    <string name="watermark_preset">Шаблон текста</string>
+    <string name="watermark_preset_copyright">Перепост запрещён</string>
+    <string name="watermark_preset_ai_ja">Запрет ИИ/перепоста (JP)</string>
+    <string name="watermark_preset_ai_en">No AI Training</string>
+    <string name="watermark_preset_ai_both">ИИ + Перепост запрещён</string>
+    <string name="watermark_preset_photo">Фото/Редактирование</string>
+    <string name="watermark_preset_custom">Пользовательский</string>
+    <string name="watermark_custom_placeholder">Введите текст (макс. 50 символов)</string>
+    <string name="watermark_custom_hint">Можно ввести несколько строк текста.</string>
+    <string name="watermark_position">Позиция</string>
+    <string name="watermark_pos_top_left">Вверху слева</string>
+    <string name="watermark_pos_top_center">Вверху по центру</string>
+    <string name="watermark_pos_top_right">Вверху справа</string>
+    <string name="watermark_pos_bottom_left">Внизу слева</string>
+    <string name="watermark_pos_bottom_center">Внизу по центру</string>
+    <string name="watermark_pos_bottom_right">Внизу справа</string>
+    <string name="watermark_pos_random">Случайно</string>
+    <string name="watermark_pos_tile">Мозаика</string>
+    <string name="watermark_opacity">Непрозрачность</string>
+    <string name="watermark_font_size">Размер шрифта</string>
+    <string name="watermark_font_size_hint">Минимальный размер устанавливается автоматически на основе ширины изображения.</string>
+    <string name="watermark_text_color">Цвет текста</string>
+    <string name="watermark_confirm_before_post">Предпросмотр водяного знака перед публикацией</string>
+    <string name="watermark_skip_video">Не применять к видео</string>
+    <string name="watermark_hint">Водяные знаки наносятся на изображения перед публикацией. Текст отказа от обучения ИИ служит заявлением о намерениях.</string>
+    <string name="watermark_confirm_title">Предпросмотр водяного знака</string>
+    <string name="watermark_confirm_message">Пожалуйста, проверьте изображения с водяным знаком перед публикацией.</string>
+    <string name="watermark_post_without">Без ВЗ</string>
+    <string name="watermark_status_on">ВКЛ</string>
+    <string name="watermark_label_copyright">Несанкционированный перепост запрещён</string>
+    <string name="watermark_label_ai_ja">Обучение ИИ/перепост запрещены</string>
+    <string name="watermark_label_photo">Фото/Редактирование</string>
+    <!-- Draft Image Warning -->
+    <string name="settings_draft_image_warning">Подтверждение сохранения черновика</string>
+    <string name="settings_enable_draft_image_warning">Предупреждать перед сохранением черновиков с изображениями</string>
+    <string name="draft_image_warning_title">Уведомление о качестве изображений</string>
+    <string name="draft_image_warning_message">При сохранении поста с изображениями в черновик качество изображений может значительно снизиться.</string>
+    <string name="draft_save_anyway">Всё равно сохранить</string>
+
+    <!-- Account Picker -->
+    <string name="auth_account_picker_title">Выбрать аккаунт</string>
+    <string name="auth_account_picker_add">Добавить другой аккаунт</string>
+    <string name="auth_account_picker_remove">Удалить аккаунт</string>
+    <string name="auth_account_picker_remove_title">Удалить этот аккаунт?</string>
+    <string name="auth_account_picker_remove_message">Данные аккаунта будут удалены с этого устройства. Вы можете добавить его снова, войдя в систему.</string>
+    <string name="auth_handle_placeholder">user.bsky.social</string>
+
+    <!-- BSAF -->
+    <string name="bsaf_enable">Включить BSAF (структурированная лента оповещений)</string>
+    <string name="bsaf_manage_bots">Управление ботами BSAF</string>
+    <string name="bsaf_title">Боты BSAF</string>
+    <string name="bsaf_register_title">Зарегистрировать бота</string>
+    <string name="bsaf_register_description">Введите URL JSON-файла определения бота</string>
+    <string name="bsaf_url_label">URL определения бота</string>
+    <string name="bsaf_register_button">Зарегистрировать</string>
+    <string name="bsaf_register_success">Бот успешно зарегистрирован</string>
+    <string name="bsaf_registered_bots">Зарегистрированные боты</string>
+    <string name="bsaf_no_bots">Нет зарегистрированных ботов</string>
+    <string name="bsaf_select_all">Выбрать все</string>
+    <string name="bsaf_deselect_all">Снять выбор</string>
+    <string name="bsaf_unregister">Отменить регистрацию</string>
+    <string name="bsaf_duplicate_indicator">Также сообщено %1$d другим(и) ботом(ами)</string>
+
+    <!-- Compose extras -->
+    <string name="compose_drafts">Черновики</string>
+    <string name="compose_save_draft">Сохранить черновик</string>
+    <string name="compose_draft_saved">Черновик сохранён</string>
+    <string name="compose_draft_discard">Удалить</string>
+    <string name="compose_draft_delete_all">Удалить все</string>
+    <string name="compose_draft_images">%1$d изображений</string>
+    <string name="compose_draft_video">Видео</string>
+    <string name="compose_unsaved_title">Сохранить черновик?</string>
+    <string name="compose_unsaved_message">У вас есть несохранённые изменения.</string>
+    <string name="compose_generate_alt">Сгенерировать ALT текст</string>
+    <string name="compose_generating_alt">Генерация…</string>
+
+    <!-- DM Search -->
+    <string name="dm_search_history">Недавние</string>
+    <string name="dm_search_history_clear">Очистить все</string>
+
+    <!-- Image Edit -->
+    <string name="image_edit_title">Редактирование изображения</string>
+    <string name="image_edit_crop_original">Оригинал</string>
+    <string name="image_edit_crop_square">Квадрат</string>
+    <string name="image_edit_crop_free">Произвольно</string>
+    <string name="image_edit_rotate">Повернуть</string>
+    <string name="image_edit_done">Готово</string>
+
+    <!-- Messages extras -->
+    <string name="messages_accept">Принять</string>
+    <string name="messages_delete_confirm">Удалить сообщение</string>
+    <string name="messages_new_conversation">Новый диалог</string>
+    <string name="messages_request">Запрос на сообщение</string>
+    <string name="messages_search_user">Поиск пользователей…</string>
+
+    <!-- Post extras -->
+    <string name="post_copy_link">Копировать ссылку</string>
+    <string name="post_link_copied">Ссылка скопирована</string>
+    <string name="post_share">Поделиться</string>
+    <string name="post_quote">Цитата</string>
+    <string name="post_quote_post">Процитировать пост</string>
+    <string name="post_quotes_title">Цитаты</string>
+    <string name="post_view_quotes">Просмотреть цитаты</string>
+
+    <!-- Profile extras -->
+    <string name="profile_tab_feeds">Ленты</string>
+    <string name="profile_tab_lists">Списки</string>
+    <string name="profile_tab_starter_packs">Стартовые наборы</string>
+    <string name="profile_no_feeds">Пока нет лент</string>
+    <string name="profile_no_lists">Пока нет списков</string>
+    <string name="profile_no_starter_packs">Пока нет стартовых наборов</string>
+    <string name="profile_feed_likes">%1$s отметок «нравится»</string>
+    <string name="profile_list_items">%1$s элементов</string>
+    <string name="profile_starter_pack_members">%1$s участников</string>
+    <string name="profile_add_to_list">Добавить в список</string>
+    <string name="profile_add_to_list_title">Добавить в список</string>
+    <string name="profile_no_curate_lists">Нет списков. Создайте список в Bluesky, чтобы начать.</string>
+    <string name="profile_list_add_success">Добавлено в список</string>
+    <string name="profile_list_remove_success">Удалено из списка</string>
+    <string name="profile_list_error">Не удалось обновить список</string>
+    <string name="profile_mention">Упомянуть</string>
+    <string name="profile_mute_user">Заглушить этого пользователя</string>
+    <string name="profile_unmute_user">Снять заглушение этого пользователя</string>
+    <string name="profile_block_user">Заблокировать этого пользователя</string>
+    <string name="profile_unblock_user">Разблокировать этого пользователя</string>
+
+    <!-- Settings extras -->
+    <string name="settings_accounts">Аккаунты</string>
+    <string name="settings_active_account">Активный</string>
+    <string name="settings_add_account">Добавить аккаунт</string>
+    <string name="settings_polling_interval">Интервал автообновления</string>
+    <string name="settings_polling_off">Выкл</string>
+    <string name="settings_polling_30s">30 секунд</string>
+    <string name="settings_polling_60s">60 секунд</string>
+    <string name="settings_polling_90s">90 секунд</string>
+    <string name="settings_polling_120s">120 секунд</string>
+    <string name="settings_push_notifications">Push-уведомления</string>
+    <string name="settings_push_notifications_enable">Включить push-уведомления</string>
+    <string name="settings_push_notifications_description">Получайте уведомления в реальном времени о лайках, репостах, подписках, ответах, упоминаниях и цитатах.</string>
+    <string name="settings_claude_api">Claude API</string>
+    <string name="settings_claude_api_revoke">Отозвать API-ключ</string>
+    <string name="settings_claude_api_footer">Используется для автоматической генерации ALT текста для изображений.</string>
 </resources>

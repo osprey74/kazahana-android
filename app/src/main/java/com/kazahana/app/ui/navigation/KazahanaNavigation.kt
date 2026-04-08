@@ -68,6 +68,7 @@ import com.kazahana.app.ui.search.SearchScreen
 import com.kazahana.app.ui.settings.BsafBotsScreen
 import com.kazahana.app.ui.settings.FeedManagementScreen
 import com.kazahana.app.ui.settings.SettingsScreen
+import com.kazahana.app.ui.settings.WatermarkSettingsScreen
 import com.kazahana.app.ui.thread.ThreadScreen
 import com.kazahana.app.ui.timeline.QuotesListScreen
 import com.kazahana.app.ui.timeline.TimelineScreen
@@ -108,6 +109,7 @@ import kotlinx.serialization.Serializable
 @Serializable object SettingsRoute
 @Serializable object FeedManagementRoute
 @Serializable object BsafBotsRoute
+@Serializable object WatermarkSettingsRoute
 @Serializable data class ChatRoute(val convoId: String)
 @Serializable object NewConversationRoute
 @Serializable data class SearchWithQueryRoute(val query: String)
@@ -279,6 +281,7 @@ private fun MainScreen(
     val isOnSettings = currentDestination?.hasRoute(SettingsRoute::class) == true
         || currentDestination?.hasRoute(FeedManagementRoute::class) == true
         || currentDestination?.hasRoute(BsafBotsRoute::class) == true
+        || currentDestination?.hasRoute(WatermarkSettingsRoute::class) == true
 
     val isOnMessages = currentDestination?.hasRoute(MessagesRoute::class) == true
         || currentDestination?.hasRoute(NewConversationRoute::class) == true
@@ -693,6 +696,11 @@ private fun MainScreen(
                             launchSingleTop = true
                         }
                     },
+                    onWatermarkSettings = {
+                        navController.navigate(WatermarkSettingsRoute) {
+                            launchSingleTop = true
+                        }
+                    },
                     savedAccounts = savedAccounts,
                     activeAccountDID = activeAccountDID,
                     onSwitchAccount = { session -> authViewModel.switchAccount(session) },
@@ -707,6 +715,11 @@ private fun MainScreen(
             }
             composable<BsafBotsRoute> {
                 BsafBotsScreen(
+                    onNavigateBack = { navController.popBackStack() },
+                )
+            }
+            composable<WatermarkSettingsRoute> {
+                WatermarkSettingsScreen(
                     onNavigateBack = { navController.popBackStack() },
                 )
             }

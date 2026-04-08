@@ -66,6 +66,8 @@ class SettingsStore(private val context: Context) {
         val CLAUDE_API_KEY = stringPreferencesKey("claude_api_key")
         val BLUESKY_POST_LANGUAGES = stringPreferencesKey("bluesky_post_languages")
         val PUSH_NOTIFICATIONS_ENABLED = booleanPreferencesKey("push_notifications_enabled")
+        val WATERMARK_SETTINGS = stringPreferencesKey("watermark_settings")
+        val CONFIRM_DRAFT_IMAGE_QUALITY = booleanPreferencesKey("confirm_draft_image_quality")
     }
 
     val themeMode: Flow<ThemeMode> = context.dataStore.data.map { prefs ->
@@ -422,6 +424,39 @@ class SettingsStore(private val context: Context) {
 
     private fun encodeBsafBots(bots: List<com.kazahana.app.data.model.BsafRegisteredBot>): String {
         return kotlinx.serialization.json.Json.encodeToString(bsafBotListSerializer, bots)
+    }
+
+    // ── Draft Image Quality Warning ──
+
+    val confirmDraftImageQuality: Flow<Boolean> = context.dataStore.data.map { prefs ->
+        prefs[Keys.CONFIRM_DRAFT_IMAGE_QUALITY] ?: true
+    }
+
+    suspend fun setConfirmDraftImageQuality(enabled: Boolean) {
+        context.dataStore.edit { prefs ->
+            prefs[Keys.CONFIRM_DRAFT_IMAGE_QUALITY] = enabled
+        }
+    }
+
+    // ── Watermark ──
+
+    val watermarkSettings: Flow<com.kazahana.app.data.WatermarkSettings> = context.dataStore.data.map { prefs ->
+        val json = prefs[Keys.WATERMARK_SETTINGS]
+        if (json.isNullOrEmpty()) com.kazahana.app.data.WatermarkSettings()
+        else try {
+            kotlinx.serialization.json.Json.decodeFromString(json)
+        } catch (_: Exception) {
+            com.kazahana.app.data.WatermarkSettings()
+        }
+    }
+
+    suspend fun setWatermarkSettings(settings: com.kazahana.app.data.WatermarkSettings) {
+        context.dataStore.edit { prefs ->
+            prefs[Keys.WATERMARK_SETTINGS] = kotlinx.serialization.json.Json.encodeToString(
+                kotlinx.serialization.serializer<com.kazahana.app.data.WatermarkSettings>(),
+                settings,
+            )
+        }
     }
 
     private fun parseModerationPref(value: String?): ModerationPref {

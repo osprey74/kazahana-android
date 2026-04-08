@@ -271,6 +271,51 @@
     <string name="image_edit_rotate">回転</string>
     <string name="image_edit_done">完了</string>
 
+    <!-- Watermark -->
+    <string name="watermark_title">ウォーターマーク</string>
+    <string name="watermark_enable">画像にウォーターマークを自動合成する</string>
+    <string name="watermark_preview">プレビュー</string>
+    <string name="watermark_preset">文言プリセット</string>
+    <string name="watermark_preset_copyright">無断転載禁止</string>
+    <string name="watermark_preset_ai_ja">AI学習・転載禁止</string>
+    <string name="watermark_preset_ai_en">No AI Training</string>
+    <string name="watermark_preset_ai_both">AI+無断転載禁止</string>
+    <string name="watermark_preset_photo">撮影・編集</string>
+    <string name="watermark_preset_custom">カスタム</string>
+    <string name="watermark_custom_placeholder">任意の文言を入力（最大50文字）</string>
+    <string name="watermark_custom_hint">改行で複数行入力できます。</string>
+    <string name="watermark_position">表示位置</string>
+    <string name="watermark_pos_top_left">左上</string>
+    <string name="watermark_pos_top_center">中央上</string>
+    <string name="watermark_pos_top_right">右上</string>
+    <string name="watermark_pos_bottom_left">左下</string>
+    <string name="watermark_pos_bottom_center">中央下</string>
+    <string name="watermark_pos_bottom_right">右下</string>
+    <string name="watermark_pos_random">ランダム</string>
+    <string name="watermark_pos_tile">タイリング</string>
+    <string name="watermark_opacity">不透明度</string>
+    <string name="watermark_font_size">文字サイズ</string>
+    <string name="watermark_font_size_hint">文字の最小サイズは画像幅から自動設定されます。</string>
+    <string name="watermark_text_color">文字色</string>
+    <string name="watermark_confirm_before_post">投稿前にウォーターマークの合成結果を確認する</string>
+    <string name="watermark_skip_video">動画には適用しない</string>
+    <string name="watermark_hint">ウォーターマークは投稿前に画像へ合成されます。AI学習拒否の文言は意思表示としての効果です。</string>
+    <string name="watermark_confirm_title">ウォーターマーク確認</string>
+    <string name="watermark_confirm_message">ウォーターマークが合成された画像を確認してください。</string>
+    <string name="watermark_post_without">WMなしで投稿</string>
+    <string name="watermark_status_on">ON</string>
+    <!-- Watermark burn-in labels -->
+    <string name="watermark_label_copyright">無断転載禁止</string>
+    <string name="watermark_label_ai_ja">AI学習・転載禁止</string>
+    <string name="watermark_label_photo">撮影・編集</string>
+
+    <!-- Draft Image Warning -->
+    <string name="settings_draft_image_warning">下書き保存時の確認</string>
+    <string name="settings_enable_draft_image_warning">画像を含む下書きの保存前に警告を表示する</string>
+    <string name="draft_image_warning_title">画像品質に関する注意</string>
+    <string name="draft_image_warning_message">画像を含むポストを下書きに保存した場合、画像品質が著しく低下します。予めご了承ください。</string>
+    <string name="draft_save_anyway">下書きを保存する</string>
+
     <string name="common_retry">再試行</string>
     <string name="common_cancel">キャンセル</string>
     <string name="common_ok">OK</string>

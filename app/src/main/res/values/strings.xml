@@ -305,6 +305,51 @@
     <string name="image_edit_rotate">Rotate</string>
     <string name="image_edit_done">Done</string>
 
+    <!-- Watermark -->
+    <string name="watermark_title">Watermark</string>
+    <string name="watermark_enable">Automatically add watermark to images</string>
+    <string name="watermark_preview">Preview</string>
+    <string name="watermark_preset">Text Preset</string>
+    <string name="watermark_preset_copyright">No Repost</string>
+    <string name="watermark_preset_ai_ja">AI/Repost Ban (JP)</string>
+    <string name="watermark_preset_ai_en">No AI Training</string>
+    <string name="watermark_preset_ai_both">AI + No Repost</string>
+    <string name="watermark_preset_photo">Photo/Edit</string>
+    <string name="watermark_preset_custom">Custom</string>
+    <string name="watermark_custom_placeholder">Enter custom text (max 50 characters)</string>
+    <string name="watermark_custom_hint">You can enter multiple lines of text.</string>
+    <string name="watermark_position">Position</string>
+    <string name="watermark_pos_top_left">Top Left</string>
+    <string name="watermark_pos_top_center">Top Center</string>
+    <string name="watermark_pos_top_right">Top Right</string>
+    <string name="watermark_pos_bottom_left">Bottom Left</string>
+    <string name="watermark_pos_bottom_center">Bottom Center</string>
+    <string name="watermark_pos_bottom_right">Bottom Right</string>
+    <string name="watermark_pos_random">Random</string>
+    <string name="watermark_pos_tile">Tiling</string>
+    <string name="watermark_opacity">Opacity</string>
+    <string name="watermark_font_size">Font Size</string>
+    <string name="watermark_font_size_hint">Minimum size is automatically set based on image width.</string>
+    <string name="watermark_text_color">Text Color</string>
+    <string name="watermark_confirm_before_post">Preview watermark before posting</string>
+    <string name="watermark_skip_video">Do not apply to videos</string>
+    <string name="watermark_hint">Watermarks are composited onto images before posting. AI training opt-out text serves as a declaration of intent.</string>
+    <string name="watermark_confirm_title">Watermark Preview</string>
+    <string name="watermark_confirm_message">Please confirm the watermarked images before posting.</string>
+    <string name="watermark_post_without">Post without WM</string>
+    <string name="watermark_status_on">ON</string>
+    <!-- Watermark burn-in labels (composited onto image) -->
+    <string name="watermark_label_copyright">Unauthorized repost prohibited</string>
+    <string name="watermark_label_ai_ja">AI training/repost prohibited</string>
+    <string name="watermark_label_photo">Photo/Edit</string>
+
+    <!-- Draft Image Warning -->
+    <string name="settings_draft_image_warning">Draft Save Confirmation</string>
+    <string name="settings_enable_draft_image_warning">Warn before saving drafts with images</string>
+    <string name="draft_image_warning_title">Image Quality Notice</string>
+    <string name="draft_image_warning_message">When saving a post with images as a draft, image quality may significantly decrease. Please be aware of this.</string>
+    <string name="draft_save_anyway">Save Draft Anyway</string>
+
     <!-- Common -->
     <string name="common_retry">Retry</string>
     <string name="common_cancel">Cancel</string>
