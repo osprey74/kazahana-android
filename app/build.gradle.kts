@@ -18,8 +18,8 @@ android {
         applicationId = "com.kazahana.app"
         minSdk = 29
         targetSdk = 35
-        versionCode = 5
-        versionName = "2.0.0"
+        versionCode = 6
+        versionName = "2.0.2"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
