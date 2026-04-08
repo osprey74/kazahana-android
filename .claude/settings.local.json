@@ -56,7 +56,8 @@
       "Bash(find /mnt/g/dev/kazahana -maxdepth 2 -name *store* -o -name *metadata*)",
       "Bash(./gradlew bundleRelease)",
       "Bash(find:*)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(sed:*)"
     ]
   }
 }
