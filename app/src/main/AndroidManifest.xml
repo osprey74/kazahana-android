@@ -30,8 +30,8 @@
                 <data android:scheme="kazahana" />
             </intent-filter>
 
-            <!-- Deep link: https://bsky.app -->
-            <intent-filter android:autoVerify="true">
+            <!-- Deep link: https://bsky.app (autoVerify disabled because bsky.app is not owned by us) -->
+            <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
