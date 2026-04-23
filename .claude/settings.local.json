@@ -57,7 +57,18 @@
       "Bash(./gradlew bundleRelease)",
       "Bash(find:*)",
       "Bash(ls:*)",
-      "Bash(sed:*)"
+      "Bash(sed:*)",
+      "Bash(gh release:*)",
+      "Bash(gh.exe release:*)",
+      "Bash(gh.exe repo:*)",
+      "Bash(gh.exe auth:*)",
+      "Bash(export JAVA_HOME=\"/mnt/c/Program Files/Android/Android Studio/jbr\")",
+      "Bash(export PATH=\"$JAVA_HOME/bin:$PATH\")",
+      "Bash(apt list *)",
+      "Read(//opt/**)",
+      "Read(//home/ospre/.sdkman/candidates/**)",
+      "Bash(\"/mnt/c/Program Files/Java/jdk-17.0.5/bin/java.exe\" -version)",
+      "Bash(cmd.exe /c \"cd /d G:\\\\dev\\\\kazahana-android && gradlew.bat assembleDebug\")"
     ]
   }
 }
