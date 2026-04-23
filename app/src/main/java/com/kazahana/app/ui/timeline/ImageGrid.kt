@@ -13,6 +13,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.PagerState
+import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.VisibilityOff
@@ -29,6 +33,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
@@ -51,13 +56,15 @@ fun ImageGrid(
     moderationDecision: ModerationDecision = ModerationDecision(),
     modifier: Modifier = Modifier,
 ) {
+    if (images.isEmpty()) return
     val shape = RoundedCornerShape(12.dp)
     var viewerIndex by remember { mutableStateOf<Int?>(null) }
     var mediaRevealed by remember { mutableStateOf(false) }
-
     val shouldBlur = moderationDecision.shouldWarn && !mediaRevealed
 
-    // Fullscreen viewer with hide button
+    // Single shared pager state — carousel path uses it; single-image path ignores it.
+    val pagerState = rememberPagerState(pageCount = { images.size })
+
     viewerIndex?.let { index ->
         FullscreenImageViewer(
             images = images,
@@ -73,88 +80,23 @@ fun ImageGrid(
 
     Column(modifier = modifier.fillMaxWidth()) {
         Box(modifier = Modifier.fillMaxWidth()) {
-            // Image content (blurred when moderated)
             val blurModifier = if (shouldBlur) Modifier.blur(24.dp) else Modifier
-
             Box(modifier = blurModifier) {
-                when (images.size) {
-                    1 -> {
-                        val img = images[0]
-                        val ratio = img.aspectRatio?.let { it.width.toFloat() / it.height }
-                            ?: (16f / 9f)
-                        AsyncImage(
-                            model = img.thumb,
-                            contentDescription = img.alt.ifEmpty { null },
-                            contentScale = ContentScale.Crop,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .aspectRatio(ratio.coerceIn(0.5f, 3f))
-                                .clip(shape)
-                                .then(
-                                    if (!shouldBlur) Modifier.clickable { viewerIndex = 0 }
-                                    else Modifier
-                                ),
-                        )
-                    }
-
-                    2 -> {
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(4.dp),
-                            modifier = Modifier.fillMaxWidth(),
-                        ) {
-                            images.forEachIndexed { index, img ->
-                                AsyncImage(
-                                    model = img.thumb,
-                                    contentDescription = img.alt.ifEmpty { null },
-                                    contentScale = ContentScale.Crop,
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .height(200.dp)
-                                        .clip(shape)
-                                        .then(
-                                            if (!shouldBlur) Modifier.clickable { viewerIndex = index }
-                                            else Modifier
-                                        ),
-                                )
-                            }
-                        }
-                    }
-
-                    else -> {
-                        val rows = images.chunked(2)
-                        var globalIndex = 0
-                        Column(
-                            verticalArrangement = Arrangement.spacedBy(4.dp),
-                            modifier = Modifier.fillMaxWidth(),
-                        ) {
-                            rows.forEach { row ->
-                                Row(
-                                    horizontalArrangement = Arrangement.spacedBy(4.dp),
-                                    modifier = Modifier.fillMaxWidth(),
-                                ) {
-                                    row.forEach { img ->
-                                        val idx = globalIndex++
-                                        AsyncImage(
-                                            model = img.thumb,
-                                            contentDescription = img.alt.ifEmpty { null },
-                                            contentScale = ContentScale.Crop,
-                                            modifier = Modifier
-                                                .weight(1f)
-                                                .height(140.dp)
-                                                .clip(shape)
-                                                .then(
-                                                    if (!shouldBlur) Modifier.clickable { viewerIndex = idx }
-                                                    else Modifier
-                                                ),
-                                        )
-                                    }
-                                    if (row.size == 1) {
-                                        Spacer(modifier = Modifier.weight(1f))
-                                    }
-                                }
-                            }
-                        }
-                    }
+                if (images.size == 1) {
+                    SingleImage(
+                        image = images[0],
+                        shape = shape,
+                        enabled = !shouldBlur,
+                        onClick = { viewerIndex = 0 },
+                    )
+                } else {
+                    ImageCarousel(
+                        images = images,
+                        pagerState = pagerState,
+                        shape = shape,
+                        enabled = !shouldBlur,
+                        onImageClick = { viewerIndex = it },
+                    )
                 }
             }
 
@@ -184,7 +126,6 @@ fun ImageGrid(
                 }
             }
 
-            // "Hide again" button when revealed
             if (moderationDecision.shouldWarn && mediaRevealed) {
                 TextButton(
                     onClick = { mediaRevealed = false },
@@ -206,6 +147,12 @@ fun ImageGrid(
             }
         }
 
+        // Page indicator — below the (possibly blurred) image area, always crisp.
+        if (images.size > 1) {
+            Spacer(modifier = Modifier.height(6.dp))
+            PageIndicator(pageCount = images.size, currentPage = pagerState.currentPage)
+        }
+
         // ALT text below the image grid
         val altsWithIndex = images.mapIndexedNotNull { i, img ->
             if (img.alt.isNotBlank()) Pair(i + 1, truncateAlt(img.alt)) else null
@@ -213,7 +160,6 @@ fun ImageGrid(
         if (altsWithIndex.isNotEmpty()) {
             Spacer(modifier = Modifier.height(4.dp))
             if (images.size == 1) {
-                // Single image: show ALT text directly
                 Text(
                     text = altsWithIndex[0].second,
                     style = MaterialTheme.typography.labelSmall,
@@ -222,7 +168,6 @@ fun ImageGrid(
                     overflow = TextOverflow.Ellipsis,
                 )
             } else {
-                // Multiple images: prefix with [画像N]
                 Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                     altsWithIndex.forEach { (index, alt) ->
                         Text(
@@ -235,6 +180,87 @@ fun ImageGrid(
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun SingleImage(
+    image: ImageView,
+    shape: Shape,
+    enabled: Boolean,
+    onClick: () -> Unit,
+) {
+    val ratio = image.aspectRatio?.let { it.width.toFloat() / it.height } ?: (16f / 9f)
+    AsyncImage(
+        model = image.thumb,
+        contentDescription = image.alt.ifEmpty { null },
+        contentScale = ContentScale.Crop,
+        modifier = Modifier
+            .fillMaxWidth()
+            .aspectRatio(ratio.coerceIn(0.5f, 3f))
+            .clip(shape)
+            .then(if (enabled) Modifier.clickable(onClick = onClick) else Modifier),
+    )
+}
+
+@Composable
+private fun ImageCarousel(
+    images: List<ImageView>,
+    pagerState: PagerState,
+    shape: Shape,
+    enabled: Boolean,
+    onImageClick: (Int) -> Unit,
+) {
+    // Container aspect ratio derived from the first image, narrower clamp than single-image
+    // so mixed orientations don't produce extreme layouts. Images below use Fit scaling so
+    // nothing gets cropped; letterboxed area uses a neutral tint.
+    val firstRatio = images[0].aspectRatio?.let { it.width.toFloat() / it.height } ?: 1f
+    val containerRatio = firstRatio.coerceIn(0.75f, 2f)
+
+    HorizontalPager(
+        state = pagerState,
+        pageSpacing = 4.dp,
+        modifier = Modifier
+            .fillMaxWidth()
+            .aspectRatio(containerRatio),
+    ) { page ->
+        val img = images[page]
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .clip(shape)
+                .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f)),
+        ) {
+            AsyncImage(
+                model = img.thumb,
+                contentDescription = img.alt.ifEmpty { null },
+                contentScale = ContentScale.Fit,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .then(if (enabled) Modifier.clickable { onImageClick(page) } else Modifier),
+            )
+        }
+    }
+}
+
+@Composable
+private fun PageIndicator(pageCount: Int, currentPage: Int) {
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally),
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        val activeColor = MaterialTheme.colorScheme.primary
+        val inactiveColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
+        repeat(pageCount) { index ->
+            val selected = index == currentPage
+            Box(
+                modifier = Modifier
+                    .size(if (selected) 8.dp else 6.dp)
+                    .clip(CircleShape)
+                    .background(if (selected) activeColor else inactiveColor),
+            )
         }
     }
 }
