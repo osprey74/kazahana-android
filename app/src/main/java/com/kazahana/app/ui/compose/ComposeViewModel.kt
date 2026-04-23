@@ -422,14 +422,16 @@ class ComposeViewModel @Inject constructor(
                     // Use pre-computed watermarked images (from confirm modal)
                     for ((index, wmData) in preComputedWmImages.withIndex()) {
                         val (bytes, mime) = wmData
-                        // Compress if needed
-                        val finalBytes = if (bytes.size > 950_000) {
-                            compressBytes(bytes)
+                        val finalBytes = if (bytes.size > ImageHelper.MAX_FILE_SIZE) {
+                            imageHelper.compressBytes(bytes)
                         } else bytes
-                        val uploadResult = postRepository.uploadBlob(finalBytes, mime)
+                        val uploadResult = postRepository.uploadBlob(finalBytes, mime) {
+                            imageHelper.compressBytes(finalBytes, ImageHelper.LEGACY_MAX_FILE_SIZE)
+                        }
                         uploadResult.onSuccess { blob ->
                             val image = state.images.getOrNull(index)
                             val aspectRatio = image?.let { imageHelper.getAspectRatio(it.uri) }
+                                ?: imageHelper.getAspectRatio(finalBytes)
                             imageEmbeds.add(
                                 ImageEmbedItem(
                                     blobRef = BlobRef(
@@ -454,14 +456,17 @@ class ComposeViewModel @Inject constructor(
                         if (shouldApplyWm) {
                             bytes = applyWatermarkToBytes(bytes, wmSettings, currentHandle)
                             compressedMime = "image/jpeg"
-                            // Compress after watermark if needed
-                            if (bytes.size > 950_000) {
-                                bytes = compressBytes(bytes)
+                            if (bytes.size > ImageHelper.MAX_FILE_SIZE) {
+                                bytes = imageHelper.compressBytes(bytes)
                             }
                         }
-                        val uploadResult = postRepository.uploadBlob(bytes, compressedMime)
+                        val finalBytes = bytes
+                        val uploadResult = postRepository.uploadBlob(finalBytes, compressedMime) {
+                            imageHelper.compressBytes(finalBytes, ImageHelper.LEGACY_MAX_FILE_SIZE)
+                        }
                         uploadResult.onSuccess { blob ->
                             val aspectRatio = imageHelper.getAspectRatio(image.uri)
+                                ?: imageHelper.getAspectRatio(finalBytes)
                             imageEmbeds.add(
                                 ImageEmbedItem(
                                     blobRef = BlobRef(
@@ -717,27 +722,6 @@ class ComposeViewModel @Inject constructor(
         viewModelScope.launch {
             draftStore.deleteAll()
         }
-    }
-
-    /**
-     * Compress JPEG bytes to fit under Bluesky's 950KB limit.
-     */
-    private fun compressBytes(bytes: ByteArray): ByteArray {
-        val bitmap = android.graphics.BitmapFactory.decodeByteArray(bytes, 0, bytes.size) ?: return bytes
-        var quality = 85
-        while (quality >= 30) {
-            val out = java.io.ByteArrayOutputStream()
-            bitmap.compress(android.graphics.Bitmap.CompressFormat.JPEG, quality, out)
-            if (out.toByteArray().size <= 950_000) {
-                bitmap.recycle()
-                return out.toByteArray()
-            }
-            quality -= 10
-        }
-        val out = java.io.ByteArrayOutputStream()
-        bitmap.compress(android.graphics.Bitmap.CompressFormat.JPEG, 20, out)
-        bitmap.recycle()
-        return out.toByteArray()
     }
 
     /**

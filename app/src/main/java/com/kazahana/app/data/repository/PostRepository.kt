@@ -49,6 +49,7 @@ class PostRepository(
     suspend fun uploadBlob(
         data: ByteArray,
         mimeType: String,
+        legacyFallback: (suspend () -> ByteArray)? = null,
     ): Result<BlobResponse> {
         return try {
             val response = client.uploadBlob(data, mimeType)
@@ -57,6 +58,17 @@ class PostRepository(
                 val text = response.bodyAsText()
                 val blob = jsonParser.decodeFromString<BlobResponse>(text)
                 Result.success(blob)
+            } else if (legacyFallback != null && isLegacySizeRejection(response.status.value)) {
+                // atproto `#4823` raised the image blob limit to 2 MB, but older PDSes
+                // still reject with 413/400. Retry once with a recompressed ≤1 MB payload.
+                val smaller = legacyFallback()
+                val retry = client.uploadBlob(smaller, mimeType)
+                if (retry.status.isSuccess()) {
+                    val blob = jsonParser.decodeFromString<BlobResponse>(retry.bodyAsText())
+                    Result.success(blob)
+                } else {
+                    Result.failure(Exception("Upload failed: HTTP ${retry.status.value}"))
+                }
             } else {
                 Result.failure(Exception("Upload failed: HTTP ${response.status.value}"))
             }
@@ -64,6 +76,8 @@ class PostRepository(
             Result.failure(e)
         }
     }
+
+    private fun isLegacySizeRejection(status: Int): Boolean = status == 413 || status == 400
 
     suspend fun createPost(
         text: String,
