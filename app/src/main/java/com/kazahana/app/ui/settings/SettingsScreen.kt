@@ -59,6 +59,7 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Button
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.kazahana.app.BuildConfig
 import com.kazahana.app.R
 import com.kazahana.app.data.local.AppLocale
 import com.kazahana.app.data.local.ModerationPref
@@ -632,7 +633,7 @@ fun SettingsScreen(
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                 )
                 Text(
-                    text = "2.0.2",
+                    text = BuildConfig.VERSION_NAME,
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                 )
