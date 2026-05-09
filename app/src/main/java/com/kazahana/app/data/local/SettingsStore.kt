@@ -68,6 +68,7 @@ class SettingsStore(private val context: Context) {
         val PUSH_NOTIFICATIONS_ENABLED = booleanPreferencesKey("push_notifications_enabled")
         val WATERMARK_SETTINGS = stringPreferencesKey("watermark_settings")
         val CONFIRM_DRAFT_IMAGE_QUALITY = booleanPreferencesKey("confirm_draft_image_quality")
+        val LONG_FORM_SERVICE_URL = stringPreferencesKey("long_form_service_url")
     }
 
     val themeMode: Flow<ThemeMode> = context.dataStore.data.map { prefs ->
@@ -314,6 +315,18 @@ class SettingsStore(private val context: Context) {
     suspend fun setClaudeApiKey(key: String) {
         context.dataStore.edit { prefs ->
             prefs[Keys.CLAUDE_API_KEY] = key
+        }
+    }
+
+    // ── Long-form post service (standard.site) ──
+
+    val longFormServiceUrl: Flow<String> = context.dataStore.data.map { prefs ->
+        prefs[Keys.LONG_FORM_SERVICE_URL] ?: ""
+    }
+
+    suspend fun setLongFormServiceUrl(url: String) {
+        context.dataStore.edit { prefs ->
+            prefs[Keys.LONG_FORM_SERVICE_URL] = url
         }
     }
 

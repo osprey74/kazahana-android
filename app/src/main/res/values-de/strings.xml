@@ -179,6 +179,7 @@
     <string name="common_error">Ein Fehler ist aufgetreten</string>
     <string name="common_clear">Löschen</string>
     <string name="common_back">Zurück</string>
+    <string name="common_send">Senden</string>
     <string name="common_settings">Einstellungen</string>
     <string name="common_move_up">Nach oben</string>
     <string name="common_move_down">Nach unten</string>
@@ -331,4 +332,21 @@
     <string name="settings_claude_api">Claude API</string>
     <string name="settings_claude_api_revoke">API-Schlüssel widerrufen</string>
     <string name="settings_claude_api_footer">Wird für die automatische ALT-Text-Generierung für Bilder verwendet.</string>
+
+    <!-- Long-form post service (standard.site) -->
+    <string name="settings_long_form_url_section">Langform-Beitragsdienst</string>
+    <string name="settings_long_form_url_label">URL des Langform-Beitragsdienstes</string>
+    <string name="settings_long_form_url_help">Lege die URL der Beitragsseite eines standard.site-kompatiblen Dienstes fest. Im Composer erscheint dann eine Schaltfläche „Langform schreiben“.</string>
+    <string name="settings_long_form_url_invalid">URL muss mit https:// beginnen</string>
+    <string name="settings_long_form_url_link">Kompatible Dienste auf standard.site ansehen</string>
+    <string name="settings_long_form_url_clear">URL löschen</string>
+    <string name="compose_write_long_form_a11y">Langform schreiben, öffnet im Browser</string>
+    <string name="notification_channel_name">Benachrichtigungen</string>
+    <string name="notification_channel_description">Bluesky-Benachrichtigungen</string>
+    <string name="a11y_avatar">Avatar</string>
+    <string name="clipboard_post_link">Beitragslink</string>
+    <plurals name="notification_unread_count">
+        <item quantity="one">%d neue Benachrichtigung</item>
+        <item quantity="other">%d neue Benachrichtigungen</item>
+    </plurals>
 </resources>

@@ -9,9 +9,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
+import com.kazahana.app.R
 
 @Composable
 fun AvatarImage(
@@ -22,7 +24,7 @@ fun AvatarImage(
 ) {
     AsyncImage(
         model = url,
-        contentDescription = "Avatar",
+        contentDescription = stringResource(R.string.a11y_avatar),
         contentScale = ContentScale.Crop,
         modifier = modifier
             .size(size)

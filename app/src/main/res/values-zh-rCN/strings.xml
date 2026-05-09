@@ -179,6 +179,7 @@
     <string name="common_error">发生错误</string>
     <string name="common_clear">清除</string>
     <string name="common_back">返回</string>
+    <string name="common_send">发送</string>
     <string name="common_settings">设置</string>
     <string name="common_move_up">上移</string>
     <string name="common_move_down">下移</string>
@@ -331,4 +332,20 @@
     <string name="settings_claude_api">Claude API</string>
     <string name="settings_claude_api_revoke">撤销 API 密钥</string>
     <string name="settings_claude_api_footer">用于自动生成图片的 ALT 文本。</string>
+
+    <!-- Long-form post service (standard.site) -->
+    <string name="settings_long_form_url_section">长文发布服务</string>
+    <string name="settings_long_form_url_label">长文发布服务 URL</string>
+    <string name="settings_long_form_url_help">设置兼容 standard.site 的服务的发布页面 URL，编辑器中将显示\"撰写长文\"按钮。</string>
+    <string name="settings_long_form_url_invalid">URL 必须以 https:// 开头</string>
+    <string name="settings_long_form_url_link">在 standard.site 查看兼容服务</string>
+    <string name="settings_long_form_url_clear">删除 URL</string>
+    <string name="compose_write_long_form_a11y">撰写长文，在浏览器中打开</string>
+    <string name="notification_channel_name">通知</string>
+    <string name="notification_channel_description">Bluesky 通知</string>
+    <string name="a11y_avatar">头像</string>
+    <string name="clipboard_post_link">帖子链接</string>
+    <plurals name="notification_unread_count">
+        <item quantity="other">%d 条新通知</item>
+    </plurals>
 </resources>

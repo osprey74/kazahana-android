@@ -179,6 +179,7 @@
     <string name="common_error">發生錯誤</string>
     <string name="common_clear">清除</string>
     <string name="common_back">返回</string>
+    <string name="common_send">傳送</string>
     <string name="common_settings">設定</string>
     <string name="common_move_up">上移</string>
     <string name="common_move_down">下移</string>
@@ -331,4 +332,20 @@
     <string name="settings_claude_api">Claude API</string>
     <string name="settings_claude_api_revoke">撤銷 API 金鑰</string>
     <string name="settings_claude_api_footer">用於自動產生圖片的 ALT 文字。</string>
+
+    <!-- Long-form post service (standard.site) -->
+    <string name="settings_long_form_url_section">長文發布服務</string>
+    <string name="settings_long_form_url_label">長文發布服務 URL</string>
+    <string name="settings_long_form_url_help">設定相容 standard.site 服務的發布頁面 URL，編輯器中將顯示「撰寫長文」按鈕。</string>
+    <string name="settings_long_form_url_invalid">URL 必須以 https:// 開頭</string>
+    <string name="settings_long_form_url_link">於 standard.site 檢視相容服務</string>
+    <string name="settings_long_form_url_clear">刪除 URL</string>
+    <string name="compose_write_long_form_a11y">撰寫長文，在瀏覽器中開啟</string>
+    <string name="notification_channel_name">通知</string>
+    <string name="notification_channel_description">Bluesky 通知</string>
+    <string name="a11y_avatar">頭像</string>
+    <string name="clipboard_post_link">貼文連結</string>
+    <plurals name="notification_unread_count">
+        <item quantity="other">%d 則新通知</item>
+    </plurals>
 </resources>

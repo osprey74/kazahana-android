@@ -62,6 +62,13 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch { settingsStore.setConfirmDraftImageQuality(enabled) }
     }
 
+    val longFormServiceUrl: StateFlow<String> = settingsStore.longFormServiceUrl
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), "")
+
+    fun setLongFormServiceUrl(url: String) {
+        viewModelScope.launch { settingsStore.setLongFormServiceUrl(url) }
+    }
+
     val uiState: StateFlow<SettingsUiState> = combine(
         combine(
             settingsStore.themeMode,

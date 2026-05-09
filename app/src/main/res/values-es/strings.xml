@@ -179,6 +179,7 @@
     <string name="common_error">Ocurrió un error</string>
     <string name="common_clear">Borrar</string>
     <string name="common_back">Volver</string>
+    <string name="common_send">Enviar</string>
     <string name="common_settings">Configuración</string>
     <string name="common_move_up">Subir</string>
     <string name="common_move_down">Bajar</string>
@@ -296,7 +297,7 @@
     <!-- Profile extras -->
     <string name="profile_tab_feeds">Feeds</string>
     <string name="profile_tab_lists">Listas</string>
-    <string name="profile_tab_starter_packs">Starter Packs</string>
+    <string name="profile_tab_starter_packs">Paquetes de inicio</string>
     <string name="profile_no_feeds">Aún no hay feeds</string>
     <string name="profile_no_lists">Aún no hay listas</string>
     <string name="profile_no_starter_packs">Aún no hay starter packs</string>
@@ -331,4 +332,21 @@
     <string name="settings_claude_api">Claude API</string>
     <string name="settings_claude_api_revoke">Revocar clave API</string>
     <string name="settings_claude_api_footer">Se usa para la generación automática de texto ALT en imágenes.</string>
+
+    <!-- Long-form post service (standard.site) -->
+    <string name="settings_long_form_url_section">Servicio de publicación de formato largo</string>
+    <string name="settings_long_form_url_label">URL del servicio de publicación de formato largo</string>
+    <string name="settings_long_form_url_help">Establece la URL de la página de publicación de un servicio compatible con standard.site. Aparecerá un botón «Escribir formato largo» en el redactor.</string>
+    <string name="settings_long_form_url_invalid">La URL debe comenzar con https://</string>
+    <string name="settings_long_form_url_link">Ver servicios compatibles en standard.site</string>
+    <string name="settings_long_form_url_clear">Eliminar URL</string>
+    <string name="compose_write_long_form_a11y">Escribir formato largo, abre en el navegador</string>
+    <string name="notification_channel_name">Notificaciones</string>
+    <string name="notification_channel_description">Notificaciones de Bluesky</string>
+    <string name="a11y_avatar">Avatar</string>
+    <string name="clipboard_post_link">Enlace de publicación</string>
+    <plurals name="notification_unread_count">
+        <item quantity="one">%d notificación nueva</item>
+        <item quantity="other">%d notificaciones nuevas</item>
+    </plurals>
 </resources>

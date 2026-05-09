@@ -671,7 +671,7 @@ private fun ActionBar(
                         val rkey = postUri.substringAfterLast("/")
                         val url = "https://bsky.app/profile/$authorHandle/post/$rkey"
                         val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                        clipboard.setPrimaryClip(ClipData.newPlainText("Post link", url))
+                        clipboard.setPrimaryClip(ClipData.newPlainText(context.getString(R.string.clipboard_post_link), url))
                         Toast.makeText(context, context.getString(R.string.post_link_copied), Toast.LENGTH_SHORT).show()
                     },
                 )

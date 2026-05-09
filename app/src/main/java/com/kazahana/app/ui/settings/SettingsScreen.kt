@@ -55,6 +55,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Button
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -239,6 +240,66 @@ fun SettingsScreen(
                     checked = uiState.showVia,
                     onCheckedChange = { viewModel.setShowVia(it) },
                 )
+            }
+
+            HorizontalDivider()
+
+            // ── Section: Long-form post service (standard.site) ──
+            SectionHeader(stringResource(R.string.settings_long_form_url_section))
+            val longFormUrl by viewModel.longFormServiceUrl.collectAsState()
+            val longFormUrlInvalid = longFormUrl.isNotEmpty() && !longFormUrl.startsWith("https://")
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp),
+            ) {
+                OutlinedTextField(
+                    value = longFormUrl,
+                    onValueChange = { viewModel.setLongFormServiceUrl(it.trim()) },
+                    modifier = Modifier.fillMaxWidth(),
+                    label = { Text(stringResource(R.string.settings_long_form_url_label)) },
+                    placeholder = { Text("https://leaflet.pub/...") },
+                    singleLine = true,
+                    isError = longFormUrlInvalid,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedPlaceholderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
+                        unfocusedPlaceholderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
+                    ),
+                    supportingText = {
+                        if (longFormUrlInvalid) {
+                            Text(stringResource(R.string.settings_long_form_url_invalid))
+                        } else {
+                            Text(stringResource(R.string.settings_long_form_url_help))
+                        }
+                    },
+                )
+                if (longFormUrl.isNotEmpty()) {
+                    TextButton(
+                        onClick = { viewModel.setLongFormServiceUrl("") },
+                        colors = ButtonDefaults.textButtonColors(
+                            contentColor = MaterialTheme.colorScheme.error,
+                        ),
+                    ) {
+                        Text(stringResource(R.string.settings_long_form_url_clear))
+                    }
+                }
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = stringResource(R.string.settings_long_form_url_link),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier
+                        .clickable {
+                            context.startActivity(
+                                android.content.Intent(
+                                    android.content.Intent.ACTION_VIEW,
+                                    Uri.parse("https://standard.site"),
+                                )
+                            )
+                        }
+                        .padding(vertical = 4.dp),
+                )
+                Spacer(modifier = Modifier.height(8.dp))
             }
 
             HorizontalDivider()

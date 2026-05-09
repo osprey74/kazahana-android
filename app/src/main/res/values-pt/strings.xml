@@ -179,6 +179,7 @@
     <string name="common_error">Ocorreu um erro</string>
     <string name="common_clear">Limpar</string>
     <string name="common_back">Voltar</string>
+    <string name="common_send">Enviar</string>
     <string name="common_settings">Configurações</string>
     <string name="common_move_up">Mover para cima</string>
     <string name="common_move_down">Mover para baixo</string>
@@ -331,4 +332,21 @@
     <string name="settings_claude_api">Claude API</string>
     <string name="settings_claude_api_revoke">Revogar chave API</string>
     <string name="settings_claude_api_footer">Utilizado para geração automática de texto ALT em imagens.</string>
+
+    <!-- Long-form post service (standard.site) -->
+    <string name="settings_long_form_url_section">Serviço de publicação de formato longo</string>
+    <string name="settings_long_form_url_label">URL do serviço de publicação de formato longo</string>
+    <string name="settings_long_form_url_help">Defina o URL da página de publicação de um serviço compatível com standard.site. Um botão \"Escrever formato longo\" aparecerá no compositor.</string>
+    <string name="settings_long_form_url_invalid">O URL deve começar com https://</string>
+    <string name="settings_long_form_url_link">Ver serviços compatíveis em standard.site</string>
+    <string name="settings_long_form_url_clear">Excluir URL</string>
+    <string name="compose_write_long_form_a11y">Escrever formato longo, abre no navegador</string>
+    <string name="notification_channel_name">Notificações</string>
+    <string name="notification_channel_description">Notificações do Bluesky</string>
+    <string name="a11y_avatar">Avatar</string>
+    <string name="clipboard_post_link">Link da publicação</string>
+    <plurals name="notification_unread_count">
+        <item quantity="one">%d nova notificação</item>
+        <item quantity="other">%d novas notificações</item>
+    </plurals>
 </resources>

@@ -102,3 +102,11 @@
 
 - [x] プロフィール画面からフィード・リストタブを削除 (軽量クライアント方針に合わせて簡素化)
 - [x] BSAF BOT投稿の左ボーダー太さを4dp→8dpに変更
+
+## standard.site 連携 (長文投稿サービス ハンドオフ)
+
+- [x] 設定画面に「長文投稿サービス URL」入力欄を追加 (https:// バリデーション + standard.site への外部リンク)
+- [x] DataStore に `long_form_service_url` キーを追加
+- [x] コンポーザに「長文を書く」ボタンを追加 (URL 設定時のみ表示、Custom Tabs で起動)
+- [x] androidx.browser:browser 依存を追加
+- [x] 11ロケール (en/ja/de/es/fr/id/ko/pt/ru/zh-rCN/zh-rTW) に文字列リソース追加

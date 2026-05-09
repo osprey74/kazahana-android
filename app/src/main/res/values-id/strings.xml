@@ -179,6 +179,7 @@
     <string name="common_error">Terjadi kesalahan</string>
     <string name="common_clear">Hapus</string>
     <string name="common_back">Kembali</string>
+    <string name="common_send">Kirim</string>
     <string name="common_settings">Pengaturan</string>
     <string name="common_move_up">Pindah ke atas</string>
     <string name="common_move_down">Pindah ke bawah</string>
@@ -331,4 +332,20 @@
     <string name="settings_claude_api">Claude API</string>
     <string name="settings_claude_api_revoke">Cabut kunci API</string>
     <string name="settings_claude_api_footer">Digunakan untuk pembuatan teks ALT otomatis pada gambar.</string>
+
+    <!-- Long-form post service (standard.site) -->
+    <string name="settings_long_form_url_section">Layanan kiriman bentuk panjang</string>
+    <string name="settings_long_form_url_label">URL layanan kiriman bentuk panjang</string>
+    <string name="settings_long_form_url_help">Atur URL halaman kiriman dari layanan yang kompatibel dengan standard.site. Tombol \"Tulis bentuk panjang\" akan muncul di komposer.</string>
+    <string name="settings_long_form_url_invalid">URL harus dimulai dengan https://</string>
+    <string name="settings_long_form_url_link">Lihat layanan kompatibel di standard.site</string>
+    <string name="settings_long_form_url_clear">Hapus URL</string>
+    <string name="compose_write_long_form_a11y">Tulis bentuk panjang, terbuka di peramban</string>
+    <string name="notification_channel_name">Notifikasi</string>
+    <string name="notification_channel_description">Notifikasi Bluesky</string>
+    <string name="a11y_avatar">Avatar</string>
+    <string name="clipboard_post_link">Tautan kiriman</string>
+    <plurals name="notification_unread_count">
+        <item quantity="other">%d notifikasi baru</item>
+    </plurals>
 </resources>

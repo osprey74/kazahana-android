@@ -178,6 +178,9 @@ class ComposeViewModel @Inject constructor(
     val confirmDraftImageQuality: StateFlow<Boolean> = settingsStore.confirmDraftImageQuality
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
 
+    val longFormServiceUrl: StateFlow<String> = settingsStore.longFormServiceUrl
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "")
+
     val currentHandle: String
         get() = sessionStore.load()?.handle ?: "example.bsky.social"
 

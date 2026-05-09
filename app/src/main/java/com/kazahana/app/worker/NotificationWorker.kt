@@ -45,10 +45,10 @@ class NotificationWorker @AssistedInject constructor(
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
                 CHANNEL_ID,
-                "Notifications",
+                applicationContext.getString(R.string.notification_channel_name),
                 NotificationManager.IMPORTANCE_DEFAULT,
             ).apply {
-                description = "Bluesky notifications"
+                description = applicationContext.getString(R.string.notification_channel_description)
             }
             notificationManager.createNotificationChannel(channel)
         }
@@ -65,8 +65,14 @@ class NotificationWorker @AssistedInject constructor(
 
         val notification = NotificationCompat.Builder(applicationContext, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_notification)
-            .setContentTitle("Kazahana")
-            .setContentText("You have $count new notification${if (count > 1) "s" else ""}")
+            .setContentTitle(applicationContext.getString(R.string.app_name))
+            .setContentText(
+                applicationContext.resources.getQuantityString(
+                    R.plurals.notification_unread_count,
+                    count,
+                    count,
+                )
+            )
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .setAutoCancel(true)
             .setContentIntent(pendingIntent)

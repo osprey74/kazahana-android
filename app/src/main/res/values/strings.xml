@@ -273,11 +273,22 @@
     <string name="settings_push_notifications">Push Notifications</string>
     <string name="settings_push_notifications_enable">Enable push notifications</string>
     <string name="settings_push_notifications_description">Receive real-time notifications for likes, reposts, follows, replies, mentions, and quotes.</string>
+    <string name="notification_channel_name">Notifications</string>
+    <string name="notification_channel_description">Bluesky notifications</string>
 
     <!-- Claude API -->
     <string name="settings_claude_api">Claude API</string>
     <string name="settings_claude_api_revoke">Revoke API key</string>
     <string name="settings_claude_api_footer">Used for automatic ALT text generation for images.</string>
+
+    <!-- Long-form post service (standard.site) -->
+    <string name="settings_long_form_url_section">Long-form post service</string>
+    <string name="settings_long_form_url_label">Long-form post service URL</string>
+    <string name="settings_long_form_url_help">Set the posting page URL of a standard.site-compatible service. A \"Write long-form\" button will appear in the composer.</string>
+    <string name="settings_long_form_url_invalid">URL must start with https://</string>
+    <string name="settings_long_form_url_link">View standard.site for compatible services</string>
+    <string name="settings_long_form_url_clear">Delete URL</string>
+    <string name="compose_write_long_form_a11y">Write long-form, opens in browser</string>
 
     <!-- Language names (native, not translated) -->
     <string name="lang_system">System</string>
@@ -359,7 +370,20 @@
     <string name="common_error">An error occurred</string>
     <string name="common_clear">Clear</string>
     <string name="common_back">Back</string>
+    <string name="common_send">Send</string>
     <string name="common_settings">Settings</string>
     <string name="common_move_up">Move up</string>
     <string name="common_move_down">Move down</string>
+
+    <!-- Accessibility -->
+    <string name="a11y_avatar">Avatar</string>
+
+    <!-- Clipboard labels -->
+    <string name="clipboard_post_link">Post link</string>
+
+    <!-- Plurals -->
+    <plurals name="notification_unread_count">
+        <item quantity="one">%d new notification</item>
+        <item quantity="other">%d new notifications</item>
+    </plurals>
 </resources>

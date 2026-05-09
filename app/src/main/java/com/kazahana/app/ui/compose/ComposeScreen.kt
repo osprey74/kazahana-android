@@ -34,6 +34,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.InsertDriveFile
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.EditNote
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -928,6 +929,23 @@ fun ComposeScreen(
                             contentDescription = stringResource(R.string.compose_add_video),
                             tint = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(24.dp),
+                        )
+                    }
+                }
+
+                // Long-form post service button — only when configured with a valid https:// URL
+                val longFormUrl by viewModel.longFormServiceUrl.collectAsState()
+                if (longFormUrl.startsWith("https://")) {
+                    IconButton(
+                        onClick = {
+                            val intent = androidx.browser.customtabs.CustomTabsIntent.Builder().build()
+                            intent.launchUrl(context, Uri.parse(longFormUrl))
+                        },
+                    ) {
+                        Icon(
+                            Icons.Default.EditNote,
+                            contentDescription = stringResource(R.string.compose_write_long_form_a11y),
+                            tint = MaterialTheme.colorScheme.primary,
                         )
                     }
                 }

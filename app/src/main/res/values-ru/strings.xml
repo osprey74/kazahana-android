@@ -179,6 +179,7 @@
     <string name="common_error">Произошла ошибка</string>
     <string name="common_clear">Очистить</string>
     <string name="common_back">Назад</string>
+    <string name="common_send">Отправить</string>
     <string name="common_settings">Настройки</string>
     <string name="common_move_up">Вверх</string>
     <string name="common_move_down">Вниз</string>
@@ -331,4 +332,23 @@
     <string name="settings_claude_api">Claude API</string>
     <string name="settings_claude_api_revoke">Отозвать API-ключ</string>
     <string name="settings_claude_api_footer">Используется для автоматической генерации ALT текста для изображений.</string>
+
+    <!-- Long-form post service (standard.site) -->
+    <string name="settings_long_form_url_section">Сервис длинных публикаций</string>
+    <string name="settings_long_form_url_label">URL сервиса длинных публикаций</string>
+    <string name="settings_long_form_url_help">Укажите URL страницы публикации сервиса, совместимого со standard.site. В редакторе появится кнопка «Написать длинный пост».</string>
+    <string name="settings_long_form_url_invalid">URL должен начинаться с https://</string>
+    <string name="settings_long_form_url_link">Совместимые сервисы на standard.site</string>
+    <string name="settings_long_form_url_clear">Удалить URL</string>
+    <string name="compose_write_long_form_a11y">Написать длинный пост, открывается в браузере</string>
+    <string name="notification_channel_name">Уведомления</string>
+    <string name="notification_channel_description">Уведомления Bluesky</string>
+    <string name="a11y_avatar">Аватар</string>
+    <string name="clipboard_post_link">Ссылка на публикацию</string>
+    <plurals name="notification_unread_count">
+        <item quantity="one">%d новое уведомление</item>
+        <item quantity="few">%d новых уведомления</item>
+        <item quantity="many">%d новых уведомлений</item>
+        <item quantity="other">%d новых уведомлений</item>
+    </plurals>
 </resources>

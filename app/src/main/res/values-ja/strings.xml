@@ -244,6 +244,15 @@
     <string name="settings_claude_api_revoke">APIキーを削除</string>
     <string name="settings_claude_api_footer">画像のALTテキスト自動生成に使用します。</string>
 
+    <!-- Long-form post service (standard.site) -->
+    <string name="settings_long_form_url_section">長文投稿サービス</string>
+    <string name="settings_long_form_url_label">長文投稿サービス URL</string>
+    <string name="settings_long_form_url_help">standard.site 対応サービスの投稿ページ URL を設定すると、コンポーザに「長文を書く」ボタンが表示されます。</string>
+    <string name="settings_long_form_url_invalid">URL は https:// で始まる必要があります</string>
+    <string name="settings_long_form_url_link">対応サービスを見る (standard.site)</string>
+    <string name="settings_long_form_url_clear">URL を削除</string>
+    <string name="compose_write_long_form_a11y">長文を書く（ブラウザで開く）</string>
+
     <!-- Language names -->
     <string name="lang_system">システム</string>
     <string name="settings_account">アカウント</string>
@@ -324,9 +333,17 @@
     <string name="common_error">エラーが発生しました</string>
     <string name="common_clear">クリア</string>
     <string name="common_back">戻る</string>
+    <string name="common_send">送信</string>
     <string name="common_settings">設定</string>
     <string name="common_move_up">上に移動</string>
     <string name="common_move_down">下に移動</string>
     <string name="feed_type_feed">フィード</string>
     <string name="feed_type_list">リスト</string>
+    <string name="notification_channel_name">通知</string>
+    <string name="notification_channel_description">Bluesky の通知</string>
+    <string name="a11y_avatar">アバター</string>
+    <string name="clipboard_post_link">投稿リンク</string>
+    <plurals name="notification_unread_count">
+        <item quantity="other">%d 件の新着通知</item>
+    </plurals>
 </resources>
