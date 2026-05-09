@@ -68,7 +68,15 @@
       "Read(//opt/**)",
       "Read(//home/ospre/.sdkman/candidates/**)",
       "Bash(\"/mnt/c/Program Files/Java/jdk-17.0.5/bin/java.exe\" -version)",
-      "Bash(cmd.exe /c \"cd /d G:\\\\dev\\\\kazahana-android && gradlew.bat assembleDebug\")"
+      "Bash(cmd.exe /c \"cd /d G:\\\\dev\\\\kazahana-android && gradlew.bat assembleDebug\")",
+      "Bash(sudo -n true)",
+      "Bash(echo \"exit=$?\")",
+      "Bash(curl -fsSL -o gradle-8.9-bin.zip \"https://services.gradle.org/distributions/gradle-8.9-bin.zip\")",
+      "Bash(unzip -q -o gradle-8.9-bin.zip)",
+      "Bash(export PATH=\"/tmp/gradle-8.9/bin:$PATH\")",
+      "Bash(export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64)",
+      "Bash(gradle --version)",
+      "Bash(gradle wrapper *)"
     ]
   }
 }
