@@ -314,6 +314,20 @@ data class VideoJobStatus(
     val message: String? = null,
 )
 
+// app.bsky.embed.getEmbedExternalView response (Standard Site link preview)
+@Serializable
+data class GetEmbedExternalViewResponse(
+    val view: EmbedExternalViewWrapper? = null,
+    val associatedRefs: List<StrongRef> = emptyList(),
+)
+
+/** app.bsky.embed.external#view — wraps the hydrated external view. */
+@Serializable
+data class EmbedExternalViewWrapper(
+    @SerialName("\$type") val type: String? = null,
+    val external: ExternalView? = null,
+)
+
 // getQuotes response
 @Serializable
 data class GetQuotesResponse(

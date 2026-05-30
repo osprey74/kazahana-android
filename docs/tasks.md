@@ -125,8 +125,10 @@
 - [x] Desktop 版に合わせ、ボタン文言を「公開元を見る」に変更 (ja)
 - [x] パブリケーションセクションに著者名 (`associatedProfiles[0].handle`) を「著者：@handle」形式で表示 (`link_card_author`)
 
-### Phase 2: コンポーザー連携 (未着手)
+### Phase 2: コンポーザー連携
 
-- [ ] 投稿レコード組み立て側に `associatedRefs` 送信を追加
-- [ ] リンクプレビュー取得を `app.bsky.embed.getEmbedExternalView` に切り替え (HTML から site.standard.* AT-URI 抽出 + OGP フォールバック)
-- [ ] コンポーザープレビューで拡張カード表示 (hideSubscribe)
+- [x] 投稿レコード組み立て側に `associatedRefs` 送信を追加 (`ExternalEmbedData` + `buildExternalEmbed`)
+- [x] リンクプレビュー取得を `app.bsky.embed.getEmbedExternalView` に切り替え (HTML から site.standard.* AT-URI 抽出 + OGP フォールバック)
+- [x] `OgpService` に `fetchHtml` / `extractStandardSiteUris` / `parseOgp` を追加
+- [x] `PostRepository.getEmbedExternalView(url, uris)` を追加 (`uris` 必須)
+- [x] コンポーザープレビューで拡張カード表示 (`LinkCard(hideSubscribe = true)`)

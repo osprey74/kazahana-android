@@ -76,6 +76,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import coil3.compose.AsyncImage
 import com.kazahana.app.R
 import com.kazahana.app.data.local.PostDraft
+import com.kazahana.app.ui.timeline.LinkCard
 import java.time.Instant
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
@@ -852,7 +853,13 @@ fun ComposeScreen(
             val linkCard = uiState.linkCard
             if (linkCard != null && uiState.images.isEmpty()) {
                 Box(modifier = Modifier.fillMaxWidth()) {
-                    LinkCardPreview(ogp = linkCard)
+                    val externalView = uiState.linkCardExternal
+                    if (externalView != null) {
+                        // Standard Site: show the hydrated extended card (subscribe hidden in composer)
+                        LinkCard(external = externalView, hideSubscribe = true)
+                    } else {
+                        LinkCardPreview(ogp = linkCard)
+                    }
                     // Dismiss button
                     Box(
                         modifier = Modifier

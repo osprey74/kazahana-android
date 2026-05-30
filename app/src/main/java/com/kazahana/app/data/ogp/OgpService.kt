@@ -38,18 +38,48 @@ object OgpService {
      * Fetch OGP metadata from [url]. Returns null on failure.
      */
     suspend fun fetch(url: String): OgpData? {
+        val html = fetchHtml(url) ?: return null
+        return parse(url, html)
+    }
+
+    /**
+     * Fetch the raw HTML of [url]. Returns null on failure.
+     */
+    suspend fun fetchHtml(url: String): String? {
         return try {
             val response = httpClient.get(url) {
                 header("User-Agent", "Mozilla/5.0 (compatible; kazahana/0.1)")
                 header("Accept", "text/html")
             }
             if (!response.status.isSuccess()) return null
-            val html = response.bodyAsText()
-            parse(url, html)
+            response.bodyAsText()
         } catch (_: Exception) {
             null
         }
     }
+
+    /** Parse OGP metadata from already-fetched [html]. Returns null on failure. */
+    fun parseOgp(url: String, html: String): OgpData? = parse(url, html)
+
+    /**
+     * Extract Standard Site AT-URIs from `<link rel="site.standard.*" href="at://...">`
+     * tags in [html]. Returns a de-duplicated list (empty if none — i.e. a normal page).
+     */
+    fun extractStandardSiteUris(html: String): List<String> {
+        val uris = LinkedHashSet<String>()
+        for (match in LINK_TAG_REGEX.findAll(html)) {
+            val tag = match.value
+            if (!STANDARD_SITE_REL_REGEX.containsMatchIn(tag)) continue
+            STANDARD_SITE_HREF_REGEX.find(tag)?.let { uris.add(it.groupValues[1]) }
+        }
+        return uris.toList()
+    }
+
+    private val LINK_TAG_REGEX = Regex("""<link\b[^>]*>""", RegexOption.IGNORE_CASE)
+    private val STANDARD_SITE_REL_REGEX =
+        Regex("""rel=["']site\.standard\.[a-z]+["']""", RegexOption.IGNORE_CASE)
+    private val STANDARD_SITE_HREF_REGEX =
+        Regex("""href=["'](at://[^"']+)["']""", RegexOption.IGNORE_CASE)
 
     /**
      * Download a thumbnail image as raw bytes. Returns null on failure.

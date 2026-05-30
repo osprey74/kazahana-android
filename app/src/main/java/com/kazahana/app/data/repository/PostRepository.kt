@@ -3,9 +3,12 @@ package com.kazahana.app.data.repository
 import com.kazahana.app.data.model.BlobRef
 import com.kazahana.app.data.model.BlobResponse
 import com.kazahana.app.data.model.CreateRecordResponse
+import com.kazahana.app.data.model.ExternalView
 import com.kazahana.app.data.model.Facet
+import com.kazahana.app.data.model.GetEmbedExternalViewResponse
 import com.kazahana.app.data.model.GetQuotesResponse
 import com.kazahana.app.data.model.ImageEmbedItem
+import com.kazahana.app.data.model.StrongRef
 import com.kazahana.app.data.model.VideoJobStatus
 import com.kazahana.app.data.model.VideoJobStatusWrapper
 import io.ktor.client.statement.bodyAsText
@@ -39,6 +42,13 @@ data class ExternalEmbedData(
     val title: String,
     val description: String,
     val thumbBlob: BlobRef? = null,
+    val associatedRefs: List<StrongRef> = emptyList(),
+)
+
+/** Result of an app.bsky.embed.getEmbedExternalView lookup (Standard Site preview). */
+data class ExternalPreview(
+    val external: ExternalView,
+    val associatedRefs: List<StrongRef>,
 )
 
 class PostRepository(
@@ -464,7 +474,49 @@ class PostRepository(
                         put("size", blob.size)
                     })
                 }
+                // Standard Site: carry the document/publication strong refs so the
+                // AppView hydrates the extended card for viewers (snapshot at post time)
+                if (external.associatedRefs.isNotEmpty()) {
+                    put("associatedRefs", buildJsonArray {
+                        external.associatedRefs.forEach { ref ->
+                            add(buildJsonObject {
+                                put("uri", ref.uri)
+                                put("cid", ref.cid)
+                            })
+                        }
+                    })
+                }
             })
+        }
+    }
+
+    /**
+     * Fetch a Standard Site extended link preview via app.bsky.embed.getEmbedExternalView.
+     * [uris] are the `site.standard.*` AT-URIs extracted from the page HTML and are
+     * REQUIRED by the endpoint (an empty list returns HTTP 400).
+     */
+    suspend fun getEmbedExternalView(
+        url: String,
+        uris: List<String>,
+    ): Result<ExternalPreview> {
+        return try {
+            val response = client.getMultiParam(
+                nsid = "app.bsky.embed.getEmbedExternalView",
+                params = mapOf("url" to listOf(url), "uris" to uris),
+            )
+            if (response.status.isSuccess()) {
+                val body = response.body<GetEmbedExternalViewResponse>()
+                val external = body.view?.external
+                if (external != null && external.title.isNotEmpty()) {
+                    Result.success(ExternalPreview(external, body.associatedRefs))
+                } else {
+                    Result.failure(Exception("getEmbedExternalView: empty view"))
+                }
+            } else {
+                Result.failure(Exception("getEmbedExternalView failed: HTTP ${response.status.value}"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
         }
     }
 

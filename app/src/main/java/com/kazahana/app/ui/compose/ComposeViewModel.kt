@@ -6,9 +6,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.kazahana.app.data.model.AspectRatio
 import com.kazahana.app.data.model.BlobRef
+import com.kazahana.app.data.model.ExternalView
 import com.kazahana.app.data.model.ImageEmbedItem
 import com.kazahana.app.data.model.PostRef
 import com.kazahana.app.data.model.PostReplyRef
+import com.kazahana.app.data.model.StrongRef
 import com.kazahana.app.data.ogp.OgpData
 import com.kazahana.app.data.ogp.OgpService
 import com.kazahana.app.data.remote.ATProtoClient
@@ -118,6 +120,9 @@ data class ComposeUiState(
     val showPostgateDialog: Boolean = false,
     val editingVideoAlt: Boolean = false,
     val linkCard: OgpData? = null,
+    // Standard Site: hydrated extended view (for rich preview) + strong refs (attached on post)
+    val linkCardExternal: ExternalView? = null,
+    val linkCardRefs: List<StrongRef> = emptyList(),
     val isFetchingLinkCard: Boolean = false,
     val linkCardDismissed: Boolean = false,
     val isGeneratingAlt: Boolean = false,
@@ -215,6 +220,8 @@ class ComposeViewModel @Inject constructor(
                 // Clear images and link card when adding video (mutually exclusive)
                 images = emptyList(),
                 linkCard = null,
+                linkCardExternal = null,
+                linkCardRefs = emptyList(),
                 linkCardDismissed = true,
                 error = null,
             )
@@ -351,7 +358,15 @@ class ComposeViewModel @Inject constructor(
     fun dismissLinkCard() {
         ogpFetchJob?.cancel()
         lastFetchedUrl = null
-        _uiState.update { it.copy(linkCard = null, isFetchingLinkCard = false, linkCardDismissed = true) }
+        _uiState.update {
+            it.copy(
+                linkCard = null,
+                linkCardExternal = null,
+                linkCardRefs = emptyList(),
+                isFetchingLinkCard = false,
+                linkCardDismissed = true,
+            )
+        }
     }
 
     private fun scheduleOgpFetch(text: String) {
@@ -365,7 +380,14 @@ class ComposeViewModel @Inject constructor(
             if (state.linkCard != null || state.isFetchingLinkCard) {
                 ogpFetchJob?.cancel()
                 lastFetchedUrl = null
-                _uiState.update { it.copy(linkCard = null, isFetchingLinkCard = false) }
+                _uiState.update {
+                    it.copy(
+                        linkCard = null,
+                        linkCardExternal = null,
+                        linkCardRefs = emptyList(),
+                        isFetchingLinkCard = false,
+                    )
+                }
             }
             return
         }
@@ -377,8 +399,43 @@ class ComposeViewModel @Inject constructor(
             delay(500) // debounce
             lastFetchedUrl = url
             _uiState.update { it.copy(isFetchingLinkCard = true) }
-            val ogp = OgpService.fetch(url)
-            _uiState.update { it.copy(linkCard = ogp, isFetchingLinkCard = false) }
+
+            // Standard Site: fetch HTML, extract site.standard.* AT-URIs, and if present
+            // hydrate the extended card via getEmbedExternalView; otherwise fall back to OGP.
+            val html = OgpService.fetchHtml(url)
+            val standardUris = if (html != null) OgpService.extractStandardSiteUris(html) else emptyList()
+
+            if (standardUris.isNotEmpty()) {
+                val preview = postRepository.getEmbedExternalView(url, standardUris).getOrNull()
+                if (preview != null) {
+                    val ext = preview.external
+                    _uiState.update {
+                        it.copy(
+                            linkCard = OgpData(
+                                url = ext.uri,
+                                title = ext.title,
+                                description = ext.description,
+                                imageUrl = ext.thumb,
+                            ),
+                            linkCardExternal = ext,
+                            linkCardRefs = preview.associatedRefs,
+                            isFetchingLinkCard = false,
+                        )
+                    }
+                    return@launch
+                }
+            }
+
+            // Fallback: plain OGP card (no Standard Site refs)
+            val ogp = if (html != null) OgpService.parseOgp(url, html) else null
+            _uiState.update {
+                it.copy(
+                    linkCard = ogp,
+                    linkCardExternal = null,
+                    linkCardRefs = emptyList(),
+                    isFetchingLinkCard = false,
+                )
+            }
         }
     }
 
@@ -549,6 +606,7 @@ class ComposeViewModel @Inject constructor(
                         title = ogp.title,
                         description = ogp.description,
                         thumbBlob = thumbBlob,
+                        associatedRefs = state.linkCardRefs,
                     )
                 } else null
 
