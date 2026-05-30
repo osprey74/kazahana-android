@@ -57,6 +57,10 @@ android {
                 "proguard-rules.pro"
             )
         }
+        debug {
+            // Install side-by-side with the Play Store build for on-device verification
+            applicationIdSuffix = ".debug"
+        }
     }
 
     compileOptions {

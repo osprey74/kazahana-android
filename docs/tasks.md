@@ -110,3 +110,23 @@
 - [x] コンポーザに「長文を書く」ボタンを追加 (URL 設定時のみ表示、Custom Tabs で起動)
 - [x] androidx.browser:browser 依存を追加
 - [x] 11ロケール (en/ja/de/es/fr/id/ko/pt/ru/zh-rCN/zh-rTW) に文字列リソース追加
+
+## Standard Site 拡張リンクカード (HANDOFF_kazahana-standard-site-embed.md)
+
+### Phase 1: 受信・表示
+
+- [x] `ExternalView` を Standard Site 拡張フィールド対応に拡張 (createdAt/updatedAt/readingTime/source/associatedRefs/associatedProfiles)
+- [x] `ExternalSource` / `ExternalSourceTheme` / `ColorRGB` / `StrongRef` データクラス追加
+- [x] `LinkCard` を3パターン分岐に拡張 (document only / document+publication / publication only)
+- [x] 読了時間 (Schedule アイコン + "Nm") と公開日 (ロケール準拠 MEDIUM) を表示
+- [x] パブリケーションセクション (アイコン + タイトル + 説明 + View publication ボタン) を追加
+- [x] accentRGB/accentForegroundRGB のみテーマ適用 (background/foreground は不採用、ダークモード可読性優先)
+- [x] 11ロケールに `link_card_view_publication` 文字列を追加
+- [x] Desktop 版に合わせ、ボタン文言を「公開元を見る」に変更 (ja)
+- [x] パブリケーションセクションに著者名 (`associatedProfiles[0].handle`) を「著者：@handle」形式で表示 (`link_card_author`)
+
+### Phase 2: コンポーザー連携 (未着手)
+
+- [ ] 投稿レコード組み立て側に `associatedRefs` 送信を追加
+- [ ] リンクプレビュー取得を `app.bsky.embed.getEmbedExternalView` に切り替え (HTML から site.standard.* AT-URI 抽出 + OGP フォールバック)
+- [ ] コンポーザープレビューで拡張カード表示 (hideSubscribe)

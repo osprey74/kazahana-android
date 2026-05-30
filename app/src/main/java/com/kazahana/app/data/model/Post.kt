@@ -180,6 +180,45 @@ data class ExternalView(
     val title: String = "",
     val description: String = "",
     val thumb: String? = null,
+    // Standard Site (site.standard.*) extended fields — all optional for backward compat
+    val createdAt: String? = null,
+    val updatedAt: String? = null,
+    val readingTime: Int? = null,
+    val source: ExternalSource? = null,
+    val associatedRefs: List<StrongRef> = emptyList(),
+    val associatedProfiles: List<ProfileViewBasic> = emptyList(),
+)
+
+/** Standard Site publication info merged into the external embed view. */
+@Serializable
+data class ExternalSource(
+    val uri: String,
+    val icon: String? = null,
+    val title: String,
+    val description: String? = null,
+    val theme: ExternalSourceTheme? = null,
+)
+
+@Serializable
+data class ExternalSourceTheme(
+    val backgroundRGB: ColorRGB? = null,
+    val foregroundRGB: ColorRGB? = null,
+    val accentRGB: ColorRGB? = null,
+    val accentForegroundRGB: ColorRGB? = null,
+)
+
+@Serializable
+data class ColorRGB(
+    val r: Int,
+    val g: Int,
+    val b: Int,
+)
+
+/** com.atproto.repo.strongRef — a {uri, cid} pair referencing another record. */
+@Serializable
+data class StrongRef(
+    val uri: String,
+    val cid: String,
 )
 
 @Serializable

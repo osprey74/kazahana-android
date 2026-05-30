@@ -25,6 +25,7 @@
     <string name="compose_reply_title">Balas</string>
     <string name="compose_quote_title">Kutip</string>
     <string name="compose_fetching_link_card">Mengambil kartu tautan…</string>
+    <string name="link_card_view_publication">Lihat publikasi</string>
     <string name="compose_replying_to">Membalas</string>
     <string name="compose_quoting">Mengutip</string>
     <string name="threadgate_title">Siapa yang bisa membalas?</string>

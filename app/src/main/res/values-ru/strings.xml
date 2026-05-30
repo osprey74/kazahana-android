@@ -25,6 +25,7 @@
     <string name="compose_reply_title">Ответ</string>
     <string name="compose_quote_title">Цитата</string>
     <string name="compose_fetching_link_card">Загрузка карточки ссылки…</string>
+    <string name="link_card_view_publication">Открыть издание</string>
     <string name="compose_replying_to">Ответ</string>
     <string name="compose_quoting">Цитирование</string>
     <string name="threadgate_title">Кто может отвечать?</string>

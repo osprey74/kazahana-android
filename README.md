@@ -26,7 +26,7 @@ Kazahana is designed as a **lightweight companion app** — not a full-featured 
 - **Posting** — Text, images (with ALT text), reply, quote repost, thread gate / post gate
 - **Rich text** — Mentions, URLs, and hashtags with automatic facet generation
 - **Media** — Image grid, fullscreen lightbox with pinch-zoom, ALT text overlay, video playback (HLS)
-- **Link cards** — OGP metadata preview for shared URLs
+- **Link cards** — OGP metadata preview for shared URLs, plus Standard Site extended cards (publication, author, reading time, publish date)
 - **Notifications** — Notification list with unread badge, background polling
 - **Profile** — User profile with tabs (posts / replies / media / likes / starter packs), follow / unfollow
 - **Search** — Posts and users, with search history (save / delete / clear)

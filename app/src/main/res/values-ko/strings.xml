@@ -25,6 +25,7 @@
     <string name="compose_reply_title">답글</string>
     <string name="compose_quote_title">인용</string>
     <string name="compose_fetching_link_card">링크 카드 가져오는 중…</string>
+    <string name="link_card_view_publication">퍼블리케이션 보기</string>
     <string name="compose_replying_to">에게 답글</string>
     <string name="compose_quoting">인용 중</string>
     <string name="threadgate_title">댓글을 달 수 있는 사람</string>

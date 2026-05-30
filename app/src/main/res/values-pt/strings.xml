@@ -25,6 +25,7 @@
     <string name="compose_reply_title">Resposta</string>
     <string name="compose_quote_title">Citação</string>
     <string name="compose_fetching_link_card">Carregando cartão de link…</string>
+    <string name="link_card_view_publication">Ver publicação</string>
     <string name="compose_replying_to">Respondendo a</string>
     <string name="compose_quoting">Citando</string>
     <string name="threadgate_title">Quem pode responder?</string>

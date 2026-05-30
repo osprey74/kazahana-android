@@ -25,6 +25,7 @@
     <string name="compose_reply_title">回覆</string>
     <string name="compose_quote_title">引用</string>
     <string name="compose_fetching_link_card">正在取得連結卡片…</string>
+    <string name="link_card_view_publication">檢視刊物</string>
     <string name="compose_replying_to">回覆</string>
     <string name="compose_quoting">引用</string>
     <string name="threadgate_title">誰可以回覆？</string>

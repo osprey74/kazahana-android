@@ -37,6 +37,8 @@
     <string name="compose_reply_title">Reply</string>
     <string name="compose_quote_title">Quote</string>
     <string name="compose_fetching_link_card">Fetching link card…</string>
+    <string name="link_card_view_publication">View publication</string>
+    <string name="link_card_author">by @%1$s</string>
     <string name="compose_replying_to">Replying to</string>
     <string name="compose_quoting">Quoting</string>
     <string name="compose_generate_alt">Generate ALT text</string>

@@ -31,6 +31,8 @@
     <string name="compose_reply_title">返信</string>
     <string name="compose_quote_title">引用</string>
     <string name="compose_fetching_link_card">リンクカードを取得中…</string>
+    <string name="link_card_view_publication">公開元を見る</string>
+    <string name="link_card_author">著者：@%1$s</string>
     <string name="compose_replying_to">に返信</string>
     <string name="compose_quoting">を引用</string>
     <string name="compose_generate_alt">ALTテキストを生成</string>
