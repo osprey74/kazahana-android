@@ -512,8 +512,12 @@ class TimelineViewModel @Inject constructor(
         val newTagsMap = mutableMapOf<String, BsafParsedTags>()
         val dupGroups = mutableMapOf<String, MutableList<FeedViewPost>>()
 
-        // Parse tags and group duplicates
+        // Parse tags and group duplicates — only for posts from registered BSAF bots.
+        // Posts that merely carry BSAF tags but come from unregistered accounts must not
+        // receive the visual styling (severity border / tag badges) or participate in
+        // duplicate detection.
         for (feedPost in posts) {
+            if (feedPost.post.author.did !in registeredDids) continue
             val record = try {
                 AppJson.decodeFromJsonElement<PostRecord>(feedPost.post.record)
             } catch (_: Exception) { continue }

@@ -63,6 +63,10 @@
     <string name="notification_mentioned">提到了你</string>
     <string name="notification_replied">回复了你的帖子</string>
     <string name="notification_quoted">引用了你的帖子</string>
+    <string name="notification_verified">验证了你的账号</string>
+    <string name="notification_unverified">取消了你的验证</string>
+    <string name="verification_verified">已验证账号</string>
+    <string name="verification_trusted_verifier">可信验证者</string>
     <string name="notification_group_label">%1$s 等%2$d人</string>
     <string name="notification_empty">暂无通知</string>
     <string name="profile_following">正在关注</string>

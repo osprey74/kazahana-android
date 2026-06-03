@@ -66,6 +66,7 @@ import com.kazahana.app.data.model.PostRecord
 import com.kazahana.app.ui.common.AvatarImage
 import com.kazahana.app.ui.common.BotBadge
 import com.kazahana.app.ui.common.isBotAccount
+import com.kazahana.app.ui.common.VerificationBadge
 import com.kazahana.app.data.bsaf.BsafService
 import com.kazahana.app.data.model.BsafDuplicateInfo
 import com.kazahana.app.data.model.BsafParsedTags
@@ -169,6 +170,11 @@ fun PostCard(
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.weight(1f, fill = false),
+                    )
+                    VerificationBadge(
+                        verification = post.author.verification,
+                        size = 14.dp,
+                        modifier = Modifier.padding(start = 3.dp),
                     )
                     if (isBotAccount(post.author.did, post.author.labels)) {
                         Spacer(modifier = Modifier.width(3.dp))

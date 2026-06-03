@@ -19,6 +19,7 @@ data class ProfileViewDetailed(
     val labels: List<ContentLabel> = emptyList(),
     val createdAt: String? = null,
     val pinnedPost: PinnedPost? = null,
+    val verification: VerificationState? = null,
 )
 
 @Serializable

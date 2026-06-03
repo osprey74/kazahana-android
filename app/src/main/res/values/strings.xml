@@ -106,6 +106,10 @@
     <string name="notification_mentioned">mentioned you</string>
     <string name="notification_replied">replied to your post</string>
     <string name="notification_quoted">quoted your post</string>
+    <string name="notification_verified">verified your account</string>
+    <string name="notification_unverified">removed verification from your account</string>
+    <string name="verification_verified">Verified account</string>
+    <string name="verification_trusted_verifier">Trusted verifier</string>
     <string name="notification_group_label">%1$s and %2$d others</string>
     <string name="notification_empty">No notifications yet</string>
 

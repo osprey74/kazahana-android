@@ -60,6 +60,7 @@ import androidx.compose.ui.unit.sp
 import com.kazahana.app.data.AppJson
 import com.kazahana.app.ui.common.BotBadge
 import com.kazahana.app.ui.common.isBotAccount
+import com.kazahana.app.ui.common.VerificationBadge
 import kotlinx.serialization.json.decodeFromJsonElement
 
 @Composable
@@ -288,6 +289,11 @@ private fun UserRow(
                     style = MaterialTheme.typography.bodyLarge,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
+                )
+                VerificationBadge(
+                    verification = user.verification,
+                    size = 14.dp,
+                    modifier = Modifier.padding(start = 3.dp),
                 )
                 if (isBotAccount(user.did, user.labels)) {
                     Spacer(modifier = Modifier.width(3.dp))

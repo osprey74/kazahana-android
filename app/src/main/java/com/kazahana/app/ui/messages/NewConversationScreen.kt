@@ -52,6 +52,7 @@ import com.kazahana.app.data.model.ProfileViewDetailed
 import com.kazahana.app.ui.common.AvatarImage
 import com.kazahana.app.ui.common.BotBadge
 import com.kazahana.app.ui.common.isBotAccount
+import com.kazahana.app.ui.common.VerificationBadge
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -189,6 +190,11 @@ private fun NewConvoUserRow(
                     style = MaterialTheme.typography.bodyLarge,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
+                )
+                VerificationBadge(
+                    verification = user.verification,
+                    size = 14.dp,
+                    modifier = Modifier.padding(start = 3.dp),
                 )
                 if (isBotAccount(user.did, user.labels)) {
                     Spacer(modifier = Modifier.width(3.dp))

@@ -63,6 +63,10 @@
     <string name="notification_mentioned">vous a mentionné</string>
     <string name="notification_replied">a répondu à votre publication</string>
     <string name="notification_quoted">a cité votre publication</string>
+    <string name="notification_verified">a vérifié votre compte</string>
+    <string name="notification_unverified">a retiré la vérification de votre compte</string>
+    <string name="verification_verified">Compte vérifié</string>
+    <string name="verification_trusted_verifier">Vérificateur de confiance</string>
     <string name="notification_group_label">%1$s et %2$d autres</string>
     <string name="notification_empty">Pas encore de notifications</string>
     <string name="profile_following">Abonnements</string>

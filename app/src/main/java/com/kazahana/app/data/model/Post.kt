@@ -100,6 +100,17 @@ data class ProfileViewBasic(
     val displayName: String? = null,
     val avatar: String? = null,
     val labels: List<ContentLabel> = emptyList(),
+    val verification: VerificationState? = null,
+)
+
+/**
+ * app.bsky.actor.defs#verificationState — Bluesky verification status for an account.
+ * verifiedStatus / trustedVerifierStatus are one of "valid" | "invalid" | "none".
+ */
+@Serializable
+data class VerificationState(
+    val verifiedStatus: String? = null,
+    val trustedVerifierStatus: String? = null,
 )
 
 @Serializable

@@ -20,10 +20,12 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FormatQuote
+import androidx.compose.material.icons.filled.GppBad
 import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Repeat
 import androidx.compose.material.icons.filled.Reply
+import androidx.compose.material.icons.filled.Verified
 import androidx.compose.material.icons.outlined.AlternateEmail
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -58,6 +60,7 @@ import androidx.compose.ui.unit.sp
 import com.kazahana.app.ui.common.AvatarImage
 import com.kazahana.app.ui.common.BotBadge
 import com.kazahana.app.ui.common.isBotAccount
+import com.kazahana.app.ui.common.VerificationBadge
 import com.kazahana.app.ui.common.relativeTime
 import com.kazahana.app.ui.common.RichTextContent
 import kotlinx.coroutines.flow.SharedFlow
@@ -66,6 +69,8 @@ import kotlinx.serialization.json.decodeFromJsonElement
 private val RepostGreen = Color(0xFF00BA7C)
 private val LikeRed = Color(0xFFE0245E)
 private val FollowBlue = Color(0xFF1DA1F2)
+private val VerifiedSky = Color(0xFF0EA5E9)
+private val UnverifiedOrange = Color(0xFFF97316)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -204,6 +209,8 @@ private fun GroupedNotificationRow(
             "mention" -> Pair(Icons.Outlined.AlternateEmail, FollowBlue)
             "reply" -> Pair(Icons.Filled.Reply, Color.Gray)
             "quote" -> Pair(Icons.Filled.FormatQuote, Color.Gray)
+            "verified" -> Pair(Icons.Filled.Verified, VerifiedSky)
+            "unverified" -> Pair(Icons.Filled.GppBad, UnverifiedOrange)
             else -> Pair(Icons.Filled.Favorite, Color.Gray)
         }
     }
@@ -219,6 +226,8 @@ private fun GroupedNotificationRow(
         "mention" -> stringResource(R.string.notification_mentioned)
         "reply" -> stringResource(R.string.notification_replied)
         "quote" -> stringResource(R.string.notification_quoted)
+        "verified" -> stringResource(R.string.notification_verified)
+        "unverified" -> stringResource(R.string.notification_unverified)
         else -> group.reason
     }
 
@@ -295,6 +304,13 @@ private fun GroupedNotificationRow(
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
                             )
+                            if (group.authors.size == 1) {
+                                VerificationBadge(
+                                    verification = firstAuthor.verification,
+                                    size = 13.dp,
+                                    modifier = Modifier.padding(start = 3.dp),
+                                )
+                            }
                             if (group.authors.size == 1 && isBotAccount(firstAuthor.did, firstAuthor.labels)) {
                                 Spacer(modifier = Modifier.width(3.dp))
                                 BotBadge(size = 13.sp)
@@ -314,7 +330,7 @@ private fun GroupedNotificationRow(
                 }
 
                 // Inline post content (text + media thumbnails)
-                if (group.reason != "follow") {
+                if (group.reason != "follow" && group.reason != "verified" && group.reason != "unverified") {
                     NotificationPostContent(
                         subjectPost = subjectPost,
                         fallbackRecord = group.record,

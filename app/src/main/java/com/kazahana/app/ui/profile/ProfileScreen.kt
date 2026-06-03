@@ -84,6 +84,7 @@ import androidx.compose.ui.unit.sp
 import com.kazahana.app.ui.common.AvatarImage
 import com.kazahana.app.ui.common.BotBadge
 import com.kazahana.app.ui.common.isBotAccount
+import com.kazahana.app.ui.common.VerificationBadge
 import com.kazahana.app.ui.common.LocalModerationSettings
 import com.kazahana.app.ui.common.checkModeration
 import com.kazahana.app.ui.timeline.PostCard
@@ -645,6 +646,11 @@ private fun CompactProfileHeader(
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
+                    VerificationBadge(
+                        verification = profile.verification,
+                        size = 14.dp,
+                        modifier = Modifier.padding(start = 4.dp),
+                    )
                     if (isBotAccount(profile.did, profile.labels)) {
                         Spacer(modifier = Modifier.width(4.dp))
                         BotBadge(size = 14.sp)
@@ -902,6 +908,11 @@ private fun ProfileHeader(
                     text = profile.displayName ?: profile.handle,
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
+                )
+                VerificationBadge(
+                    verification = profile.verification,
+                    size = 18.dp,
+                    modifier = Modifier.padding(start = 4.dp),
                 )
                 if (isBotAccount(profile.did, profile.labels)) {
                     Spacer(modifier = Modifier.width(4.dp))
