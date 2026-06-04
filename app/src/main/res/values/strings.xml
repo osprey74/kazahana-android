@@ -392,4 +392,56 @@
         <item quantity="one">%d new notification</item>
         <item quantity="other">%d new notifications</item>
     </plurals>
+
+    <!-- Evacuation Assist -->
+    <string name="evacuation_title">Evacuation Assist</string>
+    <string name="evacuation_enable">Enable Evacuation Assist</string>
+    <string name="evacuation_footer">Shows nearby shelter information based on JMA weather warning levels. Requires bsaf-kikikuru-bot BSAF registration.</string>
+    <string name="evacuation_bot_confirm_title">Register bsaf-kikikuru-bot</string>
+    <string name="evacuation_bot_confirm_message">Evacuation Assist requires bsaf-kikikuru-bot BSAF registration. Enabling this will automatically register and follow bsaf-kikikuru-bot.</string>
+    <string name="evacuation_bot_confirm_enable">Enable</string>
+    <string name="evacuation_prefecture_override">Prefecture (manual)</string>
+    <string name="evacuation_prefecture_auto">Auto (from location)</string>
+    <string name="evacuation_view_shelters">View nearest shelters</string>
+    <string name="evacuation_banner_title_level3">Weather warning level information issued</string>
+    <string name="evacuation_banner_title_level4">Check evacuation information</string>
+    <string name="evacuation_banner_title_level5">Secure your safety immediately</string>
+    <string name="evacuation_banner_action">View shelters</string>
+    <string name="evacuation_nearest_shelters">Nearest Shelters</string>
+    <string name="evacuation_hazard_filter">Hazard type</string>
+    <string name="evacuation_location_required">Location access is required</string>
+    <string name="evacuation_request_location">Allow location access</string>
+    <string name="evacuation_no_shelters_found">No shelters found</string>
+    <string name="evacuation_locating">Getting location…</string>
+    <string name="evacuation_distance">Distance</string>
+    <string name="evacuation_supported_hazards">Supported hazards</string>
+    <string name="evacuation_open_in_maps">Navigate with Maps</string>
+    <string name="evacuation_compass_nav">Simple Nav (Compass)</string>
+    <string name="evacuation_straight_line_distance">Straight-line distance</string>
+    <string name="evacuation_compass_disclaimer">Compass accuracy depends on conditions. Use as a guide only.</string>
+    <string name="evacuation_compass_calibration">Compass accuracy is low. Move your device in a figure-8 pattern.</string>
+    <string name="evacuation_compass_unavailable">A compass is not available on this device.</string>
+    <string name="evacuation_use_map_app_instead">Please use the Maps app for navigation.</string>
+    <string name="evacuation_offline">Offline</string>
+    <string name="evacuation_offline_note">No connection. Please use the simple compass navigator.</string>
+    <string name="evacuation_set_prefecture_prompt">To use offline, please set your prefecture manually.</string>
+    <string name="evacuation_hazard_flood">Flood</string>
+    <string name="evacuation_hazard_landslide">Landslide</string>
+    <string name="evacuation_hazard_storm_surge">Storm Surge</string>
+    <string name="evacuation_hazard_earthquake">Earthquake</string>
+    <string name="evacuation_hazard_tsunami">Tsunami</string>
+    <string name="evacuation_hazard_fire">Large Fire</string>
+    <string name="evacuation_hazard_inland_flood">Inland Flood</string>
+    <string name="evacuation_hazard_volcano">Volcano</string>
+    <string name="evacuation_disclaimer">Evacuation Assist is based on JMA hazard level information and surfaces nearby Designated Emergency Evacuation Sites (GSI data) to support evacuation. Always confirm evacuation decisions against local government evacuation orders and official information.</string>
+    <string name="evacuation_data_source">Source: GSI Designated Emergency Evacuation Sites</string>
+    <string name="evacuation_data_warning">Shelter data may not be current or may differ from actual sites. Check with local authorities for the latest information.</string>
+    <string name="evacuation_onboarding_title">About Evacuation Assist</string>
+    <string name="evacuation_onboarding_message">A feature to guide you to the nearest shelter during weather warnings is available. You can enable it anytime in Settings.</string>
+    <string name="evacuation_onboarding_dismiss">Later</string>
+    <string name="evacuation_demo_title">Demo Mode</string>
+    <string name="evacuation_demo_inject_level3">Simulate Level 3 alert</string>
+    <string name="evacuation_demo_inject_level4">Simulate Level 4 alert</string>
+    <string name="evacuation_demo_inject_level5">Simulate Level 5 alert</string>
+    <string name="evacuation_demo_clear">Clear alerts</string>
 </resources>

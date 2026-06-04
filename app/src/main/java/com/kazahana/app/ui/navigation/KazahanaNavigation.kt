@@ -3,6 +3,7 @@ package com.kazahana.app.ui.navigation
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.ui.unit.dp
@@ -53,6 +54,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
+import androidx.lifecycle.repeatOnLifecycle
 import com.kazahana.app.R
 import com.kazahana.app.ui.auth.AccountPickerScreen
 import com.kazahana.app.ui.auth.LoginScreen
@@ -69,6 +71,11 @@ import com.kazahana.app.ui.settings.BsafBotsScreen
 import com.kazahana.app.ui.settings.FeedManagementScreen
 import com.kazahana.app.ui.settings.SettingsScreen
 import com.kazahana.app.ui.settings.WatermarkSettingsScreen
+import com.kazahana.app.ui.evacuation.CompassNavScreen
+import com.kazahana.app.ui.evacuation.EvacuationBannerView
+import com.kazahana.app.ui.evacuation.EvacuationViewModel
+import com.kazahana.app.ui.evacuation.NearestSheltersScreen
+import com.kazahana.app.ui.evacuation.ShelterDetailScreen
 import com.kazahana.app.ui.thread.ThreadScreen
 import com.kazahana.app.ui.timeline.QuotesListScreen
 import com.kazahana.app.ui.timeline.TimelineScreen
@@ -113,6 +120,9 @@ import kotlinx.serialization.Serializable
 @Serializable data class ChatRoute(val convoId: String)
 @Serializable object NewConversationRoute
 @Serializable data class SearchWithQueryRoute(val query: String)
+@Serializable object NearestSheltersRoute
+@Serializable data class ShelterDetailRoute(val shelterId: String)
+@Serializable data class CompassNavRoute(val shelterId: String)
 
 data class BottomNavItem(
     val route: Any,
@@ -291,6 +301,33 @@ private fun MainScreen(
     val hideChrome = isOnCompose
     val hideFab = hideChrome || isOnSettings || isOnMessages || isOnProfileDetail
 
+    // Evacuation Assist: banner state is owned by a @Singleton manager, so it survives the
+    // key(activeAccountDID) recomposition that recreates MainScreen on account switch.
+    // Hoisted above Scaffold so the FAB can shift up when the banner is shown.
+    val evacuationViewModel: EvacuationViewModel = hiltViewModel()
+    val bannerState by evacuationViewModel.bannerState.collectAsState()
+    val evacPrefectureOverride by evacuationViewModel.prefectureOverride.collectAsState()
+    val evacEnabled by evacuationViewModel.evacuationEnabled.collectAsState()
+    val evacContext = androidx.compose.ui.platform.LocalContext.current
+    androidx.compose.runtime.LaunchedEffect(evacEnabled) {
+        if (evacEnabled) {
+            evacuationViewModel.ensurePrefectureResolved(
+                com.kazahana.app.ui.evacuation.hasLocationPermission(evacContext)
+            )
+        }
+    }
+    val evacLifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
+    androidx.compose.runtime.LaunchedEffect(Unit) {
+        evacLifecycleOwner.lifecycle.repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.RESUMED) {
+            evacuationViewModel.expireStaleAlerts()
+            while (true) {
+                kotlinx.coroutines.delay(com.kazahana.app.data.evacuation.EvacuationConstants.EXPIRY_CHECK_INTERVAL_MS)
+                evacuationViewModel.expireStaleAlerts()
+            }
+        }
+    }
+    val evacBannerVisible = bannerState.visible && bannerState.highestLevel != null && !hideChrome
+
     Scaffold(
         bottomBar = {
             if (!hideChrome) {
@@ -361,6 +398,12 @@ private fun MainScreen(
                             launchSingleTop = true
                         }
                     },
+                    // バナー表示中は FAB を上にずらして重なりを避ける
+                    modifier = if (evacBannerVisible) {
+                        Modifier.offset(y = (-76).dp)
+                    } else {
+                        Modifier
+                    },
                 ) {
                     Icon(Icons.Default.Edit, contentDescription = stringResource(R.string.compose_title))
                 }
@@ -384,12 +427,11 @@ private fun MainScreen(
             }
         }
 
+        Box(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
         NavHost(
             navController = navController,
             startDestination = HomeRoute,
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding),
+            modifier = Modifier.fillMaxSize(),
         ) {
             composable<HomeRoute> {
                 TimelineScreen(
@@ -701,6 +743,11 @@ private fun MainScreen(
                             launchSingleTop = true
                         }
                     },
+                    onViewShelters = {
+                        navController.navigate(NearestSheltersRoute) {
+                            launchSingleTop = true
+                        }
+                    },
                     savedAccounts = savedAccounts,
                     activeAccountDID = activeAccountDID,
                     onSwitchAccount = { session -> authViewModel.switchAccount(session) },
@@ -720,6 +767,35 @@ private fun MainScreen(
             }
             composable<WatermarkSettingsRoute> {
                 WatermarkSettingsScreen(
+                    onNavigateBack = { navController.popBackStack() },
+                )
+            }
+            composable<NearestSheltersRoute> {
+                NearestSheltersScreen(
+                    onNavigateBack = { navController.popBackStack() },
+                    onShelterClick = { shelterId ->
+                        navController.navigate(ShelterDetailRoute(shelterId = shelterId)) {
+                            launchSingleTop = true
+                        }
+                    },
+                )
+            }
+            composable<ShelterDetailRoute> { backStackEntry ->
+                val route = backStackEntry.toRoute<ShelterDetailRoute>()
+                ShelterDetailScreen(
+                    shelterId = route.shelterId,
+                    onNavigateBack = { navController.popBackStack() },
+                    onCompassNav = { shelterId ->
+                        navController.navigate(CompassNavRoute(shelterId = shelterId)) {
+                            launchSingleTop = true
+                        }
+                    },
+                )
+            }
+            composable<CompassNavRoute> { backStackEntry ->
+                val route = backStackEntry.toRoute<CompassNavRoute>()
+                CompassNavScreen(
+                    shelterId = route.shelterId,
                     onNavigateBack = { navController.popBackStack() },
                 )
             }
@@ -780,6 +856,37 @@ private fun MainScreen(
                     onMentionClick = navigateToMention,
                 )
             }
+        }
+
+        // Evacuation banner overlay (above the bottom navigation bar)
+        val bannerLevel = bannerState.highestLevel
+        if (bannerState.visible && bannerLevel != null && !hideChrome) {
+            EvacuationBannerView(
+                highestLevel = bannerLevel,
+                prefecture = evacPrefectureOverride.ifEmpty { null },
+                onClick = {
+                    navController.navigate(NearestSheltersRoute) { launchSingleTop = true }
+                },
+                modifier = Modifier.align(Alignment.BottomCenter),
+            )
+        }
+
+        // 初回オンボーディング: 一度だけ控えめに案内（オンは強制しない）
+        val onboardingShown by evacuationViewModel.onboardingShown.collectAsState()
+        if (!onboardingShown && !evacEnabled) {
+            androidx.compose.material3.AlertDialog(
+                onDismissRequest = { evacuationViewModel.markOnboardingShown() },
+                title = { Text(stringResource(R.string.evacuation_onboarding_title)) },
+                text = { Text(stringResource(R.string.evacuation_onboarding_message)) },
+                confirmButton = {
+                    androidx.compose.material3.TextButton(
+                        onClick = { evacuationViewModel.markOnboardingShown() },
+                    ) {
+                        Text(stringResource(R.string.evacuation_onboarding_dismiss))
+                    }
+                },
+            )
+        }
         }
     }
 

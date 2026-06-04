@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.kazahana.app.data.AppJson
 import com.kazahana.app.data.bsaf.BsafService
+import com.kazahana.app.data.evacuation.EvacuationAlertManager
 import com.kazahana.app.data.local.SettingsStore
 import com.kazahana.app.data.model.BsafDuplicateInfo
 import com.kazahana.app.data.model.BsafParsedTags
@@ -66,6 +67,7 @@ class TimelineViewModel @Inject constructor(
     private val reportRepository: ReportRepository,
     private val settingsStore: SettingsStore,
     private val bsafService: BsafService,
+    private val evacuationAlertManager: EvacuationAlertManager,
     private val client: ATProtoClient,
 ) : ViewModel() {
 
@@ -523,6 +525,8 @@ class TimelineViewModel @Inject constructor(
             } catch (_: Exception) { continue }
             val parsed = bsafService.parseBsafTags(record.tags) ?: continue
             newTagsMap[feedPost.post.uri] = parsed
+            // 避難誘導: 登録 Bot 由来の BSAF タグをマネージャへ転送（有効/都道府県判定は内部で行う）
+            evacuationAlertManager.processPost(parsed)
             val key = bsafService.duplicateKey(parsed)
             dupGroups.getOrPut(key) { mutableListOf() }.add(feedPost)
         }

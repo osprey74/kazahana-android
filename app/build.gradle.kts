@@ -131,4 +131,10 @@ dependencies {
 
     // Firebase
     implementation(libs.firebase.messaging)
+
+    // Location (FusedLocationProvider) — Evacuation Assist
+    implementation(libs.play.services.location)
+
+    // Testing
+    testImplementation(libs.junit)
 }

@@ -64,6 +64,7 @@ import com.kazahana.app.R
 import com.kazahana.app.data.local.AppLocale
 import com.kazahana.app.data.local.ModerationPref
 import com.kazahana.app.data.local.ThemeMode
+import com.kazahana.app.data.model.Prefecture
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -74,6 +75,7 @@ fun SettingsScreen(
     onFeedManagement: () -> Unit = {},
     onBsafBots: () -> Unit = {},
     onWatermarkSettings: () -> Unit = {},
+    onViewShelters: () -> Unit = {},
     savedAccounts: List<com.kazahana.app.data.model.Session> = emptyList(),
     activeAccountDID: String? = null,
     onSwitchAccount: (com.kazahana.app.data.model.Session) -> Unit = {},
@@ -81,6 +83,10 @@ fun SettingsScreen(
     onAddAccount: () -> Unit = {},
 ) {
     val uiState by viewModel.uiState.collectAsState()
+
+    // Hidden demo mode: tap version 5 times (store-review friendly; works in Release builds)
+    var demoTapCount by remember { mutableStateOf(0) }
+    var showDemoMode by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -344,6 +350,15 @@ fun SettingsScreen(
                     )
                 }
             }
+
+            HorizontalDivider()
+
+            // ── Section: Evacuation Assist ──
+            EvacuationSection(
+                viewModel = viewModel,
+                onViewShelters = onViewShelters,
+                showDemo = showDemoMode,
+            )
 
             HorizontalDivider()
 
@@ -624,6 +639,12 @@ fun SettingsScreen(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .clickable {
+                        if (!showDemoMode) {
+                            demoTapCount++
+                            if (demoTapCount >= 5) showDemoMode = true
+                        }
+                    }
                     .padding(horizontal = 16.dp, vertical = 8.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
@@ -650,7 +671,7 @@ fun SettingsScreen(
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                 )
                 Text(
-                    text = "@app-kazahana.bsky.social",
+                    text = "@kazahana.app",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.primary,
                 )
@@ -815,6 +836,200 @@ private fun pollingIntervalLabel(seconds: Int): String {
         90 -> stringResource(R.string.settings_polling_90s)
         120 -> stringResource(R.string.settings_polling_120s)
         else -> stringResource(R.string.settings_polling_60s)
+    }
+}
+
+@Composable
+private fun EvacuationSection(
+    viewModel: SettingsViewModel,
+    onViewShelters: () -> Unit,
+    showDemo: Boolean,
+) {
+    val enabled by viewModel.evacuationEnabled.collectAsState()
+    val prefectureOverride by viewModel.evacuationPrefectureOverride.collectAsState()
+    val botState by viewModel.evacuationBotState.collectAsState()
+
+    SectionHeader(stringResource(R.string.evacuation_title))
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { viewModel.onToggleEvacuation(!enabled) }
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = stringResource(R.string.evacuation_enable),
+            style = MaterialTheme.typography.bodyLarge,
+            modifier = Modifier.weight(1f),
+        )
+        if (botState.registering) {
+            androidx.compose.material3.CircularProgressIndicator(
+                modifier = Modifier.width(24.dp).height(24.dp),
+                strokeWidth = 2.dp,
+            )
+        } else {
+            Switch(
+                checked = enabled,
+                onCheckedChange = { viewModel.onToggleEvacuation(it) },
+            )
+        }
+    }
+
+    if (enabled) {
+        PrefecturePicker(
+            selected = prefectureOverride,
+            onSelect = { viewModel.setEvacuationPrefectureOverride(it) },
+        )
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable(onClick = onViewShelters)
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = stringResource(R.string.evacuation_view_shelters),
+                style = MaterialTheme.typography.bodyLarge,
+            )
+            Icon(
+                Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+            )
+        }
+    }
+
+    botState.error?.let { error ->
+        Text(
+            text = error,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.error,
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+        )
+    }
+
+    Text(
+        text = stringResource(R.string.evacuation_footer),
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+        modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+    )
+
+    if (showDemo) {
+        Text(
+            text = stringResource(R.string.evacuation_demo_title),
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+        )
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp),
+        ) {
+            TextButton(onClick = { viewModel.injectDemoAlert(com.kazahana.app.data.model.AlertLevel.LEVEL3) }) {
+                Text(stringResource(R.string.evacuation_demo_inject_level3))
+            }
+            TextButton(onClick = { viewModel.injectDemoAlert(com.kazahana.app.data.model.AlertLevel.LEVEL4) }) {
+                Text(stringResource(R.string.evacuation_demo_inject_level4))
+            }
+            TextButton(onClick = { viewModel.injectDemoAlert(com.kazahana.app.data.model.AlertLevel.LEVEL5) }) {
+                Text(stringResource(R.string.evacuation_demo_inject_level5))
+            }
+            TextButton(
+                onClick = { viewModel.clearDemoAlerts() },
+                colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
+            ) {
+                Text(stringResource(R.string.evacuation_demo_clear))
+            }
+        }
+    }
+
+    if (botState.needsBotConfirm) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { viewModel.dismissEvacuationBotConfirm() },
+            title = { Text(stringResource(R.string.evacuation_bot_confirm_title)) },
+            text = { Text(stringResource(R.string.evacuation_bot_confirm_message)) },
+            confirmButton = {
+                TextButton(onClick = { viewModel.confirmRegisterKikikuruAndEnable() }) {
+                    Text(stringResource(R.string.evacuation_bot_confirm_enable))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { viewModel.dismissEvacuationBotConfirm() }) {
+                    Text(stringResource(R.string.common_cancel))
+                }
+            },
+        )
+    }
+}
+
+@Composable
+private fun PrefecturePicker(
+    selected: String,
+    onSelect: (String) -> Unit,
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val selectedLabel = Prefecture.fromRawValue(selected)?.displayName
+        ?: stringResource(R.string.evacuation_prefecture_auto)
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 4.dp),
+    ) {
+        Text(
+            text = stringResource(R.string.evacuation_prefecture_override),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+        )
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { expanded = true }
+                .padding(vertical = 12.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = selectedLabel,
+                style = MaterialTheme.typography.bodyLarge,
+            )
+            Icon(
+                Icons.Default.KeyboardArrowDown,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+            )
+        }
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+        ) {
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.evacuation_prefecture_auto)) },
+                onClick = {
+                    onSelect("")
+                    expanded = false
+                },
+            )
+            Prefecture.entries.forEach { pref ->
+                DropdownMenuItem(
+                    text = {
+                        Text(
+                            text = pref.displayName,
+                            fontWeight = if (pref.rawValue == selected) FontWeight.Bold else FontWeight.Normal,
+                        )
+                    },
+                    onClick = {
+                        onSelect(pref.rawValue)
+                        expanded = false
+                    },
+                )
+            }
+        }
     }
 }
 

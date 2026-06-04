@@ -69,6 +69,9 @@ class SettingsStore(private val context: Context) {
         val WATERMARK_SETTINGS = stringPreferencesKey("watermark_settings")
         val CONFIRM_DRAFT_IMAGE_QUALITY = booleanPreferencesKey("confirm_draft_image_quality")
         val LONG_FORM_SERVICE_URL = stringPreferencesKey("long_form_service_url")
+        val EVACUATION_ENABLED = booleanPreferencesKey("evacuation_enabled")
+        val EVACUATION_PREFECTURE_OVERRIDE = stringPreferencesKey("evacuation_prefecture_override")
+        val EVACUATION_ONBOARDING_SHOWN = booleanPreferencesKey("evacuation_onboarding_shown")
     }
 
     val themeMode: Flow<ThemeMode> = context.dataStore.data.map { prefs ->
@@ -469,6 +472,41 @@ class SettingsStore(private val context: Context) {
                 kotlinx.serialization.serializer<com.kazahana.app.data.WatermarkSettings>(),
                 settings,
             )
+        }
+    }
+
+    // ── 避難誘導補助機能 ──
+
+    /** 機能の有効/無効（デフォルト false）。 */
+    val evacuationEnabled: Flow<Boolean> = context.dataStore.data.map { prefs ->
+        prefs[Keys.EVACUATION_ENABLED] ?: false
+    }
+
+    /** 手動設定した都道府県（""=測位で判定）。 */
+    val evacuationPrefectureOverride: Flow<String> = context.dataStore.data.map { prefs ->
+        prefs[Keys.EVACUATION_PREFECTURE_OVERRIDE] ?: ""
+    }
+
+    /** 初回案内を表示済みか（デフォルト false）。 */
+    val evacuationOnboardingShown: Flow<Boolean> = context.dataStore.data.map { prefs ->
+        prefs[Keys.EVACUATION_ONBOARDING_SHOWN] ?: false
+    }
+
+    suspend fun setEvacuationEnabled(enabled: Boolean) {
+        context.dataStore.edit { prefs ->
+            prefs[Keys.EVACUATION_ENABLED] = enabled
+        }
+    }
+
+    suspend fun setEvacuationPrefectureOverride(prefecture: String) {
+        context.dataStore.edit { prefs ->
+            prefs[Keys.EVACUATION_PREFECTURE_OVERRIDE] = prefecture
+        }
+    }
+
+    suspend fun setEvacuationOnboardingShown(shown: Boolean) {
+        context.dataStore.edit { prefs ->
+            prefs[Keys.EVACUATION_ONBOARDING_SHOWN] = shown
         }
     }
 

@@ -38,6 +38,12 @@ googleServices = "4.4.2"
 # Media
 media3 = "1.4.1"
 
+# Location
+playServicesLocation = "21.3.0"
+
+# Testing
+junit = "4.13.2"
+
 [libraries]
 # AndroidX Core
 androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
@@ -91,6 +97,12 @@ firebase-messaging = { group = "com.google.firebase", name = "firebase-messaging
 media3-exoplayer = { group = "androidx.media3", name = "media3-exoplayer", version.ref = "media3" }
 media3-exoplayer-hls = { group = "androidx.media3", name = "media3-exoplayer-hls", version.ref = "media3" }
 media3-ui = { group = "androidx.media3", name = "media3-ui", version.ref = "media3" }
+
+# Location
+play-services-location = { group = "com.google.android.gms", name = "play-services-location", version.ref = "playServicesLocation" }
+
+# Testing
+junit = { group = "junit", name = "junit", version.ref = "junit" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

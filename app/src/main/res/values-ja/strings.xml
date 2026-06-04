@@ -352,4 +352,56 @@
     <plurals name="notification_unread_count">
         <item quantity="other">%d 件の新着通知</item>
     </plurals>
+
+    <!-- 避難誘導補助機能 -->
+    <string name="evacuation_title">避難誘導</string>
+    <string name="evacuation_enable">避難誘導機能を有効にする</string>
+    <string name="evacuation_footer">気象庁の警報級・危険度情報に基づき、最寄りの避難所情報を表示します。本機能は bsaf-kikikuru-bot の BSAF 登録を前提としています。</string>
+    <string name="evacuation_bot_confirm_title">bsaf-kikikuru-bot の登録</string>
+    <string name="evacuation_bot_confirm_message">避難誘導機能は bsaf-kikikuru-bot の BSAF 登録を前提とした機能です。有効化すると bsaf-kikikuru-bot を自動的に BSAF 登録し、フォローします。</string>
+    <string name="evacuation_bot_confirm_enable">有効化する</string>
+    <string name="evacuation_prefecture_override">都道府県（手動設定）</string>
+    <string name="evacuation_prefecture_auto">自動（位置情報から判定）</string>
+    <string name="evacuation_view_shelters">最寄り避難所を見る</string>
+    <string name="evacuation_banner_title_level3">警報級の気象情報が出ています</string>
+    <string name="evacuation_banner_title_level4">避難情報の確認を</string>
+    <string name="evacuation_banner_title_level5">直ちに安全確保を</string>
+    <string name="evacuation_banner_action">避難所を見る</string>
+    <string name="evacuation_nearest_shelters">最寄り避難所</string>
+    <string name="evacuation_hazard_filter">災害種別</string>
+    <string name="evacuation_location_required">位置情報が必要です</string>
+    <string name="evacuation_request_location">位置情報を許可する</string>
+    <string name="evacuation_no_shelters_found">避難所が見つかりません</string>
+    <string name="evacuation_locating">位置情報を取得中…</string>
+    <string name="evacuation_distance">距離</string>
+    <string name="evacuation_supported_hazards">対応災害種別</string>
+    <string name="evacuation_open_in_maps">地図アプリでナビ</string>
+    <string name="evacuation_compass_nav">簡易ナビ（コンパス）</string>
+    <string name="evacuation_straight_line_distance">直線距離</string>
+    <string name="evacuation_compass_disclaimer">コンパスの精度は環境に依存します。目安としてご利用ください。</string>
+    <string name="evacuation_compass_calibration">コンパスの精度が低下しています。端末を8の字に動かしてください。</string>
+    <string name="evacuation_compass_unavailable">コンパスはこのデバイスでは利用できません。</string>
+    <string name="evacuation_use_map_app_instead">地図アプリでのナビをご利用ください。</string>
+    <string name="evacuation_offline">オフライン</string>
+    <string name="evacuation_offline_note">通信できません。簡易ナビをご利用ください。</string>
+    <string name="evacuation_set_prefecture_prompt">オフラインで利用するには、都道府県を手動設定してください。</string>
+    <string name="evacuation_hazard_flood">洪水</string>
+    <string name="evacuation_hazard_landslide">土砂災害</string>
+    <string name="evacuation_hazard_storm_surge">高潮</string>
+    <string name="evacuation_hazard_earthquake">地震</string>
+    <string name="evacuation_hazard_tsunami">津波</string>
+    <string name="evacuation_hazard_fire">大規模火事</string>
+    <string name="evacuation_hazard_inland_flood">内水氾濫</string>
+    <string name="evacuation_hazard_volcano">火山</string>
+    <string name="evacuation_disclaimer">避難誘導機能は気象庁発令の危険度情報に基づき、国土地理院 指定緊急避難場所のデータから最寄りの指定緊急避難場所を掲出、避難誘導をサポートする事を目的としています。避難の判断は自治体の避難指示や公式情報をご確認ください。</string>
+    <string name="evacuation_data_source">出典: 国土地理院 指定緊急避難場所データ</string>
+    <string name="evacuation_data_warning">掲載する避難所の情報は最新でない場合や実際の避難場所と異なる場合があります。最新情報は自治体にご確認ください。</string>
+    <string name="evacuation_onboarding_title">避難誘導機能について</string>
+    <string name="evacuation_onboarding_message">気象警報時に最寄りの避難所を案内する機能が利用できます。設定からいつでもオンにできます。</string>
+    <string name="evacuation_onboarding_dismiss">あとで</string>
+    <string name="evacuation_demo_title">デモモード</string>
+    <string name="evacuation_demo_inject_level3">レベル3アラートを擬似発生</string>
+    <string name="evacuation_demo_inject_level4">レベル4アラートを擬似発生</string>
+    <string name="evacuation_demo_inject_level5">レベル5アラートを擬似発生</string>
+    <string name="evacuation_demo_clear">アラートを消去</string>
 </resources>
