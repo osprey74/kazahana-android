@@ -76,7 +76,27 @@
       "Bash(export PATH=\"/tmp/gradle-8.9/bin:$PATH\")",
       "Bash(export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64)",
       "Bash(gradle --version)",
-      "Bash(gradle wrapper *)"
+      "Bash(gradle wrapper *)",
+      "Bash(./gradlew compileDebugKotlin -q)",
+      "Bash(adb devices *)",
+      "Read(//home/ospre/Android/Sdk/platform-tools/**)",
+      "Bash(./gradlew :app:assembleDebug -q)",
+      "Bash(/mnt/c/Users/ospre/AppData/Local/Android/Sdk/platform-tools/adb.exe -s ZY32MD4TQH install -r 'G:\\\\dev\\\\kazahana-android\\\\app\\\\build\\\\outputs\\\\apk\\\\debug\\\\app-debug.apk')",
+      "Bash(/mnt/c/Users/ospre/AppData/Local/Android/Sdk/platform-tools/adb.exe -s ZY32MD4TQH shell screencap -p /sdcard/kz_dbg.png)",
+      "Bash(/mnt/c/Users/ospre/AppData/Local/Android/Sdk/platform-tools/adb.exe -s ZY32MD4TQH pull /sdcard/kz_dbg.png 'G:\\\\dev\\\\kazahana-android\\\\kz_dbg.png')",
+      "Bash(/mnt/c/Users/ospre/AppData/Local/Android/Sdk/platform-tools/adb.exe -s ZY32MD4TQH shell uiautomator dump /sdcard/ui.xml)",
+      "Bash(/mnt/c/Users/ospre/AppData/Local/Android/Sdk/platform-tools/adb.exe -s ZY32MD4TQH pull /sdcard/ui.xml 'G:\\\\dev\\\\kazahana-android\\\\ui.xml')",
+      "Bash(echo \"=== exit $? ===\")",
+      "Bash(gh auth *)",
+      "Bash(echo \"=== commit exit $? ===\")",
+      "Bash(echo \"=== tag exit $? ===\")",
+      "Bash(awk 'NR>=580 && NR<=640 && /fun [A-Za-z]+\\\\\\(|profile:.*Profile/' app/src/main/java/com/kazahana/app/ui/profile/ProfileScreen.kt)",
+      "Bash(awk 'NR>=270 && NR<=295 && /fun [A-Za-z]+\\\\\\(|user:/' app/src/main/java/com/kazahana/app/ui/search/SearchScreen.kt)",
+      "Bash(awk 'NR>=170 && NR<=195 && /fun [A-Za-z]+\\\\\\(|user:/' app/src/main/java/com/kazahana/app/ui/messages/NewConversationScreen.kt)",
+      "Bash(./gradlew :app:compileDebugKotlin -q)",
+      "Bash(echo \"helper-exit:$?\")",
+      "Read(//home/ospre/**)",
+      "Bash(./gradlew clean *)"
     ]
   }
 }
