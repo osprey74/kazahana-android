@@ -16,18 +16,3 @@
   - **2通りのナビ。** 地図アプリに徒歩ナビを委譲するほか、アプリ内の簡易コンパスナビ（方向の矢印＋直線距離のリアルタイム表示）も利用できます。
   - **主体はあくまで利用者。** アプリが避難の判断を代行することはありません。デフォルトはオフで、有効化時に bsaf-kikikuru-bot を登録します（確認あり）。避難の判断は必ず自治体の避難指示など公式情報に従ってください。
 
----
-
-## Play Store (short — within 500-character limit)
-
-### English
-
-- New: Evacuation Assist. When JMA weather warning levels (via bsaf-kikikuru-bot) reach level 3+ for your prefecture, a banner guides you to the nearest Designated Emergency Evacuation Sites.
-- Offline-ready: nationwide shelter data (GSI) is bundled; compass navigator works without a connection.
-- Hand off to your maps app or use the built-in compass navigator. Optional, off by default.
-
-### 日本語
-
-- 新機能：避難誘導補助（お節介避難ナビ）。気象庁の警報級・危険度情報（bsaf-kikikuru-bot 経由）がレベル3以上になると、最寄りの指定緊急避難場所へバナーで案内します。
-- オフライン対応：全国の避難所データ（国土地理院）を同梱、コンパスナビは通信不要で動作します。
-- 地図アプリへのナビ委譲と、アプリ内コンパスナビに対応。任意機能・デフォルトはオフです。
