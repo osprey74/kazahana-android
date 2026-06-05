@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -22,9 +23,10 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SmallFloatingActionButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -61,7 +63,21 @@ fun MessagesScreen(
         }
     }
 
-    Box(modifier = Modifier.fillMaxSize()) {
+    Column(modifier = Modifier.fillMaxSize()) {
+        // iOS 版と同様、新規会話ボタンは上部バーの右上に配置（下部 FAB は避難バナーと重なるため廃止）。
+        // 外側 Scaffold が既にステータスバー分の余白を確保しているため、ここでは windowInsets を 0 にして二重余白を防ぐ。
+        TopAppBar(
+            title = { Text(stringResource(R.string.tab_messages)) },
+            actions = {
+                IconButton(onClick = onNewConversation) {
+                    Icon(
+                        Icons.Default.Edit,
+                        contentDescription = stringResource(R.string.messages_new_conversation),
+                    )
+                }
+            },
+            windowInsets = WindowInsets(0, 0, 0, 0),
+        )
         PullToRefreshBox(
             isRefreshing = uiState.isRefreshing,
             onRefresh = { viewModel.refresh() },
@@ -111,18 +127,6 @@ fun MessagesScreen(
                     }
                 }
             }
-        }
-
-        SmallFloatingActionButton(
-            onClick = onNewConversation,
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(16.dp),
-        ) {
-            Icon(
-                Icons.Default.Edit,
-                contentDescription = stringResource(R.string.messages_new_conversation),
-            )
         }
     }
 }

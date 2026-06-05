@@ -293,13 +293,18 @@ private fun MainScreen(
         || currentDestination?.hasRoute(BsafBotsRoute::class) == true
         || currentDestination?.hasRoute(WatermarkSettingsRoute::class) == true
 
-    val isOnMessages = currentDestination?.hasRoute(MessagesRoute::class) == true
-        || currentDestination?.hasRoute(NewConversationRoute::class) == true
+    // 避難所関連画面（最寄り避難所一覧・避難所詳細・コンパスナビ）ではバナーは冗長なので出さない
+    val isOnEvacuation = currentDestination?.hasRoute(NearestSheltersRoute::class) == true
+        || currentDestination?.hasRoute(ShelterDetailRoute::class) == true
+        || currentDestination?.hasRoute(CompassNavRoute::class) == true
 
-    val isOnProfileDetail = currentDestination?.hasRoute(ProfileDetailRoute::class) == true
+    // 新規投稿 FAB はホーム・プロフィールタブのみ表示（許可リスト方式）。
+    // その他のタブ（検索・通知・メッセージ）や、設定・避難所系・スレッド等のあらゆる詳細画面では表示しない。
+    val isOnHome = currentDestination?.hasRoute(HomeRoute::class) == true
+    val isOnProfileTab = currentDestination?.hasRoute(ProfileRoute::class) == true
 
     val hideChrome = isOnCompose
-    val hideFab = hideChrome || isOnSettings || isOnMessages || isOnProfileDetail
+    val showFab = (isOnHome || isOnProfileTab) && !hideChrome
 
     // Evacuation Assist: banner state is owned by a @Singleton manager, so it survives the
     // key(activeAccountDID) recomposition that recreates MainScreen on account switch.
@@ -326,7 +331,8 @@ private fun MainScreen(
             }
         }
     }
-    val evacBannerVisible = bannerState.visible && bannerState.highestLevel != null && !hideChrome
+    val evacBannerVisible = bannerState.visible && bannerState.highestLevel != null &&
+        !hideChrome && !isOnSettings && !isOnEvacuation
 
     Scaffold(
         bottomBar = {
@@ -391,7 +397,7 @@ private fun MainScreen(
             }
         },
         floatingActionButton = {
-            if (!hideFab) {
+            if (showFab) {
                 FloatingActionButton(
                     onClick = {
                         navController.navigate(ComposeRoute) {
@@ -859,8 +865,9 @@ private fun MainScreen(
         }
 
         // Evacuation banner overlay (above the bottom navigation bar)
+        // 設定画面・避難所関連画面では非表示（evacBannerVisible に集約）
         val bannerLevel = bannerState.highestLevel
-        if (bannerState.visible && bannerLevel != null && !hideChrome) {
+        if (evacBannerVisible && bannerLevel != null) {
             EvacuationBannerView(
                 highestLevel = bannerLevel,
                 prefecture = evacPrefectureOverride.ifEmpty { null },
