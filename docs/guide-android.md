@@ -6,12 +6,77 @@ This guide covers features specific to the Android version of kazahana. For comm
 
 ## Table of Contents
 
+- [Shelter Navigator (Evacuation Assist)](#shelter-navigator-evacuation-assist)
 - [Push Notifications](#push-notifications)
 - [Sharing to kazahana](#sharing-to-kazahana)
 - [Android-Specific Navigation](#android-specific-navigation)
 - [Account Switcher](#account-switcher)
 - [Deep Links](#deep-links)
 - [Differences from Desktop](#differences-from-desktop)
+
+---
+
+## Shelter Navigator (Evacuation Assist)
+
+Added in v3.2.0. This Japan-specific feature detects weather hazard information from the Japan Meteorological Agency (via bsaf-kikikuru-bot) and guides you to the nearest designated evacuation shelter. Shelter data (from the Geospatial Information Authority of Japan) is bundled with the app, so **it works even without an internet connection**.
+
+> **Important:** This feature provides supplementary information based on JMA hazard levels. It does not represent official municipal evacuation orders. Always check official evacuation instructions from your local municipality.
+
+### Enabling the Feature
+
+Shelter Navigator is off by default. To enable it:
+
+1. Go to the **Profile** tab → tap the **Settings** icon.
+2. Scroll to the **Evacuation Assist** section.
+3. Turn on the **Enable Evacuation Assist** toggle.
+4. If bsaf-kikikuru-bot is not yet registered, a confirmation dialog appears. Tap **Enable** to automatically register and follow bsaf-kikikuru-bot via BSAF.
+
+You can optionally select your **Prefecture (manual)** to specify your area. Leaving it on "Auto (from location)" uses your current location. Manual selection is recommended for offline use.
+
+### Warning Banner
+
+When Evacuation Assist is enabled and a weather warning is received for your configured prefecture (or current location), a red banner appears at the bottom of the screen.
+
+![Warning banner display](./images/Android_evaccuation_001.png)
+
+- **Level 3 (yellow):** Weather warning level information issued
+- **Level 4 (red):** Check evacuation information
+- **Level 5 (pink):** Secure safety immediately
+
+Tap **View shelters** on the banner to open the nearest shelters list. The banner clears automatically when the alert is cancelled or after 6 hours.
+
+### Nearest Shelters List
+
+Shelters are listed in order of distance from your current location. Each entry shows the straight-line distance.
+
+![Nearest shelters list](./images/Android_evaccuation_002.png)
+
+Use the **Hazard type** chips at the top (Flood, Landslide, Storm Surge, Earthquake, Tsunami, Large Fire, Inland Flood, Volcano) to filter shelters. The filter is automatically set based on the type of warning received.
+
+Tap a shelter to view its details, where you can choose **Navigate with Maps** (walking directions in a maps app such as Google Maps) or **Simple Nav (Compass)**.
+
+### Simple Nav (Compass)
+
+A compass-based navigator that works without an internet connection. It uses the device's magnetic sensor to show an arrow pointing toward the selected shelter and displays the straight-line distance in real time.
+
+![Simple Nav (Compass)](./images/Android_evaccuation_003.png)
+
+- Walk in the direction of the arrow — the distance decreases as you get closer.
+- If compass accuracy is low, move your device in a figure-8 pattern to calibrate.
+- When offline, maps app navigation is unavailable, making this the primary navigation method.
+
+### Offline Use
+
+Shelter data is bundled with the app, so the following features work even in airplane mode:
+
+| Feature | Offline |
+|---------|---------|
+| Nearest shelters list | Available |
+| Simple Nav (Compass) | Available |
+| Navigate with Maps | Unavailable (requires internet) |
+| Auto prefecture detection | Unavailable (use manual setting) |
+
+> **Note:** Shelter data is sourced from the Geospatial Information Authority of Japan (GSI) Designated Emergency Evacuation Sites. Data may not be fully up to date or may differ from actual sites. Check with your local municipality for the latest information.
 
 ---
 
@@ -122,6 +187,7 @@ kazahana for Android responds to `kazahana://` URLs and `https://bsky.app` links
 
 | Feature | Description |
 |---------|-------------|
+| Shelter Navigator | Guides to nearest evacuation shelters during weather warnings (works offline) |
 | Push notifications | Real-time notifications via FCM |
 | Share intent | Share text/URLs from other apps to kazahana |
 | Account switcher bottom sheet | Quick account switching from the home screen |
@@ -141,7 +207,9 @@ kazahana for Android responds to `kazahana://` URLs and `https://bsky.app` links
 
 | Feature | iOS | Android |
 |---------|-----|---------|
+| Shelter Navigator | Available | Available |
 | Supporter Badge (IAP) | Available | Not available |
+| Simple Nav maps integration | Apple Maps | Maps app such as Google Maps |
 | Image sharing via share sheet | Supported | Text/URL only |
 | Push notification toggle | iOS Settings app only | In-app toggle in Settings |
 | Account switcher | Settings only | Bottom sheet from Home + Settings |
