@@ -132,3 +132,33 @@
 - [x] `OgpService` に `fetchHtml` / `extractStandardSiteUris` / `parseOgp` を追加
 - [x] `PostRepository.getEmbedExternalView(url, uris)` を追加 (`uris` 必須)
 - [x] コンポーザープレビューで拡張カード表示 (`LinkCard(hideSubscribe = true)`)
+
+## Bluesky v1.123 対応 (HANDOFF_kazahana-bsky-v1.123.md) — 2026-06-09
+
+> 設計書: `../../HANDOFF_kazahana-bsky-v1.123.md`
+> 背景: 2026-06-06 リリースの Bluesky 公式 v1.123 で `app.bsky.embed.gallery`（写真 10 枚 / 5 枚以上カルーセル）が正式リリース、動画 300MB 化の feature gate も解除された
+> 一次情報: atproto #4827 (merged 2026-06-03) / social-app #10707 #10497 #10683 / lexicon: `app.bsky.embed.gallery`（`maxLength: 20`、ソフト上限 10、`#image.required = ["image", "alt", "aspectRatio"]`）
+> 重要: 動画 lexicon `video.maxSize` は **100MB のまま**。300MB はサーバ受容範囲（トランスコード前提）。`app.bsky.video.getUploadLimits` 応答の尊重を推奨
+> Android 特記: 複数枚画像表示は既に `HorizontalPager` 採用済 (`ImageGrid.kt:221-244`)。Pager 基盤を流用してカルーセル拡張可能
+
+### Phase A: 受信側 embed.gallery viewer 対応（最優先・3 プラットフォーム同時リリース推奨）
+
+- [ ] **[A-G1] `app.bsky.embed.gallery#view` レンダラ追加** — `ImageGrid.kt` を拡張。既存 `HorizontalPager` 基盤を流用
+- [ ] **[A-G2] ≤4 枚グリッド / ≥5 枚カルーセル分岐** — 4 枚以下はグリッド or `SingleImage`、5 枚以上は `HorizontalPager` でカルーセル
+- [ ] **[A-G3] `recordWithMedia` 内 gallery 対応** — `recordWithMedia.media` の union を `embed.images` / `embed.gallery` / `embed.video` 3 通りで処理
+- [ ] **[A-G4] 未知 union ref のスキップ実装** — `items[]` の将来追加 ref（`#video` 等）を安全にスキップ
+
+### Phase B: 送信側 composer 対応 + 動画 300MB
+
+- [ ] **[A-G5] `MAX_IMAGES = 4` → `10` に拡張** — `ComposeUiState.kt:146` および `ComposeScreen.kt:145-146` の `PickMultipleVisualMedia(maxItems = 10)`
+- [ ] **[A-G6] 5 枚以上選択時に `embed.gallery` で送信** — `PostRepository.kt` の embed 組み立て箇所。≤4 枚は `embed.images`、≥5 枚は `embed.gallery` で自動分岐
+- [ ] **[A-G7] gallery `#image` に alt / aspectRatio 必須付与** — lexicon required を満たす（alt 空文字は許容）
+- [ ] **[A-G8] 動画上限 100MB → 300MB** — `ComposeViewModel.kt:171` の `MAX_VIDEO_BYTES = 100_000_000L` → `300_000_000L`
+- [ ] **[A-G9] `app.bsky.video.getUploadLimits` 応答尊重** — サーバ応答の `canUpload` / `remainingDailyBytes` をチェックし、超過時はユーザに通知
+- [ ] **[A-G10] 動画ジョブポーリング調整** — 既存 60 回 × 2 秒 = 120 秒は 300MB アップロードでは短い可能性あり、応答に応じて調整検討
+- [ ] **[A-G11] Photo Picker 選択順保持確認** — Android 13 以降の Photo Picker は選択順保持、旧 API fallback がある場合は注意
+
+### Phase C: 品質改善（任意）
+
+- [ ] **[A-G12] カルーセル枚数バッジ表示** — social-app PR #10719 互換。"3 / 7" 形式を右上に
+- [ ] **[A-G13] メモリ使用量検証** — 10 枚 ×2MB 同時保持で OOM が起きないか、`inSampleSize` 段階デコードと並行処理数の制御を検証
