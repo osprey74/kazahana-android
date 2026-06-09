@@ -126,6 +126,22 @@ fun ImageGrid(
                 }
             }
 
+            // Count badge for galleries (5+ photos) — official social-app parity (PR #10719).
+            // Hidden while blurred so it doesn't sit on top of the content warning.
+            if (images.size > 4 && !shouldBlur) {
+                Text(
+                    text = "${pagerState.currentPage + 1}/${images.size}",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.surface,
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(8.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
+                        .padding(horizontal = 8.dp, vertical = 2.dp),
+                )
+            }
+
             if (moderationDecision.shouldWarn && mediaRevealed) {
                 TextButton(
                     onClick = { mediaRevealed = false },

@@ -27,6 +27,9 @@ import java.time.Instant
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 
+/** Phase of a video upload, surfaced to the composer's progress UI. */
+enum class VideoUploadPhase { UPLOADING, PROCESSING }
+
 /** Data for building an app.bsky.embed.video embed. */
 data class VideoEmbedData(
     val blobLink: String,
@@ -55,6 +58,17 @@ class PostRepository(
     private val client: ATProtoClient,
 ) {
     private val jsonParser = kotlinx.serialization.json.Json { ignoreUnknownKeys = true }
+
+    companion object {
+        /** >4 photos promote app.bsky.embed.images → app.bsky.embed.gallery (social-app PR #10707). */
+        const val GALLERY_PROMOTE_THRESHOLD = 4
+
+        /** Authoring soft limit for gallery items (lexicon ceiling is 20; see MAX_GALLERY_ITEMS_SCHEMA). */
+        const val MAX_GALLERY_ITEMS_CLIENT = 10
+
+        /** Schema-level maxLength on app.bsky.embed.gallery#main.items — future-proof ceiling. */
+        const val MAX_GALLERY_ITEMS_SCHEMA = 20
+    }
 
     suspend fun uploadBlob(
         data: ByteArray,
@@ -124,7 +138,7 @@ class PostRepository(
                         put("embed", buildRecordWithMediaEmbed(images, quoteUri!!, quoteCid!!))
                     }
                     hasImages -> {
-                        put("embed", buildImagesEmbed(images))
+                        put("embed", buildMediaImagesEmbed(images))
                     }
                     hasVideo -> {
                         put("embed", buildVideoEmbed(videoEmbed!!))
@@ -229,6 +243,7 @@ class PostRepository(
     suspend fun uploadVideo(
         data: ByteArray,
         mimeType: String,
+        onProgress: ((percent: Int, phase: VideoUploadPhase) -> Unit)? = null,
     ): Result<VideoEmbedData> {
         return try {
             val did = client.session?.did
@@ -240,11 +255,18 @@ class PostRepository(
                 ?: return Result.failure(Exception("Failed to get service auth (aud=$aud)"))
             val serviceToken = authResponse
 
-            // Step 2: Upload to video.bsky.app
+            // Step 2: Upload to video.bsky.app, reporting byte progress to the UI.
             val ext = if (mimeType.contains("quicktime") || mimeType.contains("mov")) "mov" else "mp4"
             val fileName = "${java.util.UUID.randomUUID()}.$ext"
 
-            val uploadResponse = client.uploadVideo(data, mimeType, did, fileName, serviceToken)
+            onProgress?.invoke(0, VideoUploadPhase.UPLOADING)
+            val totalBytes = data.size
+            val uploadResponse = client.uploadVideo(data, mimeType, did, fileName, serviceToken) { sent ->
+                if (totalBytes > 0) {
+                    val pct = ((sent * 100) / totalBytes).toInt().coerceIn(0, 100)
+                    onProgress?.invoke(pct, VideoUploadPhase.UPLOADING)
+                }
+            }
             val uploadText = uploadResponse.bodyAsText()
 
             // HTTP 409 "already_exists" means the video was already uploaded/processed.
@@ -271,8 +293,11 @@ class PostRepository(
                 jobStatus = initialStatus.jobStatus
             }
 
-            // Step 3: Poll for completion (max 60 attempts, 2s interval = ~120s timeout)
-            for (i in 0 until 60) {
+            // Step 3: Poll for completion (max 150 attempts, 2s interval = ~300s timeout).
+            // Raised from 120s for the 300 MB upload limit (Bluesky v1.123) — larger
+            // videos take longer to transcode server-side.
+            onProgress?.invoke(100, VideoUploadPhase.PROCESSING)
+            for (i in 0 until 150) {
                 if (jobStatus.state == "JOB_STATE_COMPLETED" && jobStatus.blob != null) break
                 if (jobStatus.error != null) {
                     return Result.failure(Exception("Video processing failed: ${jobStatus.error}"))
@@ -338,7 +363,7 @@ class PostRepository(
                     put("cid", quoteCid)
                 })
             })
-            put("media", buildImagesEmbed(images))
+            put("media", buildMediaImagesEmbed(images))
         }
     }
 
@@ -517,6 +542,51 @@ class PostRepository(
             }
         } catch (e: Exception) {
             Result.failure(e)
+        }
+    }
+
+    /**
+     * Pick the right photo embed for the given count: ≤4 keeps the legacy
+     * `app.bsky.embed.images`, ≥5 promotes to `app.bsky.embed.gallery`
+     * (matches social-app's auto promote/demote behavior, PR #10707).
+     */
+    private fun buildMediaImagesEmbed(images: List<ImageEmbedItem>): JsonElement {
+        return if (images.size > GALLERY_PROMOTE_THRESHOLD) {
+            buildGalleryEmbed(images)
+        } else {
+            buildImagesEmbed(images)
+        }
+    }
+
+    /**
+     * app.bsky.embed.gallery — used for 5–10 photos. Each item's `image`, `alt`
+     * and `aspectRatio` are all lexicon-required, so aspectRatio falls back to 1:1
+     * when unknown (rather than being omitted as in embed.images).
+     */
+    private fun buildGalleryEmbed(images: List<ImageEmbedItem>): JsonElement {
+        return buildJsonObject {
+            put("\$type", "app.bsky.embed.gallery")
+            put("items", buildJsonArray {
+                images.forEach { image ->
+                    add(buildJsonObject {
+                        put("\$type", "app.bsky.embed.gallery#image")
+                        put("image", buildJsonObject {
+                            put("\$type", "blob")
+                            put("ref", buildJsonObject {
+                                put("\$link", image.blobRef.link)
+                            })
+                            put("mimeType", image.blobRef.mimeType)
+                            put("size", image.blobRef.size)
+                        })
+                        put("alt", image.alt)
+                        val ar = image.aspectRatio
+                        put("aspectRatio", buildJsonObject {
+                            put("width", ar?.width ?: 1)
+                            put("height", ar?.height ?: 1)
+                        })
+                    })
+                }
+            })
         }
     }
 

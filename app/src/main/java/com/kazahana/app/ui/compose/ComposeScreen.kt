@@ -40,6 +40,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -75,6 +76,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil3.compose.AsyncImage
 import com.kazahana.app.R
+import com.kazahana.app.data.repository.VideoUploadPhase
 import com.kazahana.app.data.local.PostDraft
 import com.kazahana.app.ui.timeline.LinkCard
 import java.time.Instant
@@ -140,7 +142,7 @@ fun ComposeScreen(
 
     val context = androidx.compose.ui.platform.LocalContext.current
 
-    // Photo picker — maxItems fixed at 4; ViewModel trims excess
+    // Photo picker — maxItems = MAX_IMAGES (10); ViewModel trims excess
     val photoPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickMultipleVisualMedia(
             maxItems = ComposeUiState.MAX_IMAGES,
@@ -884,16 +886,44 @@ fun ComposeScreen(
                 Spacer(modifier = Modifier.height(12.dp))
             }
 
-            // Posting status (e.g. video uploading)
-            uiState.postingStatus?.let { status ->
-                Row(
+            // Posting progress — phased status (parity with desktop kazahana):
+            // image counter → video upload % → video processing → finalizing → posting.
+            if (uiState.isPosting) {
+                val imgP = uiState.imageProgress
+                val vidP = uiState.videoProgress
+                val statusText = when {
+                    imgP != null && imgP.first < imgP.second ->
+                        stringResource(R.string.compose_uploading_image, imgP.first, imgP.second)
+                    vidP != null && vidP.phase == VideoUploadPhase.UPLOADING ->
+                        "${stringResource(R.string.compose_video_uploading)} ${vidP.percent}%"
+                    vidP != null && vidP.phase == VideoUploadPhase.PROCESSING ->
+                        stringResource(R.string.compose_video_processing)
+                    imgP != null && imgP.first >= imgP.second ->
+                        stringResource(R.string.compose_finalizing_post)
+                    else ->
+                        stringResource(R.string.compose_posting)
+                }
+                Column(
                     modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-                    horizontalArrangement = Arrangement.Center,
-                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
-                    CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(status, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            statusText,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    // Determinate bar reflecting uploaded/total photos (images only).
+                    if (imgP != null && imgP.second > 0) {
+                        Spacer(modifier = Modifier.height(6.dp))
+                        LinearProgressIndicator(
+                            progress = { imgP.first.toFloat() / imgP.second },
+                            modifier = Modifier.fillMaxWidth(0.6f),
+                        )
+                    }
                 }
             }
 

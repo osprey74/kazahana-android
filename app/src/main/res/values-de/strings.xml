@@ -354,4 +354,10 @@
         <item quantity="one">%d neue Benachrichtigung</item>
         <item quantity="other">%d neue Benachrichtigungen</item>
     </plurals>
+    <!-- Posting progress indicator (Bluesky v1.123 gallery / video) -->
+    <string name="compose_posting">Wird gepostet...</string>
+    <string name="compose_uploading_image">Bild wird hochgeladen (%1$d/%2$d)</string>
+    <string name="compose_finalizing_post">Beitrag wird fertiggestellt...</string>
+    <string name="compose_video_uploading">Video wird hochgeladen...</string>
+    <string name="compose_video_processing">Video wird verarbeitet...</string>
 </resources>

@@ -27,6 +27,7 @@ import com.kazahana.app.data.local.SessionStore
 import com.kazahana.app.data.local.SettingsStore
 import com.kazahana.app.data.remote.ClaudeService
 import com.kazahana.app.data.repository.PostRepository
+import com.kazahana.app.data.repository.VideoUploadPhase
 import io.ktor.client.call.body
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -103,12 +104,21 @@ enum class ThreadgateSetting {
     }
 }
 
+/** Video upload progress shown in the composer (percent + phase). */
+data class VideoUploadProgress(
+    val percent: Int,
+    val phase: com.kazahana.app.data.repository.VideoUploadPhase,
+)
+
 data class ComposeUiState(
     val text: String = "",
     val images: List<AttachedImage> = emptyList(),
     val video: AttachedVideo? = null,
     val isPosting: Boolean = false,
-    val postingStatus: String? = null,
+    // Posting progress (parity with desktop kazahana). imageProgress = (completed, total)
+    // counter while uploading photos; videoProgress carries the video upload %/phase.
+    val imageProgress: Pair<Int, Int>? = null,
+    val videoProgress: VideoUploadProgress? = null,
     val error: String? = null,
     val posted: Boolean = false,
     val editingAltIndex: Int? = null,
@@ -143,7 +153,9 @@ data class ComposeUiState(
         get() = charCount > MAX_CHARS
 
     companion object {
-        const val MAX_IMAGES = 4
+        // Bluesky v1.123: ≤4 photos post as app.bsky.embed.images, 5–10 as
+        // app.bsky.embed.gallery (lexicon soft limit 10).
+        const val MAX_IMAGES = 10
         const val MAX_CHARS = 300
     }
 }
@@ -168,7 +180,10 @@ class ComposeViewModel @Inject constructor(
 ) : ViewModel() {
 
     companion object {
-        const val MAX_VIDEO_BYTES = 100_000_000L // 100MB (Bluesky server limit)
+        // Bluesky v1.123 lifted the video upload limit to 300 MB (social-app #10683).
+        // Note: the embed.video lexicon blob maxSize is still 100 MB; 300 MB is the
+        // server-side (video.bsky.app) accept-and-transcode ceiling.
+        const val MAX_VIDEO_BYTES = 300_000_000L // 300MB
         private const val VIA_NAME = "kazahana for Android"
     }
 
@@ -211,7 +226,7 @@ class ComposeViewModel @Inject constructor(
 
     fun addVideo(uri: Uri, mimeType: String, sizeBytes: Long) {
         if (sizeBytes > MAX_VIDEO_BYTES) {
-            _uiState.update { it.copy(error = "Video too large (${sizeBytes / 1_048_576} MB). Max 100 MB.") }
+            _uiState.update { it.copy(error = "Video too large (${sizeBytes / 1_048_576} MB). Max 300 MB.") }
             return
         }
         _uiState.update { state ->
@@ -480,7 +495,9 @@ class ComposeViewModel @Inject constructor(
                 val imageEmbeds = mutableListOf<ImageEmbedItem>()
                 if (preComputedWmImages != null) {
                     // Use pre-computed watermarked images (from confirm modal)
+                    val total = preComputedWmImages.size
                     for ((index, wmData) in preComputedWmImages.withIndex()) {
+                        _uiState.update { it.copy(imageProgress = index to total) }
                         val (bytes, mime) = wmData
                         val finalBytes = if (bytes.size > ImageHelper.MAX_FILE_SIZE) {
                             imageHelper.compressBytes(bytes)
@@ -511,7 +528,9 @@ class ComposeViewModel @Inject constructor(
                         }
                     }
                 } else {
-                    for (image in state.images) {
+                    val total = state.images.size
+                    for ((index, image) in state.images.withIndex()) {
+                        _uiState.update { it.copy(imageProgress = index to total) }
                         var (bytes, compressedMime) = imageHelper.readAndCompressImage(image.uri, image.mimeType) ?: continue
                         if (shouldApplyWm) {
                             bytes = applyWatermarkToBytes(bytes, wmSettings, currentHandle)
@@ -547,6 +566,12 @@ class ComposeViewModel @Inject constructor(
                     }
                 }
 
+                // Signal image uploads complete → composer shows "finalizing post".
+                val imageCount = preComputedWmImages?.size ?: state.images.size
+                if (imageCount > 0) {
+                    _uiState.update { it.copy(imageProgress = imageCount to imageCount) }
+                }
+
                 // Detect and resolve facets
                 val detectedFacets = RichTextParser.detectFacets(state.text)
                 val resolvedFacets = resolveMentions(state.text, detectedFacets)
@@ -567,21 +592,25 @@ class ComposeViewModel @Inject constructor(
                 // Upload video if attached
                 var videoEmbed: com.kazahana.app.data.repository.VideoEmbedData? = null
                 if (state.video != null) {
-                    _uiState.update { it.copy(postingStatus = "Uploading video…") }
+                    _uiState.update {
+                        it.copy(videoProgress = VideoUploadProgress(0, VideoUploadPhase.UPLOADING))
+                    }
                     val videoBytes = imageHelper.readBytes(state.video.uri)
                     if (videoBytes != null) {
-                        postRepository.uploadVideo(videoBytes, state.video.mimeType)
+                        postRepository.uploadVideo(videoBytes, state.video.mimeType) { percent, phase ->
+                            _uiState.update { it.copy(videoProgress = VideoUploadProgress(percent, phase)) }
+                        }
                             .onSuccess { embed ->
                                 videoEmbed = embed.copy(alt = state.video.alt)
                             }
                             .onFailure { e ->
                                 _uiState.update {
-                                    it.copy(isPosting = false, postingStatus = null, error = "Video upload failed: ${e.message}")
+                                    it.copy(isPosting = false, videoProgress = null, error = "Video upload failed: ${e.message}")
                                 }
                                 return@launch
                             }
                     }
-                    _uiState.update { it.copy(postingStatus = null) }
+                    _uiState.update { it.copy(videoProgress = null) }
                 }
 
                 // Build external link card embed (only when no images and no video)

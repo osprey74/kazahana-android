@@ -8,6 +8,7 @@
 - Phase 4 (DM・モデレーション・設定): 8/8 ✅
 - Phase 5 (BSAF・高度な機能): 4/4 ✅
 - Phase 6 (iOS/Desktop パリティ): 20/20 ✅
+- Bluesky v1.123 対応 (gallery / 動画300MB / 投稿進捗UI): 12/15 ✅（残: getUploadLimits / Photo Picker 順序検証 / メモリ検証）
 
 ## Phase 1: 基盤構築
 
@@ -143,22 +144,24 @@
 
 ### Phase A: 受信側 embed.gallery viewer 対応（最優先・3 プラットフォーム同時リリース推奨）
 
-- [ ] **[A-G1] `app.bsky.embed.gallery#view` レンダラ追加** — `ImageGrid.kt` を拡張。既存 `HorizontalPager` 基盤を流用
-- [ ] **[A-G2] ≤4 枚グリッド / ≥5 枚カルーセル分岐** — 4 枚以下はグリッド or `SingleImage`、5 枚以上は `HorizontalPager` でカルーセル
-- [ ] **[A-G3] `recordWithMedia` 内 gallery 対応** — `recordWithMedia.media` の union を `embed.images` / `embed.gallery` / `embed.video` 3 通りで処理
-- [ ] **[A-G4] 未知 union ref のスキップ実装** — `items[]` の将来追加 ref（`#video` 等）を安全にスキップ
+- [x] **[A-G1] `app.bsky.embed.gallery#view` レンダラ追加** — `PostEmbedView.displayImages` で `items` (gallery) を `ImageView` にマップし既存 `ImageGrid` / `HorizontalPager` 基盤に流す
+- [x] **[A-G2] ≤4 枚グリッド / ≥5 枚カルーセル分岐** — Android は元々複数枚を `HorizontalPager` カルーセルで表示する設計のため、gallery (5–10 枚) もそのまま同基盤で表示（2–4 枚をグリッドに変える既存設計変更は見送り）
+- [x] **[A-G3] `recordWithMedia` 内 gallery 対応** — `post.embed?.displayImages ?: post.embed?.media?.displayImages`（PostCard / NotificationScreen / QuoteCard の全受信箇所）
+- [x] **[A-G4] 未知 union ref のスキップ実装** — `GalleryViewImage.toImageView()` が `thumbnail`/`fullsize` 欠落（未知 ref）を null で返し `mapNotNull` でスキップ
 
 ### Phase B: 送信側 composer 対応 + 動画 300MB
 
-- [ ] **[A-G5] `MAX_IMAGES = 4` → `10` に拡張** — `ComposeUiState.kt:146` および `ComposeScreen.kt:145-146` の `PickMultipleVisualMedia(maxItems = 10)`
-- [ ] **[A-G6] 5 枚以上選択時に `embed.gallery` で送信** — `PostRepository.kt` の embed 組み立て箇所。≤4 枚は `embed.images`、≥5 枚は `embed.gallery` で自動分岐
-- [ ] **[A-G7] gallery `#image` に alt / aspectRatio 必須付与** — lexicon required を満たす（alt 空文字は許容）
-- [ ] **[A-G8] 動画上限 100MB → 300MB** — `ComposeViewModel.kt:171` の `MAX_VIDEO_BYTES = 100_000_000L` → `300_000_000L`
-- [ ] **[A-G9] `app.bsky.video.getUploadLimits` 応答尊重** — サーバ応答の `canUpload` / `remainingDailyBytes` をチェックし、超過時はユーザに通知
-- [ ] **[A-G10] 動画ジョブポーリング調整** — 既存 60 回 × 2 秒 = 120 秒は 300MB アップロードでは短い可能性あり、応答に応じて調整検討
-- [ ] **[A-G11] Photo Picker 選択順保持確認** — Android 13 以降の Photo Picker は選択順保持、旧 API fallback がある場合は注意
+- [x] **[A-G5] `MAX_IMAGES = 4` → `10` に拡張** — `ComposeViewModel.kt:146`（`ComposeUiState.MAX_IMAGES`）。`PickMultipleVisualMedia(maxItems = MAX_IMAGES)` も連動
+- [x] **[A-G6] 5 枚以上選択時に `embed.gallery` で送信** — `PostRepository.buildMediaImagesEmbed`：`images.size > GALLERY_PROMOTE_THRESHOLD(4)` で `buildGalleryEmbed`、≤4 は `buildImagesEmbed`（recordWithMedia の media 側も同分岐）
+- [x] **[A-G7] gallery `#image` に alt / aspectRatio 必須付与** — `buildGalleryEmbed` で `$type=app.bsky.embed.gallery#image` + `image`/`alt`/`aspectRatio`（aspectRatio 不明時は 1:1 フォールバックで required を担保）
+- [x] **[A-G8] 動画上限 100MB → 300MB** — `ComposeViewModel.kt` `MAX_VIDEO_BYTES = 300_000_000L`（エラー文言も "Max 300 MB" に更新）
+- [ ] **[A-G9] `app.bsky.video.getUploadLimits` 応答尊重** — 未着手（follow-up）。現状は 300MB 固定ガードのみ。将来サーバ応答の `canUpload` / `remainingDailyBytes` を尊重する実装に置換推奨
+- [x] **[A-G10] 動画ジョブポーリング調整** — `PostRepository` のポーリングを 60 回 → 150 回（×2 秒 = ~300 秒）に延長
+- [ ] **[A-G11] Photo Picker 選択順保持確認** — 未検証（follow-up）。実機 / OS バージョン別の選択順保持を要確認
 
 ### Phase C: 品質改善（任意）
 
-- [ ] **[A-G12] カルーセル枚数バッジ表示** — social-app PR #10719 互換。"3 / 7" 形式を右上に
-- [ ] **[A-G13] メモリ使用量検証** — 10 枚 ×2MB 同時保持で OOM が起きないか、`inSampleSize` 段階デコードと並行処理数の制御を検証
+- [x] **[A-G12] カルーセル枚数バッジ表示** — `ImageGrid.kt`：5 枚以上で右上に "現在/総数" バッジ（`pagerState.currentPage + 1`/`images.size`、ブラー時は非表示）
+- [ ] **[A-G13] メモリ使用量検証** — 未検証（follow-up）。10 枚 ×2MB 同時保持で OOM が起きないか、`inSampleSize` 段階デコードと並行処理数の制御を検証
+- [x] **[A-G14] gallery embed モデル定義の追加** — `Post.kt`：`PostEmbedView.items: List<GalleryViewImage>` + 算出 `displayImages`、`GalleryViewImage`（`thumbnail`/`fullsize`/`alt`/`aspectRatio` + `toImageView()`）を追加。`thumbnail` フィールド差分・union 安全性に対応済
+- [x] **[A-G15] 投稿進捗インジケーター（デスクトップ版パリティ）** — 投稿中に段階表示：画像カウンタ＋進捗バー（`画像をアップロード中 (n/total)`）→ 動画アップロード `%` → `変換処理中…` → `投稿を準備中…` → `投稿中…`。`ComposeUiState.imageProgress`/`videoProgress`、`PostRepository.uploadVideo(onProgress)` + Ktor `onUpload` バイト進捗、`ComposeScreen` の `LinearProgressIndicator`。全11ロケールに文字列追加（desktop 訳流用）

@@ -353,4 +353,10 @@
     <plurals name="notification_unread_count">
         <item quantity="other">%d 則新通知</item>
     </plurals>
+    <!-- Posting progress indicator (Bluesky v1.123 gallery / video) -->
+    <string name="compose_posting">發佈中...</string>
+    <string name="compose_uploading_image">正在上傳圖片 (%1$d/%2$d)</string>
+    <string name="compose_finalizing_post">正在完成發佈...</string>
+    <string name="compose_video_uploading">影片上傳中...</string>
+    <string name="compose_video_processing">正在處理影片...</string>
 </resources>

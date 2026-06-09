@@ -8,6 +8,7 @@ import io.ktor.client.call.body
 import io.ktor.client.engine.okhttp.OkHttp
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.defaultRequest
+import io.ktor.client.plugins.onUpload
 import io.ktor.client.plugins.logging.LogLevel
 import io.ktor.client.plugins.logging.Logging
 import io.ktor.client.request.get
@@ -319,6 +320,7 @@ class ATProtoClient(
         did: String,
         fileName: String,
         serviceToken: String,
+        onBytesSent: ((Long) -> Unit)? = null,
     ): HttpResponse {
         return rawClient.post("$VIDEO_SERVICE/xrpc/app.bsky.video.uploadVideo") {
             parameter("did", did)
@@ -326,6 +328,9 @@ class ATProtoClient(
             header("Authorization", "Bearer $serviceToken")
             contentType(ContentType.parse(mimeType))
             setBody(data)
+            if (onBytesSent != null) {
+                onUpload { bytesSentTotal, _ -> onBytesSent(bytesSentTotal) }
+            }
         }
     }
 

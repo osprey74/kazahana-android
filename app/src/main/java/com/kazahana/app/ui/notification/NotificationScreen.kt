@@ -367,7 +367,7 @@ private fun NotificationPostContent(
     val record = postRecord ?: fallbackPostRecord
 
     val postText = record?.text
-    val images = subjectPost?.embed?.images ?: subjectPost?.embed?.media?.images
+    val images = subjectPost?.embed?.displayImages ?: subjectPost?.embed?.media?.displayImages
     val videoThumbnail = subjectPost?.embed?.thumbnail
 
     if (postText.isNullOrEmpty() && images.isNullOrEmpty() && videoThumbnail == null) return

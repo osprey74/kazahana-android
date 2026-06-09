@@ -161,7 +161,8 @@ data class FacetFeature(
 @Serializable
 data class PostEmbedView(
     @SerialName("\$type") val type: String? = null,
-    val images: List<ImageView>? = null,
+    val images: List<ImageView>? = null,     // app.bsky.embed.images#view
+    val items: List<GalleryViewImage>? = null, // app.bsky.embed.gallery#view (Bluesky v1.123+)
     val external: ExternalView? = null,
     val record: EmbedRecordView? = null,
     val media: PostEmbedView? = null,       // recordWithMedia
@@ -169,7 +170,22 @@ data class PostEmbedView(
     val thumbnail: String? = null,           // video thumbnail
     val aspectRatio: AspectRatio? = null,
     val alt: String? = null,                 // video alt text
-)
+) {
+    /**
+     * Unified image list for rendering, sourced from either the legacy
+     * `app.bsky.embed.images#view` (`images`) or the newer
+     * `app.bsky.embed.gallery#view` (`items`, 5–10 photos). Gallery `#viewImage`
+     * entries are mapped onto [ImageView]; unknown union members (e.g. a future
+     * `#viewVideo`) are skipped so they never break rendering. Returns null when
+     * there are no displayable images.
+     */
+    val displayImages: List<ImageView>?
+        get() = when {
+            !images.isNullOrEmpty() -> images
+            !items.isNullOrEmpty() -> items.mapNotNull { it.toImageView() }.ifEmpty { null }
+            else -> null
+        }
+}
 
 @Serializable
 data class ImageView(
@@ -178,6 +194,26 @@ data class ImageView(
     val alt: String = "",
     val aspectRatio: AspectRatio? = null,
 )
+
+/**
+ * app.bsky.embed.gallery#viewImage — a single hydrated gallery photo.
+ * Note the field is `thumbnail` (not `thumb` as in embed.images#viewImage).
+ * `thumbnail`/`fullsize` are nullable so that an unknown future union member
+ * deserializes without throwing; [toImageView] returns null for such entries.
+ */
+@Serializable
+data class GalleryViewImage(
+    @SerialName("\$type") val type: String? = null,
+    val thumbnail: String? = null,
+    val fullsize: String? = null,
+    val alt: String = "",
+    val aspectRatio: AspectRatio? = null,
+) {
+    fun toImageView(): ImageView? {
+        if (thumbnail == null || fullsize == null) return null
+        return ImageView(thumb = thumbnail, fullsize = fullsize, alt = alt, aspectRatio = aspectRatio)
+    }
+}
 
 @Serializable
 data class AspectRatio(

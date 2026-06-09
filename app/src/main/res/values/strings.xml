@@ -444,4 +444,10 @@
     <string name="evacuation_demo_inject_level4">Simulate Level 4 alert</string>
     <string name="evacuation_demo_inject_level5">Simulate Level 5 alert</string>
     <string name="evacuation_demo_clear">Clear alerts</string>
+    <!-- Posting progress indicator (Bluesky v1.123 gallery / video) -->
+    <string name="compose_posting">Posting...</string>
+    <string name="compose_uploading_image">Uploading image (%1$d/%2$d)</string>
+    <string name="compose_finalizing_post">Finalizing post...</string>
+    <string name="compose_video_uploading">Uploading video...</string>
+    <string name="compose_video_processing">Processing video...</string>
 </resources>

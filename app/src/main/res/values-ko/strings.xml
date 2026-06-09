@@ -353,4 +353,10 @@
     <plurals name="notification_unread_count">
         <item quantity="other">새 알림 %d개</item>
     </plurals>
+    <!-- Posting progress indicator (Bluesky v1.123 gallery / video) -->
+    <string name="compose_posting">게시 중…</string>
+    <string name="compose_uploading_image">이미지 업로드 중 (%1$d/%2$d)</string>
+    <string name="compose_finalizing_post">게시물 마무리 중…</string>
+    <string name="compose_video_uploading">동영상 업로드 중...</string>
+    <string name="compose_video_processing">동영상 처리 중...</string>
 </resources>

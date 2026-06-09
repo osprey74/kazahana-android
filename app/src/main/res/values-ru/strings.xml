@@ -356,4 +356,10 @@
         <item quantity="many">%d новых уведомлений</item>
         <item quantity="other">%d новых уведомлений</item>
     </plurals>
+    <!-- Posting progress indicator (Bluesky v1.123 gallery / video) -->
+    <string name="compose_posting">Публикация...</string>
+    <string name="compose_uploading_image">Загрузка изображения (%1$d/%2$d)</string>
+    <string name="compose_finalizing_post">Завершение публикации...</string>
+    <string name="compose_video_uploading">Загрузка видео...</string>
+    <string name="compose_video_processing">Обработка видео...</string>
 </resources>

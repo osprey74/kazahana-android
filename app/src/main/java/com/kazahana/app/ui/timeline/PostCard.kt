@@ -262,8 +262,8 @@ fun PostCard(
                 }
 
                 // Image grid — moderation applied here
-                // Handle both top-level images and recordWithMedia images
-                val images = post.embed?.images ?: post.embed?.media?.images
+                // Handle top-level + recordWithMedia images, both embed.images and embed.gallery
+                val images = post.embed?.displayImages ?: post.embed?.media?.displayImages
                 if (!images.isNullOrEmpty()) {
                     Spacer(modifier = Modifier.height(8.dp))
                     if (!moderationDecision.shouldHide) {
@@ -426,11 +426,11 @@ fun PostCard(
             onReportUser = onReportUser,
             onMuteUser = onMuteUser,
             onBlockUser = onBlockUser,
-            hasMedia = !post.embed?.images.isNullOrEmpty() || post.embed?.playlist != null ||
-                !post.embed?.media?.images.isNullOrEmpty(),
+            hasMedia = !post.embed?.displayImages.isNullOrEmpty() || post.embed?.playlist != null ||
+                !post.embed?.media?.displayImages.isNullOrEmpty(),
             onSaveMedia = if (onSaveMedia != null) {
                 {
-                    val imageUrls = (post.embed?.images ?: post.embed?.media?.images)
+                    val imageUrls = (post.embed?.displayImages ?: post.embed?.media?.displayImages)
                         ?.map { it.fullsize } ?: emptyList()
                     val videoUrl = post.embed?.playlist
                     val videoThumbnail = post.embed?.thumbnail
@@ -468,7 +468,7 @@ private fun QuoteCard(
 
     if (viewRecord == null || viewRecord.author == null) return
 
-    val quotedImages = viewRecord.embeds.firstNotNullOfOrNull { it.images }
+    val quotedImages = viewRecord.embeds.firstNotNullOfOrNull { it.displayImages }
 
     Column(
         modifier = Modifier
