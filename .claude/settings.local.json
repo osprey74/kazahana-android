@@ -96,7 +96,31 @@
       "Bash(./gradlew :app:compileDebugKotlin -q)",
       "Bash(echo \"helper-exit:$?\")",
       "Read(//home/ospre/**)",
-      "Bash(./gradlew clean *)"
+      "Bash(./gradlew clean *)",
+      "Bash(env)",
+      "Bash(cp local.properties /tmp/local.properties.bak)",
+      "Bash(printf 'sdk.dir=/home/ospre/Android/Sdk\\\\n')",
+      "Bash(export ANDROID_HOME=/home/ospre/Android/Sdk)",
+      "Bash(./gradlew :app:kspReleaseKotlin --stacktrace --info)",
+      "Bash(echo \"EXIT=$?\")",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(gh pr create --base main --head docs/matrix-update-20260609 --title 'docs\\(matrix\\): Android v3.3.0 — Bluesky v1.123 対応を反映' --body ' *)",
+      "Bash('/mnt/c/Program Files/GitHub CLI/gh.exe' pr create -R osprey74/kazahana --base main --head docs/matrix-update-20260609 --title 'docs\\(matrix\\): Android v3.3.0 — Bluesky v1.123 対応を反映' --body-file 'G:\\\\dev\\\\kazahana\\\\_pr_body.md')",
+      "Bash(unzip -l /home/ospre/.gradle/caches/8.9/transforms/8cf4400aebc09c1f354b5991030a9363/transformed/ui-graphics-release-api.jar)",
+      "Bash(unzip -o /home/ospre/.gradle/caches/8.9/transforms/8cf4400aebc09c1f354b5991030a9363/transformed/ui-graphics-release-api.jar androidx/compose/ui/graphics/drawscope/DrawScopeKt.class androidx/compose/ui/graphics/layer/*Kt*.class)",
+      "Bash(javap androidx/compose/ui/graphics/drawscope/DrawScopeKt.class)",
+      "Bash(javap -p androidx/compose/ui/graphics/layer/GraphicsLayerKt.class)",
+      "WebFetch(domain:github.com)",
+      "WebSearch",
+      "Bash('/mnt/c/Program Files/GitHub CLI/gh.exe' auth status)",
+      "Bash('/mnt/c/Program Files/GitHub CLI/gh.exe' release create v3.4.0 -R osprey74/kazahana-android --draft --title v3.4.0 --notes-file RELEASE_NOTES_v3.4.0.md)",
+      "Bash($GH release *)",
+      "Bash('/mnt/c/Program Files/GitHub CLI/gh.exe' pr create -R osprey74/kazahana --base main --head docs/matrix-update-20260613 --title 'docs\\(matrix\\): Android v3.4.0 グループチャット・プロフィールQR を反映' --body ' *)",
+      "Read(//usr/bin/**)",
+      "Bash(gh.exe --version)",
+      "Bash(curl -s https://api.github.com/repos/osprey74/kazahana-android/releases)",
+      "Bash('/mnt/c/Program Files/GitHub CLI/gh.exe' release list -R osprey74/kazahana-android --limit 8)",
+      "Bash('/mnt/c/Program Files/GitHub CLI/gh.exe' release view v3.4.0 -R osprey74/kazahana-android)"
     ]
   }
 }
