@@ -209,6 +209,7 @@
     <string name="group_kick">Remove</string>
     <string name="group_kick_confirm">Remove %1$s from the group?</string>
     <string name="group_join_requests">Join requests</string>
+    <string name="group_join_requests_count">%1$d pending join requests</string>
     <string name="group_approve">Approve</string>
     <string name="group_reject">Reject</string>
     <string name="settings_chat">Chat</string>

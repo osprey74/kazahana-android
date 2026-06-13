@@ -109,11 +109,20 @@ fun ChatScreen(
                                 text = group.name.ifBlank { stringResource(R.string.messages_group_unnamed) },
                                 maxLines = 1,
                             )
-                            Text(
-                                text = stringResource(R.string.messages_group_member_count, group.memberCount),
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                            )
+                            val unreadReqs = group.unreadJoinRequestCount ?: 0
+                            if (unreadReqs > 0) {
+                                Text(
+                                    text = stringResource(R.string.group_join_requests_count, unreadReqs),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.primary,
+                                )
+                            } else {
+                                Text(
+                                    text = stringResource(R.string.messages_group_member_count, group.memberCount),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                                )
+                            }
                         }
                     } else {
                         Text(

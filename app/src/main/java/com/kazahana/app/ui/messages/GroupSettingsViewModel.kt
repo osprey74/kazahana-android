@@ -50,9 +50,14 @@ class GroupSettingsViewModel @Inject constructor(
     }
 
     private fun maybeLoadJoinRequests(convo: ConvoView) {
-        val group = convo.groupInfo ?: return
-        // joinRequestCount is owner-only; non-null means we're the owner and can list them.
-        if ((group.joinRequestCount ?: 0) <= 0) return
+        val group = convo.groupInfo
+        // joinRequestCount is owner-only; non-null & >0 means there are requests to list.
+        // Otherwise clear any stale list — leaving an approved user in both the requests
+        // and members lists would produce duplicate LazyColumn keys and crash.
+        if (group == null || (group.joinRequestCount ?: 0) <= 0) {
+            _uiState.update { it.copy(joinRequests = emptyList()) }
+            return
+        }
         viewModelScope.launch {
             chatRepository.listJoinRequests(convoId)
                 .onSuccess { resp -> _uiState.update { it.copy(joinRequests = resp.requests) } }

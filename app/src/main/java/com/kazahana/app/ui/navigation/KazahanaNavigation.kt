@@ -68,6 +68,7 @@ import com.kazahana.app.ui.messages.CreateGroupScreen
 import com.kazahana.app.ui.messages.GroupSettingsScreen
 import com.kazahana.app.ui.messages.JoinGroupScreen
 import com.kazahana.app.ui.messages.MessagesScreen
+import com.kazahana.app.ui.messages.MessagesViewModel
 import com.kazahana.app.ui.messages.NewConversationScreen
 import com.kazahana.app.ui.notification.NotificationScreen
 import com.kazahana.app.ui.notification.NotificationViewModel
@@ -227,6 +228,27 @@ private fun MainScreen(
     val notificationViewModel: NotificationViewModel = hiltViewModel()
     val unreadCount by notificationViewModel.unreadCount.collectAsState()
 
+    // Shared MessagesViewModel — hoisted so its polling drives the Messages tab
+    // badge and the app-wide group join-request notification (not just while the
+    // Messages screen is open). Passed into MessagesScreen so there's one instance.
+    val messagesViewModel: MessagesViewModel = hiltViewModel()
+    val messagesUiState by messagesViewModel.uiState.collectAsState()
+    val pendingJoinRequests = messagesUiState.conversations.sumOf {
+        it.groupInfo?.unreadJoinRequestCount ?: 0
+    }
+    val appContext = androidx.compose.ui.platform.LocalContext.current
+    androidx.compose.runtime.LaunchedEffect(Unit) {
+        messagesViewModel.joinRequestNotices.collect { notice ->
+            val name = notice.groupName.ifBlank { appContext.getString(R.string.messages_group_unnamed) }
+            com.kazahana.app.service.GroupRequestNotifier.notify(
+                context = appContext,
+                convoId = notice.convoId,
+                title = name,
+                body = appContext.getString(R.string.group_join_requests_count, notice.count),
+            )
+        }
+    }
+
     // Current user DID for messages
     val myDid = authViewModel.currentDid
 
@@ -272,6 +294,9 @@ private fun MainScreen(
                 }
                 is DeepLink.JoinGroup -> navController.navigate(
                     JoinGroupRoute(code = deepLink.code)
+                ) { launchSingleTop = true }
+                is DeepLink.GroupRequests -> navController.navigate(
+                    GroupSettingsRoute(convoId = deepLink.convoId)
                 ) { launchSingleTop = true }
             }
         }
@@ -365,6 +390,12 @@ private fun MainScreen(
                         } == true
 
                         val isNotifications = item.route is NotificationsRoute
+                        val isMessages = item.route is MessagesRoute
+                        val badgeCount = when {
+                            isNotifications -> unreadCount
+                            isMessages -> pendingJoinRequests
+                            else -> 0
+                        }
 
                         NavigationBarItem(
                             selected = selected,
@@ -389,12 +420,12 @@ private fun MainScreen(
                                 }
                             },
                             icon = {
-                                if (isNotifications && unreadCount > 0) {
+                                if (badgeCount > 0) {
                                     BadgedBox(
                                         badge = {
                                             Badge {
                                                 Text(
-                                                    if (unreadCount > 99) "99+" else unreadCount.toString()
+                                                    if (badgeCount > 99) "99+" else badgeCount.toString()
                                                 )
                                             }
                                         }
@@ -558,6 +589,7 @@ private fun MainScreen(
             composable<MessagesRoute> {
                 MessagesScreen(
                     retapFlow = messagesRetap,
+                    viewModel = messagesViewModel,
                     myDid = myDid,
                     onConvoClick = { convoId ->
                         navController.navigate(ChatRoute(convoId = convoId)) {

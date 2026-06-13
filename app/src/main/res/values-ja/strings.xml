@@ -187,6 +187,7 @@
     <string name="group_kick">削除</string>
     <string name="group_kick_confirm">%1$s をグループから削除しますか？</string>
     <string name="group_join_requests">参加申請</string>
+    <string name="group_join_requests_count">%1$d 件の参加申請</string>
     <string name="group_approve">承認</string>
     <string name="group_reject">拒否</string>
     <string name="settings_chat">チャット</string>

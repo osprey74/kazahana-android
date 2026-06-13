@@ -146,7 +146,7 @@ fun GroupSettingsScreen(
                 item {
                     SectionHeader(stringResource(R.string.group_join_requests))
                 }
-                items(uiState.joinRequests, key = { it.requestedBy.did }) { req ->
+                items(uiState.joinRequests, key = { "req_${it.requestedBy.did}" }) { req ->
                     JoinRequestRow(
                         req = req,
                         onApprove = { viewModel.approve(req.requestedBy.did) },
@@ -244,7 +244,7 @@ fun GroupSettingsScreen(
 
             // Members
             item { SectionHeader(stringResource(R.string.group_members)) }
-            items(convo.members, key = { it.did }) { member ->
+            items(convo.members, key = { "member_${it.did}" }) { member ->
                 MemberRow(
                     member = member,
                     canKick = isOwner && member.did != myDid && !member.isOwner,

@@ -261,6 +261,16 @@ private fun ConvoRow(
                 )
             }
 
+            val unreadJoinRequests = group?.unreadJoinRequestCount ?: 0
+            if (unreadJoinRequests > 0) {
+                Text(
+                    text = stringResource(R.string.group_join_requests_count, unreadJoinRequests),
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+            }
+
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp),

@@ -25,6 +25,9 @@ sealed class DeepLink {
 
     /** Open the group join flow for an invite code. */
     data class JoinGroup(val code: String) : DeepLink()
+
+    /** Open a group's settings (e.g. to act on pending join requests). */
+    data class GroupRequests(val convoId: String) : DeepLink()
 }
 
 /** Group invite codes are 7-10 alphanumeric chars (bsky.app/chat/{code}). */
@@ -97,6 +100,10 @@ object DeepLinkHandler {
             "hashtag" -> {
                 val tag = pathSegments.firstOrNull() ?: return null
                 DeepLink.Search("#$tag")
+            }
+            "group-requests" -> {
+                val convoId = pathSegments.firstOrNull() ?: return null
+                DeepLink.GroupRequests(convoId)
             }
             else -> null
         }
