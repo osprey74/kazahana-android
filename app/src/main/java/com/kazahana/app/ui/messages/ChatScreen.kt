@@ -57,6 +57,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.kazahana.app.R
+import com.kazahana.app.data.model.ChatMember
 import com.kazahana.app.data.model.ChatMessageOrDeleted
 import com.kazahana.app.data.model.ChatReaction
 import com.kazahana.app.ui.common.relativeTime
@@ -72,10 +73,14 @@ fun ChatScreen(
     onNavigateBack: () -> Unit = {},
     onHashtagClick: (String) -> Unit = {},
     onProfileClick: (String) -> Unit = {},
+    onJoinLink: (code: String) -> Unit = {},
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val listState = rememberLazyListState()
 
+    val group = uiState.convo?.groupInfo
+    val isLocked = group?.isLocked == true
+    val members = uiState.convo?.members ?: emptyList()
     val otherMember = uiState.convo?.members?.firstOrNull { it.did != myDid }
         ?: uiState.convo?.members?.firstOrNull()
 
@@ -97,10 +102,24 @@ fun ChatScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    Text(
-                        text = otherMember?.displayName ?: otherMember?.handle ?: "",
-                        maxLines = 1,
-                    )
+                    if (group != null) {
+                        Column {
+                            Text(
+                                text = group.name.ifBlank { stringResource(R.string.messages_group_unnamed) },
+                                maxLines = 1,
+                            )
+                            Text(
+                                text = stringResource(R.string.messages_group_member_count, group.memberCount),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                            )
+                        }
+                    } else {
+                        Text(
+                            text = otherMember?.displayName ?: otherMember?.handle ?: "",
+                            maxLines = 1,
+                        )
+                    }
                 },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
@@ -114,6 +133,9 @@ fun ChatScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
+                // Reserve space for the persistent evacuation banner overlay so the
+                // input and newest messages aren't hidden behind it.
+                .padding(bottom = com.kazahana.app.ui.common.LocalEvacBannerInset.current)
                 .imePadding(),
         ) {
             when {
@@ -154,10 +176,15 @@ fun ChatScreen(
                             items = uiState.messages,
                             key = { it.id ?: it.hashCode().toString() },
                         ) { message ->
+                            if (message.isSystem) {
+                                SystemMessageRow(message = message, members = members)
+                                return@items
+                            }
                             MessageBubble(
                                 message = message,
                                 isMine = message.sender?.did == myDid,
                                 myDid = myDid,
+                                onJoinLink = onJoinLink,
                                 showReactionPicker = reactionTargetId == message.id,
                                 onLongPress = {
                                     val isDeleted = message.type?.contains("deletedMessage") == true
@@ -191,7 +218,18 @@ fun ChatScreen(
                 }
             }
 
-            // Message input
+            // Message input (or a locked notice for locked groups)
+            if (isLocked) {
+                Text(
+                    text = stringResource(R.string.chat_group_locked_notice),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 16.dp),
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                )
+            } else {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -223,7 +261,29 @@ fun ChatScreen(
                     }
                 }
             }
+            }
         }
+    }
+}
+
+@Composable
+private fun SystemMessageRow(
+    message: ChatMessageOrDeleted,
+    members: List<ChatMember>,
+) {
+    val data = message.systemData ?: return
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 24.dp, vertical = 6.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = systemMessageText(data, members),
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.55f),
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+        )
     }
 }
 
@@ -233,6 +293,7 @@ private fun MessageBubble(
     message: ChatMessageOrDeleted,
     isMine: Boolean,
     myDid: String,
+    onJoinLink: (String) -> Unit = {},
     showReactionPicker: Boolean = false,
     onLongPress: () -> Unit = {},
     onReaction: (String) -> Unit = {},
@@ -242,6 +303,7 @@ private fun MessageBubble(
     onHashtagClick: (String) -> Unit = {},
     onProfileClick: (String) -> Unit = {},
 ) {
+    val joinLinkEmbed = message.joinLinkEmbed
     val isDeleted = message.type?.contains("deletedMessage") == true
     val screenWidth = LocalConfiguration.current.screenWidthDp.dp
     val reactions = message.reactions ?: emptyList()
@@ -336,6 +398,23 @@ private fun MessageBubble(
                     onHashtagClick = onHashtagClick,
                     onMentionClick = onProfileClick,
                     onLongPress = onLongPress,
+                    onNonLinkClick = { if (showReactionPicker) onDismissReactions() },
+                    onUrlClick = { url ->
+                        val code = com.kazahana.app.data.util.ChatInviteLink.extractCode(url)
+                        if (code != null) {
+                            onJoinLink(code)
+                            true
+                        } else {
+                            false
+                        }
+                    },
+                )
+            }
+            if (joinLinkEmbed != null) {
+                Spacer(modifier = Modifier.height(6.dp))
+                com.kazahana.app.ui.messages.components.JoinLinkEmbed(
+                    embed = joinLinkEmbed,
+                    onJoin = onJoinLink,
                 )
             }
             if (message.sentAt != null) {

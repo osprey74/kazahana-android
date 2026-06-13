@@ -139,6 +139,37 @@
     <string name="messages_accept">承認</string>
     <string name="dm_search_history">最近</string>
     <string name="dm_search_history_clear">すべて削除</string>
+
+    <!-- Group chat -->
+    <string name="messages_group_unnamed">グループ</string>
+    <string name="messages_group_member_count">%1$d 人</string>
+    <string name="chat_group_locked">ロック中</string>
+    <string name="chat_group_locked_notice">このグループはロックされています。メッセージを送信できません。</string>
+    <string name="chat_system_add_member">%1$s が %2$s を追加しました</string>
+    <string name="chat_system_remove_member">%1$s が %2$s を削除しました</string>
+    <string name="chat_system_member_join">%1$s が参加しました</string>
+    <string name="chat_system_member_leave">%1$s が退出しました</string>
+    <string name="chat_system_lock">%1$s がグループをロックしました</string>
+    <string name="chat_system_unlock">%1$s がロックを解除しました</string>
+    <string name="chat_system_lock_permanent">グループが永続的にロックされました</string>
+    <string name="chat_system_edit_group_named">グループ名が「%1$s」に変更されました</string>
+    <string name="chat_system_edit_group">グループ情報が更新されました</string>
+    <string name="chat_system_create_join_link">招待リンクが作成されました</string>
+    <string name="chat_system_edit_join_link">招待リンクが更新されました</string>
+    <string name="chat_system_enable_join_link">招待リンクが有効化されました</string>
+    <string name="chat_system_disable_join_link">招待リンクが無効化されました</string>
+    <string name="chat_system_generic">グループが更新されました</string>
+    <string name="join_link_join">参加する</string>
+    <string name="join_link_disabled">この招待リンクは無効化されています</string>
+    <string name="join_link_invalid">この招待リンクは無効です</string>
+    <string name="join_group_title">グループに参加</string>
+    <string name="join_group_requires_approval">参加にはグループ管理者の承認が必要です。</string>
+    <string name="join_group_pending_toast">参加申請を送信しました</string>
+    <string name="join_error_locked">このグループはロックされています</string>
+    <string name="join_error_follow_required">参加するにはグループ管理者にフォローされている必要があります</string>
+    <string name="join_error_member_limit">このグループは満員です</string>
+    <string name="join_error_kicked">このグループには再参加できません</string>
+    <string name="join_error_generic">グループに参加できませんでした</string>
     <string name="settings_title">設定</string>
     <string name="settings_theme">テーマ</string>
     <string name="settings_light">ライト</string>

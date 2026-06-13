@@ -33,10 +33,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
 import kotlinx.coroutines.launch
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -61,6 +64,7 @@ import com.kazahana.app.ui.auth.LoginScreen
 import com.kazahana.app.ui.auth.AuthViewModel
 import com.kazahana.app.ui.compose.ComposeScreen
 import com.kazahana.app.ui.messages.ChatScreen
+import com.kazahana.app.ui.messages.JoinGroupScreen
 import com.kazahana.app.ui.messages.MessagesScreen
 import com.kazahana.app.ui.messages.NewConversationScreen
 import com.kazahana.app.ui.notification.NotificationScreen
@@ -119,6 +123,7 @@ import kotlinx.serialization.Serializable
 @Serializable object WatermarkSettingsRoute
 @Serializable data class ChatRoute(val convoId: String)
 @Serializable object NewConversationRoute
+@Serializable data class JoinGroupRoute(val code: String)
 @Serializable data class SearchWithQueryRoute(val query: String)
 @Serializable object NearestSheltersRoute
 @Serializable data class ShelterDetailRoute(val shelterId: String)
@@ -261,6 +266,9 @@ private fun MainScreen(
                         launchSingleTop = true
                     }
                 }
+                is DeepLink.JoinGroup -> navController.navigate(
+                    JoinGroupRoute(code = deepLink.code)
+                ) { launchSingleTop = true }
             }
         }
     }
@@ -333,6 +341,15 @@ private fun MainScreen(
     }
     val evacBannerVisible = bannerState.visible && bannerState.highestLevel != null &&
         !hideChrome && !isOnSettings && !isOnEvacuation
+
+    // Measured banner height, provided to screens with bottom-anchored content (e.g. chat)
+    // so they can reserve space and avoid being covered by the overlay banner.
+    var evacBannerHeightPx by remember { mutableIntStateOf(0) }
+    val evacBannerInset = if (evacBannerVisible) {
+        with(LocalDensity.current) { evacBannerHeightPx.toDp() }
+    } else {
+        0.dp
+    }
 
     Scaffold(
         bottomBar = {
@@ -434,6 +451,9 @@ private fun MainScreen(
         }
 
         Box(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
+        androidx.compose.runtime.CompositionLocalProvider(
+            com.kazahana.app.ui.common.LocalEvacBannerInset provides evacBannerInset,
+        ) {
         NavHost(
             navController = navController,
             startDestination = HomeRoute,
@@ -831,6 +851,22 @@ private fun MainScreen(
                             launchSingleTop = true
                         }
                     },
+                    onJoinLink = { code ->
+                        navController.navigate(JoinGroupRoute(code = code)) {
+                            launchSingleTop = true
+                        }
+                    },
+                )
+            }
+            composable<JoinGroupRoute> {
+                JoinGroupScreen(
+                    onNavigateBack = { navController.popBackStack() },
+                    onJoined = { convoId ->
+                        navController.popBackStack()
+                        navController.navigate(ChatRoute(convoId = convoId)) {
+                            launchSingleTop = true
+                        }
+                    },
                 )
             }
             composable<SearchWithQueryRoute> { backStackEntry ->
@@ -863,6 +899,7 @@ private fun MainScreen(
                 )
             }
         }
+        } // CompositionLocalProvider(LocalEvacBannerInset)
 
         // Evacuation banner overlay (above the bottom navigation bar)
         // 設定画面・避難所関連画面では非表示（evacBannerVisible に集約）
@@ -874,7 +911,9 @@ private fun MainScreen(
                 onClick = {
                     navController.navigate(NearestSheltersRoute) { launchSingleTop = true }
                 },
-                modifier = Modifier.align(Alignment.BottomCenter),
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .onSizeChanged { evacBannerHeightPx = it.height },
             )
         }
 

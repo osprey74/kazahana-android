@@ -4,14 +4,20 @@ import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.text.ClickableText
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import com.kazahana.app.data.model.Facet
@@ -39,6 +45,9 @@ fun RichTextContent(
     onMentionClick: ((String) -> Unit)? = null,
     onLongPress: (() -> Unit)? = null,
     onNonLinkClick: (() -> Unit)? = null,
+    // Intercept URL taps. Return true if handled in-app (e.g. group invite link),
+    // false to fall back to opening the URL externally.
+    onUrlClick: ((String) -> Boolean)? = null,
 ) {
     val context = LocalContext.current
     val linkColor = MaterialTheme.colorScheme.primary
@@ -94,13 +103,25 @@ fun RichTextContent(
     }
 
     if (onLongPress != null) {
-        // Use plain Text so long-press is not consumed by ClickableText.
-        // Links are handled via combinedClickable onClick — not per-character,
-        // but this preserves long-press for reaction picker in DM bubbles.
+        // Detect taps (to follow links) while preserving long-press for the DM
+        // reaction picker. A plain Text alone would swallow link taps entirely.
+        var layoutResult by remember { mutableStateOf<TextLayoutResult?>(null) }
         Text(
             text = annotatedString,
             style = style,
-            modifier = modifier,
+            onTextLayout = { layoutResult = it },
+            modifier = modifier.pointerInput(annotatedString) {
+                detectTapGestures(
+                    onLongPress = { onLongPress() },
+                    onTap = { pos ->
+                        val offset = layoutResult?.getOffsetForPosition(pos) ?: -1
+                        val handled = offset >= 0 && handleAnnotationClick(
+                            annotatedString, offset, context, onHashtagClick, onMentionClick, onUrlClick,
+                        )
+                        if (!handled) onNonLinkClick?.invoke()
+                    },
+                )
+            },
         )
     } else {
         ClickableText(
@@ -108,7 +129,7 @@ fun RichTextContent(
             style = style,
             modifier = modifier,
             onClick = { offset ->
-                val handled = handleAnnotationClick(annotatedString, offset, context, onHashtagClick, onMentionClick)
+                val handled = handleAnnotationClick(annotatedString, offset, context, onHashtagClick, onMentionClick, onUrlClick)
                 if (!handled) {
                     onNonLinkClick?.invoke()
                 }
@@ -123,8 +144,10 @@ private fun handleAnnotationClick(
     context: android.content.Context,
     onHashtagClick: ((String) -> Unit)?,
     onMentionClick: ((String) -> Unit)?,
+    onUrlClick: ((String) -> Boolean)?,
 ): Boolean {
     annotatedString.getStringAnnotations("URL", offset, offset).firstOrNull()?.let {
+        if (onUrlClick?.invoke(it.item) == true) return true
         try {
             context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(it.item)))
         } catch (_: Exception) {}

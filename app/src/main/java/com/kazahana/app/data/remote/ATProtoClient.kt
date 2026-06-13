@@ -385,6 +385,16 @@ suspend fun HttpResponse.atprotoError(): String {
     }
 }
 
+/** Parse AT Protocol error response and return just the error code/name (e.g. "ConvoLocked"), or null. */
+suspend fun HttpResponse.atprotoErrorName(): String? {
+    return try {
+        val json = Json { ignoreUnknownKeys = true }
+        json.decodeFromString<AtprotoErrorResponse>(bodyAsText()).error
+    } catch (_: Exception) {
+        null
+    }
+}
+
 @kotlinx.serialization.Serializable
 private data class AtprotoErrorResponse(
     val error: String? = null,

@@ -162,6 +162,37 @@
     <string name="dm_search_history">Recent</string>
     <string name="dm_search_history_clear">Clear all</string>
 
+    <!-- Group chat -->
+    <string name="messages_group_unnamed">Group</string>
+    <string name="messages_group_member_count">%1$d members</string>
+    <string name="chat_group_locked">Locked</string>
+    <string name="chat_group_locked_notice">This group is locked. You can\'t send messages.</string>
+    <string name="chat_system_add_member">%1$s added %2$s</string>
+    <string name="chat_system_remove_member">%1$s removed %2$s</string>
+    <string name="chat_system_member_join">%1$s joined</string>
+    <string name="chat_system_member_leave">%1$s left</string>
+    <string name="chat_system_lock">%1$s locked the group</string>
+    <string name="chat_system_unlock">%1$s unlocked the group</string>
+    <string name="chat_system_lock_permanent">The group was locked permanently</string>
+    <string name="chat_system_edit_group_named">The group was renamed to “%1$s”</string>
+    <string name="chat_system_edit_group">The group was updated</string>
+    <string name="chat_system_create_join_link">An invite link was created</string>
+    <string name="chat_system_edit_join_link">An invite link was updated</string>
+    <string name="chat_system_enable_join_link">An invite link was enabled</string>
+    <string name="chat_system_disable_join_link">An invite link was disabled</string>
+    <string name="chat_system_generic">The group was updated</string>
+    <string name="join_link_join">Join</string>
+    <string name="join_link_disabled">This invite link has been disabled</string>
+    <string name="join_link_invalid">This invite link is invalid</string>
+    <string name="join_group_title">Join group</string>
+    <string name="join_group_requires_approval">The group owner must approve your request to join.</string>
+    <string name="join_group_pending_toast">Your join request has been sent</string>
+    <string name="join_error_locked">This group is locked</string>
+    <string name="join_error_follow_required">The group owner must follow you to join</string>
+    <string name="join_error_member_limit">This group is full</string>
+    <string name="join_error_kicked">You can\'t rejoin this group</string>
+    <string name="join_error_generic">Couldn\'t join the group</string>
+
     <!-- Settings -->
     <string name="settings_title">Settings</string>
     <string name="settings_theme">Theme</string>

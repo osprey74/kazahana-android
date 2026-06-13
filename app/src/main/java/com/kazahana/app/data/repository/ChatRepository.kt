@@ -3,11 +3,16 @@ package com.kazahana.app.data.repository
 import com.kazahana.app.data.model.ConvoListResponse
 import com.kazahana.app.data.model.ConvoView
 import com.kazahana.app.data.model.GetConvoResponse
+import com.kazahana.app.data.model.JoinLinkPreviewState
+import com.kazahana.app.data.model.JoinLinkPreviewsResponse
 import com.kazahana.app.data.model.MessageListResponse
 import com.kazahana.app.data.model.ReactionResponse
+import com.kazahana.app.data.model.RequestJoinResponse
 import com.kazahana.app.data.model.SendMessageResponse
+import com.kazahana.app.data.model.toJoinLinkPreviewState
 import com.kazahana.app.data.remote.ATProtoClient
 import com.kazahana.app.data.remote.atprotoError
+import com.kazahana.app.data.remote.atprotoErrorName
 import io.ktor.client.call.body
 import io.ktor.http.isSuccess
 import kotlinx.serialization.json.buildJsonObject
@@ -89,11 +94,7 @@ class ChatRepository(
 
     suspend fun getConvoForMembers(did: String): Result<ConvoView> {
         return try {
-            val body = buildJsonObject {
-                put("members", kotlinx.serialization.json.buildJsonArray {
-                    add(kotlinx.serialization.json.JsonPrimitive(did))
-                })
-            }
+            // 1:1 convo lookup — `members` takes a single recipient DID here.
             val response = client.getWithProxy(
                 "chat.bsky.convo.getConvoForMembers",
                 mapOf("members" to did),
@@ -232,6 +233,64 @@ class ChatRepository(
                 put("convoId", convoId)
             }
             val response = client.postWithProxy("chat.bsky.convo.leaveConvo", body)
+            if (response.status.isSuccess()) {
+                Result.success(Unit)
+            } else {
+                Result.failure(Exception(response.atprotoError()))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    // --- Group join (Phase 2) ---
+
+    /** Preview a single join link by its code. */
+    suspend fun getJoinLinkPreview(code: String): Result<JoinLinkPreviewState> {
+        return try {
+            val response = client.getWithProxy(
+                "chat.bsky.group.getJoinLinkPreviews",
+                mapOf("codes" to code),
+            )
+            if (response.status.isSuccess()) {
+                val body = response.body<JoinLinkPreviewsResponse>()
+                val state = body.joinLinkPreviews.firstOrNull()?.toJoinLinkPreviewState()
+                    ?: JoinLinkPreviewState.Invalid
+                Result.success(state)
+            } else {
+                Result.failure(Exception(response.atprotoError()))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    /** Request to join a group via its invite code. Returns status joined|pending (+ convo when joined). */
+    suspend fun requestJoin(code: String): Result<RequestJoinResponse> {
+        return try {
+            val body = buildJsonObject {
+                put("code", code)
+            }
+            val response = client.postWithProxy("chat.bsky.group.requestJoin", body)
+            if (response.status.isSuccess()) {
+                Result.success(response.body())
+            } else {
+                // Surface the error code (e.g. ConvoLocked) so the UI can localize it.
+                val name = response.atprotoErrorName()
+                Result.failure(Exception(name ?: "RequestJoinFailed"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    /** Withdraw a pending join request for a group. */
+    suspend fun withdrawJoinRequest(convoId: String): Result<Unit> {
+        return try {
+            val body = buildJsonObject {
+                put("convoId", convoId)
+            }
+            val response = client.postWithProxy("chat.bsky.group.withdrawJoinRequest", body)
             if (response.status.isSuccess()) {
                 Result.success(Unit)
             } else {

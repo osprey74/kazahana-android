@@ -22,7 +22,13 @@ sealed class DeepLink {
 
     /** Navigate to notifications tab, optionally switching to a target account. */
     data class Notification(val targetDid: String?) : DeepLink()
+
+    /** Open the group join flow for an invite code. */
+    data class JoinGroup(val code: String) : DeepLink()
 }
+
+/** Group invite codes are 7-10 alphanumeric chars (bsky.app/chat/{code}). */
+private val CHAT_INVITE_CODE_REGEX = Regex("^[a-zA-Z0-9]{7,10}$")
 
 /**
  * Parses an Android Intent into a [DeepLink], or returns null if the intent
@@ -102,6 +108,7 @@ object DeepLinkHandler {
      * Supported patterns:
      * - https://bsky.app/profile/{handle}
      * - https://bsky.app/profile/{handle}/post/{rkey}
+     * - https://bsky.app/chat/{code} (group invite link)
      */
     private fun parseBskyAppUri(uri: Uri): DeepLink? {
         if (uri.host != "bsky.app") return null
@@ -109,6 +116,10 @@ object DeepLinkHandler {
         if (segments.isEmpty()) return null
 
         return when (segments.firstOrNull()) {
+            "chat" -> {
+                val code = segments.getOrNull(1)?.takeIf { it.matches(CHAT_INVITE_CODE_REGEX) } ?: return null
+                DeepLink.JoinGroup(code)
+            }
             "profile" -> {
                 val handle = segments.getOrNull(1) ?: return null
                 when {

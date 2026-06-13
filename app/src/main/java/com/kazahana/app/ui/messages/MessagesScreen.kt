@@ -11,11 +11,13 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material3.Badge
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -42,6 +44,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.kazahana.app.R
 import com.kazahana.app.data.model.ConvoView
 import com.kazahana.app.ui.common.AvatarImage
+import com.kazahana.app.ui.common.GroupAvatar
 import com.kazahana.app.ui.common.relativeTime
 import kotlinx.coroutines.flow.SharedFlow
 
@@ -116,9 +119,14 @@ fun MessagesScreen(
                                 myDid = myDid,
                                 onClick = { onConvoClick(convo.id) },
                                 onAvatarClick = {
-                                    val otherDid = convo.members.firstOrNull { it.did != myDid }?.did
-                                        ?: convo.members.firstOrNull()?.did
-                                    otherDid?.let { onProfileClick(it) }
+                                    // Group avatars open the convo; 1:1 avatars open the other profile.
+                                    if (convo.isGroup) {
+                                        onConvoClick(convo.id)
+                                    } else {
+                                        val otherDid = convo.members.firstOrNull { it.did != myDid }?.did
+                                            ?: convo.members.firstOrNull()?.did
+                                        otherDid?.let { onProfileClick(it) }
+                                    }
                                 },
                                 onAccept = { viewModel.acceptConvo(convo.id) },
                             )
@@ -139,8 +147,15 @@ private fun ConvoRow(
     onAvatarClick: () -> Unit = {},
     onAccept: () -> Unit = {},
 ) {
+    val group = convo.groupInfo
+    val isGroup = group != null
     val otherMember = convo.members.firstOrNull { it.did != myDid } ?: convo.members.firstOrNull()
     val isPending = convo.status != null && convo.status != "accepted" || convo.opened == false
+    val title = if (isGroup) {
+        group.name.ifBlank { stringResource(R.string.messages_group_unnamed) }
+    } else {
+        otherMember?.displayName ?: otherMember?.handle ?: stringResource(R.string.messages_unknown)
+    }
 
     Row(
         modifier = Modifier
@@ -156,7 +171,15 @@ private fun ConvoRow(
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        AvatarImage(url = otherMember?.avatar, size = 48.dp, onClick = onAvatarClick)
+        if (isGroup) {
+            GroupAvatar(
+                avatarUrls = convo.members.map { it.avatar },
+                size = 48.dp,
+                modifier = Modifier.clickable(onClick = onAvatarClick),
+            )
+        } else {
+            AvatarImage(url = otherMember?.avatar, size = 48.dp, onClick = onAvatarClick)
+        }
 
         Spacer(modifier = Modifier.width(12.dp))
 
@@ -166,8 +189,17 @@ private fun ConvoRow(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
+                if (isGroup && group.isLocked) {
+                    Icon(
+                        Icons.Filled.Lock,
+                        contentDescription = stringResource(R.string.chat_group_locked),
+                        modifier = Modifier.size(14.dp),
+                        tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                }
                 Text(
-                    text = otherMember?.displayName ?: otherMember?.handle ?: stringResource(R.string.messages_unknown),
+                    text = title,
                     style = MaterialTheme.typography.bodyLarge,
                     fontWeight = if (convo.unreadCount > 0 || isPending) FontWeight.Bold else FontWeight.Normal,
                     maxLines = 1,
@@ -189,16 +221,24 @@ private fun ConvoRow(
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.primary,
                 )
+            } else if (isGroup) {
+                Text(
+                    text = stringResource(R.string.messages_group_member_count, group.memberCount),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                )
             }
 
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                val lastText = if (convo.lastMessage?.type?.contains("deletedMessage") == true) {
-                    stringResource(R.string.messages_deleted)
-                } else {
-                    convo.lastMessage?.text ?: ""
+                val last = convo.lastMessage
+                val systemData = last?.systemData
+                val lastText = when {
+                    last?.isDeleted == true -> stringResource(R.string.messages_deleted)
+                    systemData != null -> systemMessageText(systemData, convo.members)
+                    else -> last?.text ?: ""
                 }
                 Text(
                     text = lastText,
