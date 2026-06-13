@@ -74,6 +74,7 @@ fun ChatScreen(
     onHashtagClick: (String) -> Unit = {},
     onProfileClick: (String) -> Unit = {},
     onJoinLink: (code: String) -> Unit = {},
+    onOpenGroupSettings: () -> Unit = {},
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val listState = rememberLazyListState()
@@ -103,7 +104,7 @@ fun ChatScreen(
             TopAppBar(
                 title = {
                     if (group != null) {
-                        Column {
+                        Column(modifier = Modifier.clickable(onClick = onOpenGroupSettings)) {
                             Text(
                                 text = group.name.ifBlank { stringResource(R.string.messages_group_unnamed) },
                                 maxLines = 1,

@@ -64,6 +64,8 @@ import com.kazahana.app.ui.auth.LoginScreen
 import com.kazahana.app.ui.auth.AuthViewModel
 import com.kazahana.app.ui.compose.ComposeScreen
 import com.kazahana.app.ui.messages.ChatScreen
+import com.kazahana.app.ui.messages.CreateGroupScreen
+import com.kazahana.app.ui.messages.GroupSettingsScreen
 import com.kazahana.app.ui.messages.JoinGroupScreen
 import com.kazahana.app.ui.messages.MessagesScreen
 import com.kazahana.app.ui.messages.NewConversationScreen
@@ -123,6 +125,8 @@ import kotlinx.serialization.Serializable
 @Serializable object WatermarkSettingsRoute
 @Serializable data class ChatRoute(val convoId: String)
 @Serializable object NewConversationRoute
+@Serializable object CreateGroupRoute
+@Serializable data class GroupSettingsRoute(val convoId: String)
 @Serializable data class JoinGroupRoute(val code: String)
 @Serializable data class SearchWithQueryRoute(val query: String)
 @Serializable object NearestSheltersRoute
@@ -570,6 +574,11 @@ private fun MainScreen(
                             launchSingleTop = true
                         }
                     },
+                    onNewGroup = {
+                        navController.navigate(CreateGroupRoute) {
+                            launchSingleTop = true
+                        }
+                    },
                 )
             }
             composable<ProfileRoute> {
@@ -836,6 +845,17 @@ private fun MainScreen(
                     },
                 )
             }
+            composable<CreateGroupRoute> {
+                CreateGroupScreen(
+                    onNavigateBack = { navController.popBackStack() },
+                    onGroupCreated = { convoId ->
+                        navController.popBackStack()
+                        navController.navigate(ChatRoute(convoId = convoId)) {
+                            launchSingleTop = true
+                        }
+                    },
+                )
+            }
             composable<ChatRoute> { backStackEntry ->
                 val route = backStackEntry.toRoute<ChatRoute>()
                 ChatScreen(
@@ -853,6 +873,26 @@ private fun MainScreen(
                     },
                     onJoinLink = { code ->
                         navController.navigate(JoinGroupRoute(code = code)) {
+                            launchSingleTop = true
+                        }
+                    },
+                    onOpenGroupSettings = {
+                        navController.navigate(GroupSettingsRoute(convoId = route.convoId)) {
+                            launchSingleTop = true
+                        }
+                    },
+                )
+            }
+            composable<GroupSettingsRoute> {
+                GroupSettingsScreen(
+                    myDid = myDid,
+                    onNavigateBack = { navController.popBackStack() },
+                    onLeft = {
+                        // Pop the settings + chat screens back to the conversation list.
+                        navController.popBackStack(MessagesRoute, inclusive = false)
+                    },
+                    onProfileClick = { did ->
+                        navController.navigate(ProfileDetailRoute(actorDid = did)) {
                             launchSingleTop = true
                         }
                     },

@@ -73,7 +73,15 @@ data class ChatMember(
     val handle: String,
     val displayName: String? = null,
     val avatar: String? = null,
-)
+    // profileViewBasic.kind — union whose #groupConvoMember member carries `role`.
+    val kind: JsonElement? = null,
+) {
+    /** Member role within a group: "owner" | "standard", or null outside groups. */
+    val role: String?
+        get() = (kind as? JsonObject)?.get("role")?.jsonPrimitive?.contentOrNull
+
+    val isOwner: Boolean get() = role == "owner"
+}
 
 @Serializable
 data class ChatReaction(
@@ -206,6 +214,25 @@ data class RequestJoinResponse(
     // joined | pending
     val status: String,
     val convo: ConvoView? = null,
+)
+
+@Serializable
+data class JoinLinkResponse(
+    val joinLink: JoinLinkView? = null,
+)
+
+@Serializable
+data class JoinRequestsResponse(
+    val requests: List<JoinRequestView> = emptyList(),
+    val cursor: String? = null,
+)
+
+/** chat.bsky.group.defs#joinRequestView (owner's view of a pending request). */
+@Serializable
+data class JoinRequestView(
+    val convoId: String,
+    val requestedBy: ChatMember,
+    val requestedAt: String? = null,
 )
 
 @Serializable

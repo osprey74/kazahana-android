@@ -192,6 +192,25 @@
     <string name="join_error_member_limit">This group is full</string>
     <string name="join_error_kicked">You can\'t rejoin this group</string>
     <string name="join_error_generic">Couldn\'t join the group</string>
+    <string name="common_save">Save</string>
+    <string name="create_group_title">Create group</string>
+    <string name="create_group_create">Create</string>
+    <string name="create_group_name_label">Group name</string>
+    <string name="group_settings_title">Group settings</string>
+    <string name="group_rename">Rename group</string>
+    <string name="group_members">Members</string>
+    <string name="group_role_owner">Owner</string>
+    <string name="group_invite_link">Invite link</string>
+    <string name="group_invite_link_enabled">Enable invite link</string>
+    <string name="group_lock">Lock group</string>
+    <string name="group_mute">Mute</string>
+    <string name="group_leave">Leave group</string>
+    <string name="group_leave_confirm">Are you sure you want to leave this group?</string>
+    <string name="group_kick">Remove</string>
+    <string name="group_kick_confirm">Remove %1$s from the group?</string>
+    <string name="group_join_requests">Join requests</string>
+    <string name="group_approve">Approve</string>
+    <string name="group_reject">Reject</string>
 
     <!-- Settings -->
     <string name="settings_title">Settings</string>

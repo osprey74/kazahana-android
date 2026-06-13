@@ -5,6 +5,9 @@ import com.kazahana.app.data.model.ConvoView
 import com.kazahana.app.data.model.GetConvoResponse
 import com.kazahana.app.data.model.JoinLinkPreviewState
 import com.kazahana.app.data.model.JoinLinkPreviewsResponse
+import com.kazahana.app.data.model.JoinLinkResponse
+import com.kazahana.app.data.model.JoinLinkView
+import com.kazahana.app.data.model.JoinRequestsResponse
 import com.kazahana.app.data.model.MessageListResponse
 import com.kazahana.app.data.model.ReactionResponse
 import com.kazahana.app.data.model.RequestJoinResponse
@@ -15,6 +18,8 @@ import com.kazahana.app.data.remote.atprotoError
 import com.kazahana.app.data.remote.atprotoErrorName
 import io.ktor.client.call.body
 import io.ktor.http.isSuccess
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 
@@ -296,6 +301,129 @@ class ChatRepository(
             } else {
                 Result.failure(Exception(response.atprotoError()))
             }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    // --- Group creation & owner operations (Phase 3) ---
+
+    /** Common handler for procedures returning `{ convo }`. */
+    private suspend fun convoResult(nsid: String, body: kotlinx.serialization.json.JsonObject): Result<ConvoView> {
+        return try {
+            val response = client.postWithProxy(nsid, body)
+            if (response.status.isSuccess()) {
+                Result.success(response.body<GetConvoResponse>().convo)
+            } else {
+                Result.failure(Exception(response.atprotoErrorName() ?: response.atprotoError()))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    /** Common handler for procedures returning `{ joinLink }`. */
+    private suspend fun joinLinkResult(nsid: String, body: kotlinx.serialization.json.JsonObject): Result<JoinLinkView?> {
+        return try {
+            val response = client.postWithProxy(nsid, body)
+            if (response.status.isSuccess()) {
+                Result.success(response.body<JoinLinkResponse>().joinLink)
+            } else {
+                Result.failure(Exception(response.atprotoErrorName() ?: response.atprotoError()))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun createGroup(name: String, members: List<String>): Result<ConvoView> =
+        convoResult("chat.bsky.group.createGroup", buildJsonObject {
+            put("name", name)
+            put("members", buildJsonArray { members.forEach { add(JsonPrimitive(it)) } })
+        })
+
+    suspend fun editGroup(convoId: String, name: String): Result<ConvoView> =
+        convoResult("chat.bsky.group.editGroup", buildJsonObject {
+            put("convoId", convoId)
+            put("name", name)
+        })
+
+    suspend fun addMembers(convoId: String, members: List<String>): Result<ConvoView> =
+        convoResult("chat.bsky.group.addMembers", buildJsonObject {
+            put("convoId", convoId)
+            put("members", buildJsonArray { members.forEach { add(JsonPrimitive(it)) } })
+        })
+
+    suspend fun removeMembers(convoId: String, members: List<String>): Result<ConvoView> =
+        convoResult("chat.bsky.group.removeMembers", buildJsonObject {
+            put("convoId", convoId)
+            put("members", buildJsonArray { members.forEach { add(JsonPrimitive(it)) } })
+        })
+
+    suspend fun createJoinLink(
+        convoId: String,
+        joinRule: String = "anyone",
+        requireApproval: Boolean = false,
+    ): Result<JoinLinkView?> =
+        joinLinkResult("chat.bsky.group.createJoinLink", buildJsonObject {
+            put("convoId", convoId)
+            put("joinRule", joinRule)
+            put("requireApproval", requireApproval)
+        })
+
+    suspend fun enableJoinLink(convoId: String): Result<JoinLinkView?> =
+        joinLinkResult("chat.bsky.group.enableJoinLink", buildJsonObject { put("convoId", convoId) })
+
+    suspend fun disableJoinLink(convoId: String): Result<JoinLinkView?> =
+        joinLinkResult("chat.bsky.group.disableJoinLink", buildJsonObject { put("convoId", convoId) })
+
+    suspend fun lockConvo(convoId: String): Result<ConvoView> =
+        convoResult("chat.bsky.convo.lockConvo", buildJsonObject { put("convoId", convoId) })
+
+    suspend fun unlockConvo(convoId: String): Result<ConvoView> =
+        convoResult("chat.bsky.convo.unlockConvo", buildJsonObject { put("convoId", convoId) })
+
+    suspend fun approveJoinRequest(convoId: String, member: String): Result<ConvoView> =
+        convoResult("chat.bsky.group.approveJoinRequest", buildJsonObject {
+            put("convoId", convoId)
+            put("member", member)
+        })
+
+    suspend fun rejectJoinRequest(convoId: String, member: String): Result<Unit> {
+        return try {
+            val body = buildJsonObject {
+                put("convoId", convoId)
+                put("member", member)
+            }
+            val response = client.postWithProxy("chat.bsky.group.rejectJoinRequest", body)
+            if (response.status.isSuccess()) Result.success(Unit)
+            else Result.failure(Exception(response.atprotoError()))
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun updateJoinRequestsRead(convoId: String): Result<Unit> {
+        return try {
+            val body = buildJsonObject { put("convoId", convoId) }
+            val response = client.postWithProxy("chat.bsky.group.updateJoinRequestsRead", body)
+            if (response.status.isSuccess()) Result.success(Unit)
+            else Result.failure(Exception(response.atprotoError()))
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun listJoinRequests(convoId: String, cursor: String? = null): Result<JoinRequestsResponse> {
+        return try {
+            val params = buildMap {
+                put("convoId", convoId)
+                put("limit", "50")
+                if (cursor != null) put("cursor", cursor)
+            }
+            val response = client.getWithProxy("chat.bsky.group.listJoinRequests", params)
+            if (response.status.isSuccess()) Result.success(response.body())
+            else Result.failure(Exception(response.atprotoError()))
         } catch (e: Exception) {
             Result.failure(e)
         }

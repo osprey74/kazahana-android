@@ -18,9 +18,13 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.outlined.Group
+import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material3.Badge
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.HorizontalDivider
@@ -34,6 +38,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -56,9 +63,11 @@ fun MessagesScreen(
     onConvoClick: (convoId: String) -> Unit = {},
     onProfileClick: (did: String) -> Unit = {},
     onNewConversation: () -> Unit = {},
+    onNewGroup: () -> Unit = {},
     myDid: String = "",
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    var showNewMenu by remember { mutableStateOf(false) }
 
     LaunchedEffect(retapFlow) {
         retapFlow?.collect {
@@ -72,11 +81,34 @@ fun MessagesScreen(
         TopAppBar(
             title = { Text(stringResource(R.string.tab_messages)) },
             actions = {
-                IconButton(onClick = onNewConversation) {
-                    Icon(
-                        Icons.Default.Edit,
-                        contentDescription = stringResource(R.string.messages_new_conversation),
-                    )
+                Box {
+                    IconButton(onClick = { showNewMenu = true }) {
+                        Icon(
+                            Icons.Default.Edit,
+                            contentDescription = stringResource(R.string.messages_new_conversation),
+                        )
+                    }
+                    DropdownMenu(
+                        expanded = showNewMenu,
+                        onDismissRequest = { showNewMenu = false },
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.messages_new_conversation)) },
+                            leadingIcon = { Icon(Icons.Outlined.Person, contentDescription = null) },
+                            onClick = {
+                                showNewMenu = false
+                                onNewConversation()
+                            },
+                        )
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.create_group_title)) },
+                            leadingIcon = { Icon(Icons.Outlined.Group, contentDescription = null) },
+                            onClick = {
+                                showNewMenu = false
+                                onNewGroup()
+                            },
+                        )
+                    }
                 }
             },
             windowInsets = WindowInsets(0, 0, 0, 0),
