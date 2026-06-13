@@ -31,7 +31,7 @@ Kazahana is designed as a **lightweight companion app** — not a full-featured 
 - **Profile** — User profile with tabs (posts / replies / media / likes / starter packs), follow / unfollow, and profile QR code sharing (copy / share / save)
 - **Search** — Posts and users, with search history (save / delete / clear)
 - **Feed management** — Custom feeds and lists with show/hide toggle and reorder
-- **Direct messages** — Conversation list, send/receive, reactions
+- **Direct messages & group chat** — Conversation list, send/receive, reactions, and group chats (create, invite links, member management, join request approval, lock, privacy settings)
 - **Moderation** — Content labels, filtering, blur, and reporting
 - **BSAF support** — Structured alert feed with bot badge and severity color border
 - **Evacuation Assist** — Surfaces the nearest Designated Emergency Evacuation Sites (GSI data, bundled for offline use) in response to JMA weather warning levels (bsaf-kikikuru-bot). Persistent banner, OS maps navigation hand-off, and a simple compass navigator. Optional feature (off by default)
