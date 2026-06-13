@@ -189,6 +189,12 @@
     <string name="group_join_requests">参加申請</string>
     <string name="group_approve">承認</string>
     <string name="group_reject">拒否</string>
+    <string name="settings_chat">チャット</string>
+    <string name="settings_chat_allow_incoming">メッセージを受け取る相手</string>
+    <string name="settings_chat_allow_group_invites">グループ招待を受け取る相手</string>
+    <string name="settings_chat_policy_all">全員</string>
+    <string name="settings_chat_policy_following">フォロー中の人のみ</string>
+    <string name="settings_chat_policy_none">誰からも受け取らない</string>
     <string name="settings_title">設定</string>
     <string name="settings_theme">テーマ</string>
     <string name="settings_light">ライト</string>

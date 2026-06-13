@@ -1,7 +1,9 @@
 package com.kazahana.app.data.repository
 
+import com.kazahana.app.data.model.ChatDeclaration
 import com.kazahana.app.data.model.ConvoListResponse
 import com.kazahana.app.data.model.ConvoView
+import com.kazahana.app.data.model.DeclarationRecordResponse
 import com.kazahana.app.data.model.GetConvoResponse
 import com.kazahana.app.data.model.JoinLinkPreviewState
 import com.kazahana.app.data.model.JoinLinkPreviewsResponse
@@ -423,6 +425,53 @@ class ChatRepository(
             }
             val response = client.getWithProxy("chat.bsky.group.listJoinRequests", params)
             if (response.status.isSuccess()) Result.success(response.body())
+            else Result.failure(Exception(response.atprotoError()))
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    // --- Chat privacy declaration (Phase 4) ---
+    // chat.bsky.actor.declaration is a normal repo record (rkey "self") written directly
+    // to the PDS via com.atproto.repo.putRecord — no chat proxy header.
+
+    suspend fun getDeclaration(): Result<ChatDeclaration> {
+        return try {
+            val did = client.session?.did ?: return Result.success(ChatDeclaration())
+            val response = client.get(
+                "com.atproto.repo.getRecord",
+                mapOf(
+                    "repo" to did,
+                    "collection" to "chat.bsky.actor.declaration",
+                    "rkey" to "self",
+                ),
+            )
+            if (response.status.isSuccess()) {
+                Result.success(response.body<DeclarationRecordResponse>().value ?: ChatDeclaration())
+            } else {
+                // No declaration record yet → server defaults apply.
+                Result.success(ChatDeclaration())
+            }
+        } catch (_: Exception) {
+            Result.success(ChatDeclaration())
+        }
+    }
+
+    suspend fun putDeclaration(allowIncoming: String, allowGroupInvites: String): Result<Unit> {
+        return try {
+            val did = client.session?.did ?: return Result.failure(Exception("No session"))
+            val body = buildJsonObject {
+                put("repo", did)
+                put("collection", "chat.bsky.actor.declaration")
+                put("rkey", "self")
+                put("record", buildJsonObject {
+                    put("\$type", "chat.bsky.actor.declaration")
+                    put("allowIncoming", allowIncoming)
+                    put("allowGroupInvites", allowGroupInvites)
+                })
+            }
+            val response = client.post("com.atproto.repo.putRecord", body)
+            if (response.status.isSuccess()) Result.success(Unit)
             else Result.failure(Exception(response.atprotoError()))
         } catch (e: Exception) {
             Result.failure(e)

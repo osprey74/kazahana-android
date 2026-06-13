@@ -165,6 +165,11 @@ fun SettingsScreen(
 
             HorizontalDivider()
 
+            // ── Section: Chat (DM / group invite privacy) ──
+            ChatSettingsSection()
+
+            HorizontalDivider()
+
             // ── Section: Push Notifications ──
             SectionHeader(stringResource(R.string.settings_push_notifications))
 
@@ -1042,6 +1047,56 @@ private fun SectionHeader(title: String) {
         color = MaterialTheme.colorScheme.primary,
         modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
     )
+}
+
+@Composable
+private fun ChatSettingsSection(
+    viewModel: ChatSettingsViewModel = androidx.hilt.navigation.compose.hiltViewModel(),
+) {
+    val state by viewModel.uiState.collectAsState()
+    SectionHeader(stringResource(R.string.settings_chat))
+    ChatPolicyRow(
+        label = stringResource(R.string.settings_chat_allow_incoming),
+        selected = state.allowIncoming,
+        onSelect = { viewModel.setAllowIncoming(it) },
+    )
+    ChatPolicyRow(
+        label = stringResource(R.string.settings_chat_allow_group_invites),
+        selected = state.allowGroupInvites,
+        onSelect = { viewModel.setAllowGroupInvites(it) },
+    )
+}
+
+@Composable
+private fun ChatPolicyRow(
+    label: String,
+    selected: String,
+    onSelect: (String) -> Unit,
+) {
+    Text(
+        text = label,
+        style = MaterialTheme.typography.bodyLarge,
+        modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+    )
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 4.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        val options = listOf(
+            "all" to R.string.settings_chat_policy_all,
+            "following" to R.string.settings_chat_policy_following,
+            "none" to R.string.settings_chat_policy_none,
+        )
+        options.forEach { (value, labelRes) ->
+            FilterChip(
+                selected = selected == value,
+                onClick = { onSelect(value) },
+                label = { Text(stringResource(labelRes)) },
+            )
+        }
+    }
 }
 
 @Composable

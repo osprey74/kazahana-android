@@ -178,6 +178,18 @@ data class JoinLinkPreview(
     val joinRule: String? = null,
 )
 
+/** chat.bsky.actor.declaration record value — DM/group invite privacy (all|none|following). */
+@Serializable
+data class ChatDeclaration(
+    val allowIncoming: String? = null,
+    val allowGroupInvites: String? = null,
+)
+
+@Serializable
+data class DeclarationRecordResponse(
+    val value: ChatDeclaration? = null,
+)
+
 @Serializable
 data class MessageListResponse(
     val messages: List<ChatMessageOrDeleted> = emptyList(),
