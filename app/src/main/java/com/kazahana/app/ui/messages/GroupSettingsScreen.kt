@@ -36,6 +36,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -192,6 +193,46 @@ fun GroupSettingsScreen(
                                     Spacer(modifier = Modifier.width(4.dp))
                                     Text(stringResource(R.string.profile_qr_share))
                                 }
+                            }
+
+                            // Who can join + approval requirement (editable once a link exists)
+                            Spacer(modifier = Modifier.size(8.dp))
+                            HorizontalDivider()
+                            Text(
+                                text = stringResource(R.string.group_join_rule_label),
+                                style = MaterialTheme.typography.labelLarge,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                                modifier = Modifier.padding(top = 8.dp),
+                            )
+                            JoinRuleOption(
+                                label = stringResource(R.string.group_join_rule_anyone),
+                                selected = (link.joinRule ?: "anyone") == "anyone",
+                                enabled = !uiState.isWorking,
+                                onClick = { viewModel.setJoinRule("anyone") },
+                            )
+                            JoinRuleOption(
+                                label = stringResource(R.string.group_join_rule_followed),
+                                selected = link.joinRule == "followedByOwner",
+                                enabled = !uiState.isWorking,
+                                onClick = { viewModel.setJoinRule("followedByOwner") },
+                            )
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.group_require_approval),
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    modifier = Modifier.weight(1f),
+                                )
+                                Switch(
+                                    checked = link.requireApproval,
+                                    onCheckedChange = { viewModel.setRequireApproval(it) },
+                                    enabled = !uiState.isWorking,
+                                )
                             }
                         }
                         Row(
@@ -366,6 +407,25 @@ private fun SectionHeader(text: String) {
         color = MaterialTheme.colorScheme.primary,
         modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
     )
+}
+
+@Composable
+private fun JoinRuleOption(
+    label: String,
+    selected: Boolean,
+    enabled: Boolean,
+    onClick: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(enabled = enabled, onClick = onClick)
+            .padding(vertical = 2.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        RadioButton(selected = selected, onClick = onClick, enabled = enabled)
+        Text(text = label, style = MaterialTheme.typography.bodyMedium)
+    }
 }
 
 @Composable

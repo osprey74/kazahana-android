@@ -373,6 +373,18 @@ class ChatRepository(
             put("requireApproval", requireApproval)
         })
 
+    /** Update an existing link's join rule and/or approval requirement; omitted fields are left unchanged. */
+    suspend fun editJoinLink(
+        convoId: String,
+        joinRule: String? = null,
+        requireApproval: Boolean? = null,
+    ): Result<JoinLinkView?> =
+        joinLinkResult("chat.bsky.group.editJoinLink", buildJsonObject {
+            put("convoId", convoId)
+            joinRule?.let { put("joinRule", it) }
+            requireApproval?.let { put("requireApproval", it) }
+        })
+
     suspend fun enableJoinLink(convoId: String): Result<JoinLinkView?> =
         joinLinkResult("chat.bsky.group.enableJoinLink", buildJsonObject { put("convoId", convoId) })
 

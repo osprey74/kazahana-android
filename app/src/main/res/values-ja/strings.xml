@@ -180,6 +180,10 @@
     <string name="group_role_owner">オーナー</string>
     <string name="group_invite_link">招待リンク</string>
     <string name="group_invite_link_enabled">招待リンクを有効にする</string>
+    <string name="group_join_rule_label">誰が参加できるか</string>
+    <string name="group_join_rule_anyone">リンクを持つ全員</string>
+    <string name="group_join_rule_followed">オーナーがフォローしている人のみ</string>
+    <string name="group_require_approval">参加に承認を必須にする</string>
     <string name="group_lock">グループをロック</string>
     <string name="group_mute">ミュート</string>
     <string name="group_leave">グループを退出</string>

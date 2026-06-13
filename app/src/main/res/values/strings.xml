@@ -202,6 +202,10 @@
     <string name="group_role_owner">Owner</string>
     <string name="group_invite_link">Invite link</string>
     <string name="group_invite_link_enabled">Enable invite link</string>
+    <string name="group_join_rule_label">Who can join</string>
+    <string name="group_join_rule_anyone">Anyone with the link</string>
+    <string name="group_join_rule_followed">Only people the owner follows</string>
+    <string name="group_require_approval">Require owner approval to join</string>
     <string name="group_lock">Lock group</string>
     <string name="group_mute">Mute</string>
     <string name="group_leave">Leave group</string>

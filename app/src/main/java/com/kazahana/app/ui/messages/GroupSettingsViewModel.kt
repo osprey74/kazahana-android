@@ -105,6 +105,18 @@ class GroupSettingsViewModel @Inject constructor(
         }
     }
 
+    /** Change who can join via the existing link (anyone | followedByOwner). */
+    fun setJoinRule(rule: String) {
+        if (_uiState.value.convo?.groupInfo?.joinLink?.joinRule == rule) return
+        runAction { chatRepository.editJoinLink(convoId, joinRule = rule) }
+    }
+
+    /** Toggle whether the owner must approve people joining via the link. */
+    fun setRequireApproval(require: Boolean) {
+        if (_uiState.value.convo?.groupInfo?.joinLink?.requireApproval == require) return
+        runAction { chatRepository.editJoinLink(convoId, requireApproval = require) }
+    }
+
     fun approve(did: String) = runAction { chatRepository.approveJoinRequest(convoId, did) }
 
     fun reject(did: String) = runAction { chatRepository.rejectJoinRequest(convoId, did) }
