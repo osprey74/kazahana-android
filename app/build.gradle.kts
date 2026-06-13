@@ -135,6 +135,9 @@ dependencies {
     // Location (FusedLocationProvider) — Evacuation Assist
     implementation(libs.play.services.location)
 
+    // QR code generation (offline, no ML Kit) — Profile QR sheet
+    implementation(libs.zxing.core)
+
     // Testing
     testImplementation(libs.junit)
 }

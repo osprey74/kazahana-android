@@ -3,6 +3,7 @@ package com.kazahana.app.data.model
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.decodeFromJsonElement
 
 /**
  * AT Protocol feed/post models.
@@ -123,11 +124,30 @@ data class ContentLabel(
     val cts: String? = null,
 )
 
+/**
+ * app.bsky.feed.defs#replyRef — `root` and `parent` are unions of
+ * postView | notFoundPost | blockedPost. They are kept as raw [JsonElement]
+ * because notFoundPost/blockedPost lack a full post (e.g. blockedPost's author
+ * is a `blockedAuthor` with no `handle`), which would otherwise fail strict
+ * deserialization and abort parsing of the entire feed response.
+ */
 @Serializable
 data class ReplyRef(
-    val root: PostView? = null,
-    val parent: PostView? = null,
-)
+    val root: JsonElement? = null,
+    val parent: JsonElement? = null,
+) {
+    /** Reply root as a full [PostView], or null when it is a notFoundPost / blockedPost. */
+    val rootPost: PostView? get() = root?.toPostViewOrNull()
+
+    /** Reply parent as a full [PostView], or null when it is a notFoundPost / blockedPost. */
+    val parentPost: PostView? get() = parent?.toPostViewOrNull()
+}
+
+private fun JsonElement.toPostViewOrNull(): PostView? = try {
+    com.kazahana.app.data.AppJson.decodeFromJsonElement<PostView>(this)
+} catch (_: Exception) {
+    null
+}
 
 @Serializable
 data class FeedReason(

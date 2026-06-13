@@ -221,6 +221,17 @@
     <string name="profile_blocked_notice">このユーザーをブロックしています</string>
     <string name="profile_muted_notice">このユーザーをミュートしています</string>
     <string name="profile_mention">メンション</string>
+
+    <!-- Profile QR code -->
+    <string name="profile_qr_title">友達を招待</string>
+    <string name="profile_qr_subtitle">QRコードをシェアしてフォロワーを増やしましょう</string>
+    <string name="profile_qr_copy">リンクをコピー</string>
+    <string name="profile_qr_share">共有</string>
+    <string name="profile_qr_save">QRコードを保存</string>
+    <string name="profile_qr_copied_toast">リンクをコピーしました</string>
+    <string name="profile_qr_saved_toast">QRコードを保存しました</string>
+    <string name="profile_qr_save_error_toast">保存に失敗しました</string>
+
     <!-- Bot badge -->
     <string name="bot_label">このアカウントは自動化されています</string>
 

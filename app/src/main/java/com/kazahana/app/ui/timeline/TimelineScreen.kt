@@ -232,7 +232,7 @@ fun TimelineScreen(
                                 onClick = { uri -> onPostClick(uri) },
                                 onAuthorClick = { did -> onProfileClick(did) },
                                 onReply = { uri, cid ->
-                                    val replyRoot = feedPost.reply?.root
+                                    val replyRoot = feedPost.reply?.rootPost
                                     val rootUri = replyRoot?.uri ?: uri
                                     val rootCid = replyRoot?.cid ?: cid
                                     onReply(

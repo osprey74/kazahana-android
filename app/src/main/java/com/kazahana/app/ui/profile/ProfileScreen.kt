@@ -33,6 +33,7 @@ import androidx.compose.material.icons.outlined.Block
 import androidx.compose.material.icons.outlined.Flag
 import androidx.compose.material.icons.outlined.List
 import androidx.compose.material.icons.outlined.MoreVert
+import androidx.compose.material.icons.outlined.QrCode2
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.VolumeOff
 import androidx.compose.material.icons.outlined.VolumeUp
@@ -118,6 +119,9 @@ fun ProfileScreen(
     var reportTarget by remember { mutableStateOf<Any?>(null) } // Pair<uri,cid> for post, "user" for profile user
     var isReportSubmitting by remember { mutableStateOf(false) }
 
+    // Profile QR sheet (self profile only)
+    var showQrSheet by remember { mutableStateOf(false) }
+
     // Mute/Block confirmation dialogs
     var muteConfirmTarget by remember { mutableStateOf<Pair<String, String>?>(null) }
     var blockConfirmTarget by remember { mutableStateOf<Pair<String, String>?>(null) }
@@ -186,6 +190,7 @@ fun ProfileScreen(
                             onFollowToggle = { viewModel.toggleFollow() },
                             onNavigateBack = onNavigateBack,
                             onSettingsClick = if (viewModel.isSelf) onSettingsClick else null,
+                            onShowQr = if (viewModel.isSelf) { { showQrSheet = true } } else null,
                             onMuteToggle = if (!viewModel.isSelf) { { viewModel.toggleMute() } } else null,
                             onBlockToggle = if (!viewModel.isSelf) { { viewModel.toggleBlock() } } else null,
                             onReport = if (!viewModel.isSelf) { { reportTarget = "user" } } else null,
@@ -343,7 +348,7 @@ fun ProfileScreen(
                                     onClick = { uri -> onPostClick(uri) },
                                     onAuthorClick = { did -> onProfileClick(did) },
                                     onReply = { uri, cid ->
-                                        val replyRoot = feedPost.reply?.root
+                                        val replyRoot = feedPost.reply?.rootPost
                                         val rootUri = replyRoot?.uri ?: uri
                                         val rootCid = replyRoot?.cid ?: cid
                                         onReply(
@@ -513,6 +518,17 @@ fun ProfileScreen(
                 }
                 Spacer(modifier = Modifier.height(16.dp))
             }
+        }
+    }
+
+    // Profile QR sheet
+    if (showQrSheet) {
+        uiState.profile?.let { profile ->
+            ProfileQRSheet(
+                handle = profile.handle,
+                displayName = profile.displayName,
+                onDismiss = { showQrSheet = false },
+            )
         }
     }
 
@@ -703,6 +719,7 @@ private fun ProfileHeader(
     onFollowToggle: () -> Unit,
     onNavigateBack: (() -> Unit)?,
     onSettingsClick: (() -> Unit)? = null,
+    onShowQr: (() -> Unit)? = null,
     onMuteToggle: (() -> Unit)? = null,
     onBlockToggle: (() -> Unit)? = null,
     onReport: (() -> Unit)? = null,
@@ -754,15 +771,27 @@ private fun ProfileHeader(
                     .clip(CircleShape),
             )
 
-            if (onSettingsClick != null) {
-                IconButton(
-                    onClick = onSettingsClick,
+            if (isSelf) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.padding(top = 8.dp),
                 ) {
-                    Icon(
-                        Icons.Outlined.Settings,
-                        contentDescription = stringResource(R.string.common_settings),
-                    )
+                    if (onShowQr != null) {
+                        IconButton(onClick = onShowQr) {
+                            Icon(
+                                Icons.Outlined.QrCode2,
+                                contentDescription = stringResource(R.string.profile_qr_title),
+                            )
+                        }
+                    }
+                    if (onSettingsClick != null) {
+                        IconButton(onClick = onSettingsClick) {
+                            Icon(
+                                Icons.Outlined.Settings,
+                                contentDescription = stringResource(R.string.common_settings),
+                            )
+                        }
+                    }
                 }
             }
 

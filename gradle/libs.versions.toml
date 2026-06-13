@@ -41,6 +41,9 @@ media3 = "1.4.1"
 # Location
 playServicesLocation = "21.3.0"
 
+# QR code
+zxing = "3.5.3"
+
 # Testing
 junit = "4.13.2"
 
@@ -100,6 +103,9 @@ media3-ui = { group = "androidx.media3", name = "media3-ui", version.ref = "medi
 
 # Location
 play-services-location = { group = "com.google.android.gms", name = "play-services-location", version.ref = "playServicesLocation" }
+
+# QR code
+zxing-core = { group = "com.google.zxing", name = "core", version.ref = "zxing" }
 
 # Testing
 junit = { group = "junit", name = "junit", version.ref = "junit" }

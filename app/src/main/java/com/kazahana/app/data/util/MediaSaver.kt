@@ -2,6 +2,7 @@ package com.kazahana.app.data.util
 
 import android.content.ContentValues
 import android.content.Context
+import android.graphics.Bitmap
 import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
@@ -75,6 +76,46 @@ object MediaSaver {
                 context.contentResolver.openOutputStream(uri)?.use { os ->
                     os.write(bytes)
                 }
+
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    contentValues.clear()
+                    contentValues.put(MediaStore.Images.Media.IS_PENDING, 0)
+                    context.contentResolver.update(uri, contentValues, null, null)
+                }
+
+                true
+            } catch (_: Exception) {
+                false
+            }
+        }
+    }
+
+    /**
+     * Save an in-memory [Bitmap] to the device gallery as a PNG.
+     * Used for locally-rendered images such as the profile QR card.
+     */
+    suspend fun saveBitmap(context: Context, bitmap: Bitmap): Boolean {
+        return withContext(Dispatchers.IO) {
+            try {
+                val fileName = "kazahana_qr_${System.currentTimeMillis()}.png"
+
+                val contentValues = ContentValues().apply {
+                    put(MediaStore.Images.Media.DISPLAY_NAME, fileName)
+                    put(MediaStore.Images.Media.MIME_TYPE, "image/png")
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                        put(MediaStore.Images.Media.RELATIVE_PATH, Environment.DIRECTORY_PICTURES + "/kazahana")
+                        put(MediaStore.Images.Media.IS_PENDING, 1)
+                    }
+                }
+
+                val uri = context.contentResolver.insert(
+                    MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+                    contentValues,
+                ) ?: return@withContext false
+
+                context.contentResolver.openOutputStream(uri)?.use { os ->
+                    bitmap.compress(Bitmap.CompressFormat.PNG, 100, os)
+                } ?: return@withContext false
 
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                     contentValues.clear()

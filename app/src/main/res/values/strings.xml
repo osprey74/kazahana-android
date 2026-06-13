@@ -256,6 +256,16 @@
     <string name="profile_muted_notice">You have muted this user</string>
     <string name="profile_mention">Mention</string>
 
+    <!-- Profile QR code -->
+    <string name="profile_qr_title">Invite Friends</string>
+    <string name="profile_qr_subtitle">Share your QR code to gain followers</string>
+    <string name="profile_qr_copy">Copy link</string>
+    <string name="profile_qr_share">Share</string>
+    <string name="profile_qr_save">Save QR code</string>
+    <string name="profile_qr_copied_toast">Link copied</string>
+    <string name="profile_qr_saved_toast">QR code saved</string>
+    <string name="profile_qr_save_error_toast">Failed to save</string>
+
     <!-- Bot badge -->
     <string name="bot_label">This account is automated</string>
 
