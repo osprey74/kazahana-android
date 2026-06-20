@@ -5,6 +5,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.jsonPrimitive
@@ -103,6 +104,9 @@ data class ChatMessageOrDeleted(
     val embed: JsonElement? = null,
     // systemMessageView.data — union of the systemMessageData* types.
     val data: JsonElement? = null,
+    // messageView.replyTo (Bluesky v1.125) — the replied-to message, a union of
+    // #messageView | #deletedMessageView. Raw so unknown future members don't break parsing.
+    val replyTo: JsonElement? = null,
 ) {
     val isDeleted: Boolean get() = type?.endsWith("#deletedMessageView") == true
     val isSystem: Boolean get() = type?.endsWith("#systemMessageView") == true || data != null
@@ -110,6 +114,23 @@ data class ChatMessageOrDeleted(
     /** Decoded system message payload (member join/leave, lock, edit group, etc.). */
     val systemData: SystemMessageData?
         get() = data?.let { runCatching { AppJson.decodeFromJsonElement<SystemMessageData>(it) }.getOrNull() }
+
+    /**
+     * The message this one is a reply to (Bluesky v1.125 DM/group replies), or null.
+     * Resolves both `#messageView` (still present) and `#deletedMessageView`
+     * (its text is dropped → [ChatReplyRef.isDeleted] is true).
+     */
+    val replyToRef: ChatReplyRef?
+        get() {
+            val obj = replyTo as? JsonObject ?: return null
+            val deleted = replyTo.typeName?.endsWith("#deletedMessageView") == true
+            return ChatReplyRef(
+                id = (obj["id"] as? JsonPrimitive)?.contentOrNull,
+                text = if (deleted) null else (obj["text"] as? JsonPrimitive)?.contentOrNull,
+                senderDid = (obj["sender"] as? JsonObject)?.get("did")?.let { (it as? JsonPrimitive)?.contentOrNull },
+                isDeleted = deleted,
+            )
+        }
 
     /** Decoded join-link embed when the message carries one, else null. */
     val joinLinkEmbed: JoinLinkEmbedView?
@@ -120,6 +141,18 @@ data class ChatMessageOrDeleted(
 @Serializable
 data class ChatSender(
     val did: String,
+)
+
+/**
+ * Lightweight view of the message a chat message replies to (Bluesky v1.125),
+ * derived from [ChatMessageOrDeleted.replyTo].
+ */
+data class ChatReplyRef(
+    val id: String?,
+    /** Replied-to message text, or null when that message was deleted. */
+    val text: String?,
+    val senderDid: String?,
+    val isDeleted: Boolean,
 )
 
 /**
@@ -209,6 +242,8 @@ data class SendMessageResponse(
     val sender: ChatSender? = null,
     val sentAt: String? = null,
     val reactions: List<ChatReaction>? = null,
+    // Echoed when the sent message was a reply (union of #messageView | #deletedMessageView).
+    val replyTo: JsonElement? = null,
 )
 
 @Serializable

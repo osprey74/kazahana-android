@@ -4,9 +4,10 @@ import io.ktor.client.HttpClient
 import io.ktor.client.engine.okhttp.OkHttp
 import io.ktor.client.request.get
 import io.ktor.client.request.header
-import io.ktor.client.statement.bodyAsText
 import io.ktor.client.statement.readBytes
+import io.ktor.http.HttpHeaders
 import io.ktor.http.isSuccess
+import java.nio.charset.Charset
 
 /**
  * OGP metadata extracted from a web page.
@@ -52,10 +53,35 @@ object OgpService {
                 header("Accept", "text/html")
             }
             if (!response.status.isSuccess()) return null
-            response.bodyAsText()
+            val bytes = response.readBytes()
+            val charset = detectCharset(bytes, response.headers[HttpHeaders.ContentType])
+            String(bytes, charset)
         } catch (_: Exception) {
             null
         }
+    }
+
+    private val HEADER_CHARSET_REGEX = Regex("""charset=([^\s;"']+)""", RegexOption.IGNORE_CASE)
+    private val META_CHARSET_REGEX =
+        Regex("""<meta[^>]+charset\s*=\s*["']?([^"'>\s;]+)""", RegexOption.IGNORE_CASE)
+    private val META_HTTP_EQUIV_CHARSET_REGEX =
+        Regex("""<meta[^>]+http-equiv\s*=\s*["']?content-type[^>]*charset=([^"'>\s;]+)""", RegexOption.IGNORE_CASE)
+
+    /**
+     * Detect the character encoding of an HTML byte stream following the HTML
+     * Living Standard precedence: HTTP `Content-Type` charset, then a `<meta>`
+     * charset within the first ~4096 bytes, falling back to UTF-8. This prevents
+     * mojibake for Shift_JIS / EUC-JP / ISO-2022-JP pages whose OGP titles would
+     * otherwise be persisted corrupted into the post's external embed record.
+     */
+    private fun detectCharset(bytes: ByteArray, contentType: String?): Charset {
+        val headerCharset = contentType?.let { HEADER_CHARSET_REGEX.find(it)?.groupValues?.get(1) }
+        val head = String(bytes, 0, minOf(4096, bytes.size), Charsets.US_ASCII)
+        val metaCharset = META_CHARSET_REGEX.find(head)?.groupValues?.get(1)
+            ?: META_HTTP_EQUIV_CHARSET_REGEX.find(head)?.groupValues?.get(1)
+        val name = headerCharset ?: metaCharset
+        return runCatching { if (name != null) Charset.forName(name) else Charsets.UTF_8 }
+            .getOrDefault(Charsets.UTF_8)
     }
 
     /** Parse OGP metadata from already-fetched [html]. Returns null on failure. */

@@ -19,6 +19,7 @@
     <string name="auth_error_network">Network error. Please try again.</string>
     <string name="auth_error_rate_limit">Too many attempts. Please wait.</string>
     <string name="auth_account_picker_title">Select Account</string>
+    <string name="auth_switching_account">Switching account…</string>
     <string name="auth_account_picker_add">Add Another Account</string>
     <string name="auth_account_picker_remove">Remove Account</string>
     <string name="auth_account_picker_remove_title">Remove this account?</string>
@@ -70,6 +71,7 @@
 
     <!-- Post -->
     <string name="post_reply">Reply</string>
+    <string name="post_reply_to">Replying to @%1$s</string>
     <string name="post_pinned">Pinned post</string>
     <string name="post_translate">Translate</string>
     <string name="post_hide">Hide this post</string>
@@ -153,6 +155,11 @@
     <string name="messages_no_messages">No messages yet</string>
     <string name="messages_deleted">Message deleted</string>
     <string name="messages_unknown">Unknown user</string>
+    <string name="messages_reply">Reply</string>
+    <string name="messages_replying_to">Replying to</string>
+    <string name="messages_replying_to_name">Replying to %1$s</string>
+    <string name="messages_reply_cancel">Cancel reply</string>
+    <string name="messages_reply_target_not_found">The message you replied to was not found (it may have been deleted)</string>
     <string name="messages_load_failed">Failed to load messages</string>
     <string name="messages_delete_confirm">Delete message</string>
     <string name="messages_new_conversation">New conversation</string>

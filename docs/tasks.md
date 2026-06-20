@@ -9,6 +9,7 @@
 - Phase 5 (BSAF・高度な機能): 4/4 ✅
 - Phase 6 (iOS/Desktop パリティ): 20/20 ✅
 - Bluesky v1.123 対応 (gallery / 動画300MB / 投稿進捗UI): 12/15 ✅（残: getUploadLimits / Photo Picker 順序検証 / メモリ検証）
+- 不具合修正 + DM返信機能 (2026-06-20): OGP文字化け / 引用投稿表示 / 返信先表示 / DM返信(v1.125) / アカウント切替UI / キーボード自動クローズ ✅
 
 ## Phase 1: 基盤構築
 
@@ -165,3 +166,31 @@
 - [ ] **[A-G13] メモリ使用量検証** — 未検証（follow-up）。10 枚 ×2MB 同時保持で OOM が起きないか、`inSampleSize` 段階デコードと並行処理数の制御を検証
 - [x] **[A-G14] gallery embed モデル定義の追加** — `Post.kt`：`PostEmbedView.items: List<GalleryViewImage>` + 算出 `displayImages`、`GalleryViewImage`（`thumbnail`/`fullsize`/`alt`/`aspectRatio` + `toImageView()`）を追加。`thumbnail` フィールド差分・union 安全性に対応済
 - [x] **[A-G15] 投稿進捗インジケーター（デスクトップ版パリティ）** — 投稿中に段階表示：画像カウンタ＋進捗バー（`画像をアップロード中 (n/total)`）→ 動画アップロード `%` → `変換処理中…` → `投稿を準備中…` → `投稿中…`。`ComposeUiState.imageProgress`/`videoProgress`、`PostRepository.uploadVideo(onProgress)` + Ktor `onUpload` バイト進捗、`ComposeScreen` の `LinearProgressIndicator`。全11ロケールに文字列追加（desktop 訳流用）
+
+## 不具合修正 + DM返信機能 (HANDOFF_kazahana-bugs-2026-06-20.md ほか) — 2026-06-20
+
+> 起票元: HANDOFF_kazahana-bugs-2026-06-20.md（OGP 文字化け / 引用投稿 / 返信先表示）+ ユーザ報告（DM 返信機能・アカウント切替 UI・キーボード）
+
+### 不具合修正
+
+- [x] **OGP 文字化け** — `OgpService.fetchHtml` を `bodyAsText()`（UTF-8 固定）から `readBytes()` + 文字コード自動判定に変更。HTTP `Content-Type` charset → 先頭4096バイトの `<meta charset>`/`http-equiv` → UTF-8 の順（HTML Living Standard 準拠）。Shift_JIS / EUC-JP 等の文字化けを解消
+- [x] **引用投稿が表示されない** — `PostEmbedView.quotedRecord` を追加し、`record#view`（1段）/`recordWithMedia#view`（2段）のネスト差を構造ベースで吸収。`PostCard` の引用抽出を差し替え（handoff の「media.record」説は誤りで、実際は通常引用が 2 段固定参照で落ちていた）
+- [x] **タイムラインで返信先が不明** — `PostCard` の返信インジケータを `feedPost.reply.parentPost?.author?.handle` で「@handle への返信」表示に変更（取得不可時は「返信」にフォールバック）。文字列 `post_reply_to` を EN/JA 追加
+
+### DM / グループチャット 返信機能（Bluesky v1.125 互換）
+
+- [x] **送信** — `ChatRepository.sendMessage(convoId, text, replyToMessageId?)`。`message.replyTo = { messageId }`（`chat.bsky.convo.defs#replyRef`）。失敗時はエラーコード名を surface
+- [x] **受信モデル** — `ChatMessageOrDeleted.replyTo`（union `#messageView`/`#deletedMessageView`）+ `replyToRef`（`ChatReplyRef`）。`SendMessageResponse.replyTo` 追加
+- [x] **ViewModel** — `ChatReplyTarget` / `replyTo` / `sendError` state、`startReply`/`cancelReply`/`consumeSendError`。楽観的バブルはサーバ反響 or ローカル構築 JSON で引用即表示。`ReplyTargetNotFound` で返信解除
+- [x] **UI** — 長押しピッカーに返信アイコン、コンポーザ上部の「返信先」バー（キャンセル可）、受信バブル内の引用プレビュー。文字列 `messages_reply*` を EN/JA 追加
+- [x] **引用タップでスクロール + 青フラッシュ** — `animateScrollToItem` + `Animatable`（0→1→0、約0.9秒、`Color(0xFF3884FF)`）でデスクトップ `kazahana-message-flash` 相当
+- [x] **DM 送信後キーボード自動クローズ** — 送信時に `SoftwareKeyboardController.hide()` + `FocusManager.clearFocus()`。`imePadding` による画面ずれを解消
+
+### アカウント切り替え UI
+
+- [x] **切り替え中ローディング** — `AuthViewModel.isSwitchingAccount` + `switchAccount` の再入ガード/フラグ管理。`AccountPickerScreen` にフルスクリーンオーバーレイ（暗幕 + スピナー + 「アカウントを切り替え中…」、タップ無効化）。iOS `auth.switchingAccount` 相当の文字列を EN/JA 追加
+
+### follow-up（任意・未対応）
+
+- [ ] 引用投稿のうち feed/list/starterPack 引用は author 不在で未表示（通常引用は対応済）
+- [ ] 引用先が削除済み/ブロックの場合のプレースホルダ表示（デスクトップは「削除されました」表示あり）

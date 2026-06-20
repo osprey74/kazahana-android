@@ -1,6 +1,8 @@
 package com.kazahana.app.ui.messages
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -12,13 +14,16 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
@@ -29,6 +34,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Send
+import androidx.compose.material.icons.automirrored.outlined.Reply
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -46,21 +53,33 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.focus.FocusManager
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.SoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import android.widget.Toast
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.kazahana.app.R
 import com.kazahana.app.data.model.ChatMember
 import com.kazahana.app.data.model.ChatMessageOrDeleted
 import com.kazahana.app.data.model.ChatReaction
+import com.kazahana.app.data.model.ChatReplyRef
 import com.kazahana.app.ui.common.relativeTime
+import kotlinx.coroutines.launch
 
 private val QUICK_REACTIONS = listOf("❤️", "👍", "😂", "😮", "😢", "🎉")
 private const val DELETED_MESSAGE_TYPE = "chat.bsky.convo.defs#deletedMessageView"
@@ -78,6 +97,29 @@ fun ChatScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val listState = rememberLazyListState()
+    val coroutineScope = rememberCoroutineScope()
+    val context = LocalContext.current
+    val keyboardController = LocalSoftwareKeyboardController.current
+    val focusManager = LocalFocusManager.current
+
+    // Send the message and dismiss the keyboard so the screen returns to its
+    // resting position instead of staying pushed up by the IME.
+    val sendMessage: () -> Unit = {
+        viewModel.sendMessage()
+        dismissKeyboard(keyboardController, focusManager)
+    }
+
+    // Surface reply-specific send failures (e.g. the target message was deleted).
+    LaunchedEffect(uiState.sendError) {
+        if (uiState.sendError == "ReplyTargetNotFound") {
+            Toast.makeText(
+                context,
+                context.getString(R.string.messages_reply_target_not_found),
+                Toast.LENGTH_LONG,
+            ).show()
+        }
+        if (uiState.sendError != null) viewModel.consumeSendError()
+    }
 
     val group = uiState.convo?.groupInfo
     val isLocked = group?.isLocked == true
@@ -86,6 +128,8 @@ fun ChatScreen(
         ?: uiState.convo?.members?.firstOrNull()
 
     var reactionTargetId by remember { mutableStateOf<String?>(null) }
+    // Message to briefly flash blue after jumping to it from a reply preview.
+    var flashMessageId by remember { mutableStateOf<String?>(null) }
 
     val shouldLoadMore by remember {
         derivedStateOf {
@@ -190,12 +234,38 @@ fun ChatScreen(
                                 SystemMessageRow(message = message, members = members)
                                 return@items
                             }
+                            val replyRef = message.replyToRef
+                            val replyToSenderName = replyRef?.senderDid?.let { did ->
+                                members.firstOrNull { it.did == did }?.let { it.displayName ?: it.handle }
+                            }
                             MessageBubble(
                                 message = message,
                                 isMine = message.sender?.did == myDid,
                                 myDid = myDid,
                                 onJoinLink = onJoinLink,
                                 showReactionPicker = reactionTargetId == message.id,
+                                replyRef = replyRef,
+                                replyToSenderName = replyToSenderName,
+                                onReply = {
+                                    message.id?.let { id ->
+                                        viewModel.startReply(id, message.text, message.sender?.did)
+                                    }
+                                    reactionTargetId = null
+                                },
+                                isFlashing = flashMessageId == message.id,
+                                onFlashComplete = {
+                                    if (flashMessageId == message.id) flashMessageId = null
+                                },
+                                onReplyPreviewClick = {
+                                    val targetId = replyRef?.id
+                                    if (targetId != null) {
+                                        val idx = uiState.messages.indexOfFirst { it.id == targetId }
+                                        if (idx >= 0) {
+                                            coroutineScope.launch { listState.animateScrollToItem(idx) }
+                                            flashMessageId = targetId
+                                        }
+                                    }
+                                },
                                 onLongPress = {
                                     val isDeleted = message.type?.contains("deletedMessage") == true
                                     if (!isDeleted && message.id != null) {
@@ -240,6 +310,61 @@ fun ChatScreen(
                     textAlign = androidx.compose.ui.text.style.TextAlign.Center,
                 )
             } else {
+            // "Replying to …" indicator above the composer.
+            val replyTarget = uiState.replyTo
+            if (replyTarget != null) {
+                val replyName = members.firstOrNull { it.did == replyTarget.senderDid }
+                    ?.let { it.displayName ?: it.handle }
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 12.dp, vertical = 4.dp)
+                        .height(IntrinsicSize.Min),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .width(3.dp)
+                            .fillMaxHeight()
+                            .clip(RoundedCornerShape(2.dp))
+                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.6f)),
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = if (replyName != null) {
+                                stringResource(R.string.messages_replying_to_name, replyName)
+                            } else {
+                                stringResource(R.string.messages_replying_to)
+                            },
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.primary,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                        Text(
+                            text = if (replyTarget.isDeleted) {
+                                stringResource(R.string.messages_deleted)
+                            } else {
+                                replyTarget.text
+                            },
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                            fontStyle = if (replyTarget.isDeleted) FontStyle.Italic else FontStyle.Normal,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                    IconButton(onClick = { viewModel.cancelReply() }) {
+                        Icon(
+                            Icons.Default.Close,
+                            contentDescription = stringResource(R.string.messages_reply_cancel),
+                            modifier = Modifier.size(20.dp),
+                            tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                        )
+                    }
+                }
+            }
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -256,7 +381,7 @@ fun ChatScreen(
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 IconButton(
-                    onClick = { viewModel.sendMessage() },
+                    onClick = sendMessage,
                     enabled = uiState.messageText.isNotBlank() && !uiState.isSending,
                 ) {
                     if (uiState.isSending) {
@@ -274,6 +399,15 @@ fun ChatScreen(
             }
         }
     }
+}
+
+/** Hide the soft keyboard and drop text-field focus (used after sending a message). */
+private fun dismissKeyboard(
+    keyboardController: SoftwareKeyboardController?,
+    focusManager: FocusManager,
+) {
+    keyboardController?.hide()
+    focusManager.clearFocus()
 }
 
 @Composable
@@ -305,6 +439,12 @@ private fun MessageBubble(
     myDid: String,
     onJoinLink: (String) -> Unit = {},
     showReactionPicker: Boolean = false,
+    replyRef: ChatReplyRef? = null,
+    replyToSenderName: String? = null,
+    isFlashing: Boolean = false,
+    onFlashComplete: () -> Unit = {},
+    onReply: () -> Unit = {},
+    onReplyPreviewClick: () -> Unit = {},
     onLongPress: () -> Unit = {},
     onReaction: (String) -> Unit = {},
     onReactionBadgeTap: (String) -> Unit = {},
@@ -317,6 +457,19 @@ private fun MessageBubble(
     val isDeleted = message.type?.contains("deletedMessage") == true
     val screenWidth = LocalConfiguration.current.screenWidthDp.dp
     val reactions = message.reactions ?: emptyList()
+
+    // Blue highlight flash when this message is jumped to from a reply preview
+    // (mirrors the desktop `kazahana-message-flash` ~0.9s pulse).
+    val flash = remember { Animatable(0f) }
+    LaunchedEffect(isFlashing) {
+        if (isFlashing) {
+            flash.snapTo(0f)
+            flash.animateTo(1f, animationSpec = tween(220))
+            flash.animateTo(0f, animationSpec = tween(680))
+            onFlashComplete()
+        }
+    }
+    val flashColor = Color(0xFF3884FF).copy(alpha = flash.value * 0.5f)
 
     Column(
         modifier = Modifier
@@ -339,7 +492,18 @@ private fun MessageBubble(
                 Row(
                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                     horizontalArrangement = Arrangement.spacedBy(2.dp),
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Outlined.Reply,
+                        contentDescription = stringResource(R.string.messages_reply),
+                        tint = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier
+                            .clip(CircleShape)
+                            .clickable { onReply() }
+                            .padding(horizontal = 6.dp, vertical = 4.dp)
+                            .size(24.dp),
+                    )
                     QUICK_REACTIONS.forEach { emoji ->
                         val alreadyReacted = reactions.any { it.value == emoji && it.sender.did == myDid }
                         Text(
@@ -386,6 +550,8 @@ private fun MessageBubble(
                     if (isMine) MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
                     else MaterialTheme.colorScheme.surfaceVariant
                 )
+                // Flash overlay drawn over the resting bubble color.
+                .background(flashColor)
                 .combinedClickable(
                     onClick = {
                         if (showReactionPicker) onDismissReactions()
@@ -394,6 +560,49 @@ private fun MessageBubble(
                 )
                 .padding(horizontal = 12.dp, vertical = 8.dp),
         ) {
+            // Replied-to message preview (Bluesky v1.125) — tap to jump to the original.
+            if (replyRef != null) {
+                Row(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(6.dp))
+                        .clickable { onReplyPreviewClick() }
+                        .padding(bottom = 4.dp)
+                        .height(IntrinsicSize.Min),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .width(3.dp)
+                            .fillMaxHeight()
+                            .clip(RoundedCornerShape(2.dp))
+                            .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)),
+                    )
+                    Column {
+                        if (replyToSenderName != null) {
+                            Text(
+                                text = replyToSenderName,
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        }
+                        Text(
+                            text = if (replyRef.isDeleted) {
+                                stringResource(R.string.messages_deleted)
+                            } else {
+                                replyRef.text ?: ""
+                            },
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                            fontStyle = if (replyRef.isDeleted) FontStyle.Italic else FontStyle.Normal,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                }
+            }
             if (isDeleted) {
                 Text(
                     text = stringResource(R.string.messages_deleted),

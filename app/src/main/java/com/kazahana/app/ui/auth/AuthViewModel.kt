@@ -57,6 +57,10 @@ class AuthViewModel @Inject constructor(
     private val _showAddAccountLogin = MutableStateFlow(false)
     val showAddAccountLogin: StateFlow<Boolean> = _showAddAccountLogin.asStateFlow()
 
+    /** True while an account switch is in progress — drives the picker's loading overlay. */
+    private val _isSwitchingAccount = MutableStateFlow(false)
+    val isSwitchingAccount: StateFlow<Boolean> = _isSwitchingAccount.asStateFlow()
+
     init {
         refreshAccountList()
         val accounts = _savedAccounts.value
@@ -135,23 +139,30 @@ class AuthViewModel @Inject constructor(
 
     /** Switch to a different saved account. */
     fun switchAccount(session: Session) {
+        if (_isSwitchingAccount.value) return
+        // Set synchronously so the picker's loading overlay appears immediately on tap.
+        _isSwitchingAccount.value = true
         viewModelScope.launch {
-            // 1. Persist active DID first (race condition prevention — see iOS handoff doc)
-            sessionStore.activeAccountDID = session.did
-            // 2. Update client session
-            client.updateSession(session)
-            // 3. Resolve PDS for the new account
-            resolvePds(session.did)
-            // 4. Update UI state
-            _activeAccountDID.value = session.did
-            refreshAccountList()
-            _isLoggedIn.value = true
-            // 5. Silent token refresh
-            viewModelScope.launch {
-                client.refreshToken()
+            try {
+                // 1. Persist active DID first (race condition prevention — see iOS handoff doc)
+                sessionStore.activeAccountDID = session.did
+                // 2. Update client session
+                client.updateSession(session)
+                // 3. Resolve PDS for the new account
+                resolvePds(session.did)
+                // 4. Update UI state
+                _activeAccountDID.value = session.did
                 refreshAccountList()
+                _isLoggedIn.value = true
+                // 5. Silent token refresh
+                viewModelScope.launch {
+                    client.refreshToken()
+                    refreshAccountList()
+                }
+                loadPostLanguages()
+            } finally {
+                _isSwitchingAccount.value = false
             }
-            loadPostLanguages()
         }
     }
 

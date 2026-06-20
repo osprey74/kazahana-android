@@ -15,7 +15,18 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import javax.inject.Inject
+
+/** The message the composer is currently replying to (Bluesky v1.125 DM replies). */
+data class ChatReplyTarget(
+    val messageId: String,
+    val text: String,
+    val senderDid: String,
+    val isDeleted: Boolean = false,
+)
 
 data class ChatUiState(
     val convo: ConvoView? = null,
@@ -26,6 +37,9 @@ data class ChatUiState(
     val cursor: String? = null,
     val hasMore: Boolean = true,
     val messageText: String = "",
+    val replyTo: ChatReplyTarget? = null,
+    /** One-shot send error code/message, consumed by the UI via [ChatViewModel.consumeSendError]. */
+    val sendError: String? = null,
 )
 
 @HiltViewModel
@@ -129,14 +143,41 @@ class ChatViewModel @Inject constructor(
         _uiState.update { it.copy(messageText = text) }
     }
 
+    /** Start replying to [message] (no-op for deleted/system messages without an id). */
+    fun startReply(messageId: String, text: String?, senderDid: String?) {
+        if (senderDid == null) return
+        _uiState.update {
+            it.copy(
+                replyTo = ChatReplyTarget(
+                    messageId = messageId,
+                    text = text ?: "",
+                    senderDid = senderDid,
+                    isDeleted = text == null,
+                ),
+            )
+        }
+    }
+
+    fun cancelReply() {
+        _uiState.update { it.copy(replyTo = null) }
+    }
+
+    fun consumeSendError() {
+        _uiState.update { it.copy(sendError = null) }
+    }
+
     fun sendMessage(directText: String? = null) {
         val text = directText ?: _uiState.value.messageText.trim()
         if (text.isEmpty() || _uiState.value.isSending) return
+        val replyTarget = _uiState.value.replyTo
 
         viewModelScope.launch {
-            _uiState.update { it.copy(isSending = true) }
-            chatRepository.sendMessage(convoId, text)
+            _uiState.update { it.copy(isSending = true, sendError = null) }
+            chatRepository.sendMessage(convoId, text, replyTarget?.messageId)
                 .onSuccess { response ->
+                    // Prefer the server-echoed replyTo; fall back to a locally built one
+                    // so the sender's own bubble shows the reply context immediately.
+                    val replyToJson = response.replyTo ?: replyTarget?.let { buildReplyToJson(it) }
                     val newMessage = ChatMessageOrDeleted(
                         type = "chat.bsky.convo.defs#messageView",
                         id = response.id,
@@ -144,19 +185,40 @@ class ChatViewModel @Inject constructor(
                         text = response.text,
                         sender = response.sender,
                         sentAt = response.sentAt,
+                        replyTo = replyToJson,
                     )
                     _uiState.update {
                         it.copy(
                             messages = listOf(newMessage) + it.messages,
                             messageText = if (directText != null) it.messageText else "",
                             isSending = false,
+                            replyTo = null,
                         )
                     }
                 }
-                .onFailure {
-                    _uiState.update { it.copy(isSending = false) }
+                .onFailure { e ->
+                    val code = e.message
+                    _uiState.update {
+                        it.copy(
+                            isSending = false,
+                            sendError = code,
+                            // The reply target no longer exists — drop it so the user can retry plainly.
+                            replyTo = if (code == "ReplyTargetNotFound") null else it.replyTo,
+                        )
+                    }
                 }
         }
+    }
+
+    private fun buildReplyToJson(target: ChatReplyTarget): JsonElement = buildJsonObject {
+        put(
+            "\$type",
+            if (target.isDeleted) "chat.bsky.convo.defs#deletedMessageView"
+            else "chat.bsky.convo.defs#messageView",
+        )
+        put("id", target.messageId)
+        if (!target.isDeleted) put("text", target.text)
+        put("sender", buildJsonObject { put("did", target.senderDid) })
     }
 
     fun toggleReaction(messageId: String, emoji: String, myDid: String) {

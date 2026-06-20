@@ -15,6 +15,7 @@
     <string name="auth_error_network">ネットワークエラー。再試行してください。</string>
     <string name="auth_error_rate_limit">試行回数が多すぎます。しばらくお待ちください。</string>
     <string name="auth_account_picker_title">アカウントを選択</string>
+    <string name="auth_switching_account">アカウントを切り替え中…</string>
     <string name="auth_account_picker_add">別のアカウントを追加</string>
     <string name="auth_account_picker_remove">アカウントを削除</string>
     <string name="auth_account_picker_remove_title">アカウントを削除しますか？</string>
@@ -62,6 +63,7 @@
     <string name="postgate_allow">引用を許可する</string>
     <string name="postgate_disable">引用を制限する</string>
     <string name="post_reply">返信</string>
+    <string name="post_reply_to">@%1$s への返信</string>
     <string name="post_pinned">ピン留め投稿</string>
     <string name="post_translate">翻訳</string>
     <string name="post_hide">この投稿を非表示</string>
@@ -131,6 +133,11 @@
     <string name="messages_no_messages">メッセージはまだありません</string>
     <string name="messages_deleted">メッセージが削除されました</string>
     <string name="messages_unknown">不明なユーザー</string>
+    <string name="messages_reply">返信</string>
+    <string name="messages_replying_to">返信先</string>
+    <string name="messages_replying_to_name">%1$s さんへ返信</string>
+    <string name="messages_reply_cancel">返信をキャンセル</string>
+    <string name="messages_reply_target_not_found">返信先のメッセージが見つかりませんでした（削除された可能性があります）</string>
     <string name="messages_load_failed">メッセージの読み込みに失敗しました</string>
     <string name="messages_delete_confirm">メッセージを削除</string>
     <string name="messages_new_conversation">新しい会話</string>

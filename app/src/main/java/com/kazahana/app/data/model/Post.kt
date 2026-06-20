@@ -3,6 +3,8 @@ package com.kazahana.app.data.model
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonNull
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.decodeFromJsonElement
 
 /**
@@ -184,7 +186,11 @@ data class PostEmbedView(
     val images: List<ImageView>? = null,     // app.bsky.embed.images#view
     val items: List<GalleryViewImage>? = null, // app.bsky.embed.gallery#view (Bluesky v1.123+)
     val external: ExternalView? = null,
-    val record: EmbedRecordView? = null,
+    // Raw embedded record. For app.bsky.embed.record#view this is the
+    // `#viewRecord` directly; for app.bsky.embed.recordWithMedia#view it is a
+    // nested `#view` wrapper ({ record: <viewRecord> }). Use [quotedRecord] to
+    // resolve the actual viewRecord regardless of nesting.
+    val record: JsonElement? = null,
     val media: PostEmbedView? = null,       // recordWithMedia
     val playlist: String? = null,            // video HLS
     val thumbnail: String? = null,           // video thumbnail
@@ -204,6 +210,24 @@ data class PostEmbedView(
             !images.isNullOrEmpty() -> images
             !items.isNullOrEmpty() -> items.mapNotNull { it.toImageView() }.ifEmpty { null }
             else -> null
+        }
+
+    /**
+     * The quoted post (`app.bsky.embed.record#viewRecord`) as raw JSON, resolved
+     * for both embed shapes:
+     * - `app.bsky.embed.record#view`: [record] is the `#viewRecord` itself.
+     * - `app.bsky.embed.recordWithMedia#view`: [record] is a `#view` wrapper whose
+     *   own `record` field holds the `#viewRecord`.
+     * Discrimination is structural: a `#view` wrapper has a nested `record` object,
+     * while a `#viewRecord` (uri/cid/author/value/embeds) does not. Returns null
+     * when there is no embedded record.
+     */
+    val quotedRecord: JsonElement?
+        get() {
+            val rec = record ?: return null
+            val obj = rec as? JsonObject ?: return rec
+            val nested = obj["record"]
+            return if (nested != null && nested !is JsonNull) nested else rec
         }
 }
 
@@ -286,12 +310,6 @@ data class ColorRGB(
 data class StrongRef(
     val uri: String,
     val cid: String,
-)
-
-@Serializable
-data class EmbedRecordView(
-    @SerialName("\$type") val type: String? = null,
-    val record: JsonElement? = null,  // Flexible — can be PostView, NotFoundPost, etc.
 )
 
 /** Parsed embedded record (app.bsky.embed.record#viewRecord) for quote posts */

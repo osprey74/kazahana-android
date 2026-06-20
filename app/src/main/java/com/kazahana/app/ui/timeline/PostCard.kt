@@ -210,8 +210,13 @@ fun PostCard(
                             modifier = Modifier.size(14.dp),
                             tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
                         )
+                        val parentHandle = feedPost.reply.parentPost?.author?.handle
                         Text(
-                            text = stringResource(R.string.post_reply),
+                            text = if (parentHandle != null) {
+                                stringResource(R.string.post_reply_to, parentHandle)
+                            } else {
+                                stringResource(R.string.post_reply)
+                            },
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
                         )
@@ -316,12 +321,13 @@ fun PostCard(
                     LinkCard(external = external)
                 }
 
-                // Quote post (embedded record)
-                val embeddedRecord = post.embed?.record
-                if (embeddedRecord?.record != null) {
+                // Quote post (embedded record) — handles both app.bsky.embed.record#view
+                // and app.bsky.embed.recordWithMedia#view via PostEmbedView.quotedRecord
+                val quotedRecordJson = post.embed?.quotedRecord
+                if (quotedRecordJson != null) {
                     Spacer(modifier = Modifier.height(8.dp))
                     QuoteCard(
-                        recordJson = embeddedRecord.record,
+                        recordJson = quotedRecordJson,
                         onClick = onClick,
                     )
                 }

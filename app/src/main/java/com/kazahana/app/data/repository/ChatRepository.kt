@@ -80,19 +80,30 @@ class ChatRepository(
         }
     }
 
-    suspend fun sendMessage(convoId: String, text: String): Result<SendMessageResponse> {
+    suspend fun sendMessage(
+        convoId: String,
+        text: String,
+        replyToMessageId: String? = null,
+    ): Result<SendMessageResponse> {
         return try {
             val body = buildJsonObject {
                 put("convoId", convoId)
                 put("message", buildJsonObject {
                     put("text", text)
+                    // chat.bsky.convo.defs#replyRef — a convo-local message reference.
+                    if (replyToMessageId != null) {
+                        put("replyTo", buildJsonObject {
+                            put("messageId", replyToMessageId)
+                        })
+                    }
                 })
             }
             val response = client.postWithProxy("chat.bsky.convo.sendMessage", body)
             if (response.status.isSuccess()) {
                 Result.success(response.body())
             } else {
-                Result.failure(Exception(response.atprotoError()))
+                // Surface the error code (e.g. ReplyTargetNotFound) so the UI can localize it.
+                Result.failure(Exception(response.atprotoErrorName() ?: response.atprotoError()))
             }
         } catch (e: Exception) {
             Result.failure(e)
