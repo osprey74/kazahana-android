@@ -12,12 +12,12 @@ plugins {
 
 android {
     namespace = "com.kazahana.app"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.kazahana.app"
         minSdk = 29
-        targetSdk = 35
+        targetSdk = 36
         versionCode = 18
         versionName = "3.5.0"
 
