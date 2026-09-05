@@ -297,6 +297,7 @@
     <string name="post_quote">인용</string>
     <string name="post_quote_post">게시물 인용</string>
     <string name="post_quotes_title">인용</string>
+    <string name="post_op_thread">스레드 %1$d/%2$d</string>
     <string name="post_view_quotes">인용 보기</string>
 
     <!-- Profile extras -->

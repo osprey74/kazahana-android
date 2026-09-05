@@ -46,7 +46,7 @@ import com.kazahana.app.ui.common.ModerationDecision
 
 private const val ALT_MAX_CHARS = 128
 
-private fun truncateAlt(alt: String): String {
+internal fun truncateAlt(alt: String): String {
     return if (alt.length > ALT_MAX_CHARS) alt.take(ALT_MAX_CHARS) + "…" else alt
 }
 

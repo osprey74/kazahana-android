@@ -120,7 +120,15 @@
       "Bash(gh.exe --version)",
       "Bash(curl -s https://api.github.com/repos/osprey74/kazahana-android/releases)",
       "Bash('/mnt/c/Program Files/GitHub CLI/gh.exe' release list -R osprey74/kazahana-android --limit 8)",
-      "Bash('/mnt/c/Program Files/GitHub CLI/gh.exe' release view v3.4.0 -R osprey74/kazahana-android)"
+      "Bash('/mnt/c/Program Files/GitHub CLI/gh.exe' release view v3.4.0 -R osprey74/kazahana-android)",
+      "Bash(gh pr create --base main --head matrix-update-20260620 --title 'docs\\(matrix\\): Android の v1.125 チャット返信・OGP文字コード対応を反映' --body ' *)",
+      "Bash(./gradlew --stop)",
+      "Bash(unzip -p app/build/outputs/bundle/release/app-release.aab base/manifest/AndroidManifest.xml)",
+      "Bash(unzip -l app/build/outputs/bundle/release/app-release.aab)",
+      "Bash(export ANDROID_SDK_ROOT=/home/ospre/Android/Sdk)",
+      "Bash(./gradlew assembleRelease --no-daemon)",
+      "Bash(gh --version)",
+      "Bash(./gradlew bundleRelease --no-daemon)"
     ]
   }
 }

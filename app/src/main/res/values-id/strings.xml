@@ -297,6 +297,7 @@
     <string name="post_quote">Kutip</string>
     <string name="post_quote_post">Kutip postingan</string>
     <string name="post_quotes_title">Kutipan</string>
+    <string name="post_op_thread">Utas %1$d/%2$d</string>
     <string name="post_view_quotes">Lihat kutipan</string>
 
     <!-- Profile extras -->

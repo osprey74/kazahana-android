@@ -36,6 +36,7 @@ import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.Repeat
 import androidx.compose.material.icons.filled.FormatQuote
 import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material.icons.outlined.FormatListNumbered
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
@@ -50,6 +51,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
@@ -195,6 +198,33 @@ fun PostCard(
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
                     )
+                    // OP thread position (e.g. 2/3) for contiguous same-author threads
+                    val opThread = feedPost.opThreadNumbering
+                    if (opThread != null) {
+                        val opThreadDescription = stringResource(
+                            R.string.post_op_thread, opThread.index, opThread.count,
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(2.dp),
+                            modifier = Modifier.semantics {
+                                contentDescription = opThreadDescription
+                            },
+                        ) {
+                            Icon(
+                                Icons.Outlined.FormatListNumbered,
+                                contentDescription = null,
+                                modifier = Modifier.size(12.dp),
+                                tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                            )
+                            Text(
+                                text = "${opThread.index}/${opThread.count}",
+                                fontSize = 11.sp,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                            )
+                        }
+                    }
                 }
 
                 // Reply indicator
@@ -280,38 +310,12 @@ fun PostCard(
                     // shouldHide → images completely hidden
                 }
 
-                // Video player — moderation applied here too
-                val videoUrl = post.embed?.playlist
-                if (videoUrl != null && !moderationDecision.shouldHide) {
+                // Video player — moderation applied here too.
+                // displayVideo also covers recordWithMedia (quote post + video).
+                val video = post.embed?.displayVideo
+                if (video != null && !moderationDecision.shouldHide) {
                     Spacer(modifier = Modifier.height(8.dp))
-                    if (!moderationDecision.shouldWarn) {
-                        com.kazahana.app.ui.common.VideoPlayer(
-                            hlsUrl = videoUrl,
-                            thumbnailUrl = post.embed.thumbnail,
-                            aspectRatio = post.embed.aspectRatio,
-                        )
-                    } else {
-                        com.kazahana.app.ui.common.ModerationWarnOverlay(
-                            decision = moderationDecision,
-                        ) {
-                            com.kazahana.app.ui.common.VideoPlayer(
-                                hlsUrl = videoUrl,
-                                thumbnailUrl = post.embed.thumbnail,
-                                aspectRatio = post.embed.aspectRatio,
-                            )
-                        }
-                    }
-                    val videoAlt = post.embed?.alt
-                    if (!videoAlt.isNullOrBlank()) {
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = if (videoAlt.length > 128) videoAlt.take(128) + "…" else videoAlt,
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                            maxLines = 2,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                    }
+                    VideoEmbed(video = video, moderationDecision = moderationDecision)
                 }
 
                 // Link card (no moderation needed)
@@ -432,21 +436,57 @@ fun PostCard(
             onReportUser = onReportUser,
             onMuteUser = onMuteUser,
             onBlockUser = onBlockUser,
-            hasMedia = !post.embed?.displayImages.isNullOrEmpty() || post.embed?.playlist != null ||
+            hasMedia = !post.embed?.displayImages.isNullOrEmpty() || post.embed?.displayVideo != null ||
                 !post.embed?.media?.displayImages.isNullOrEmpty(),
             onSaveMedia = if (onSaveMedia != null) {
                 {
                     val imageUrls = (post.embed?.displayImages ?: post.embed?.media?.displayImages)
                         ?.map { it.fullsize } ?: emptyList()
-                    val videoUrl = post.embed?.playlist
-                    val videoThumbnail = post.embed?.thumbnail
-                    onSaveMedia(imageUrls, videoUrl, videoThumbnail)
+                    val savedVideo = post.embed?.displayVideo
+                    onSaveMedia(imageUrls, savedVideo?.playlist, savedVideo?.thumbnail)
                 }
             } else null,
             modifier = Modifier.padding(start = 66.dp, end = 16.dp, bottom = 8.dp),
         )
 
         HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
+    }
+}
+
+/**
+ * Video embed with its ALT text below the player. Shared by the post body and the
+ * quote card so every surface renders `app.bsky.embed.video#view.alt` the same way.
+ */
+@Composable
+private fun VideoEmbed(
+    video: com.kazahana.app.data.model.VideoEmbedView,
+    moderationDecision: ModerationDecision = ModerationDecision(),
+) {
+    val player = @Composable {
+        com.kazahana.app.ui.common.VideoPlayer(
+            hlsUrl = video.playlist,
+            thumbnailUrl = video.thumbnail,
+            aspectRatio = video.aspectRatio,
+            alt = video.alt,
+        )
+    }
+    if (moderationDecision.shouldWarn) {
+        com.kazahana.app.ui.common.ModerationWarnOverlay(decision = moderationDecision) {
+            player()
+        }
+    } else {
+        player()
+    }
+    val alt = video.alt
+    if (!alt.isNullOrBlank()) {
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(
+            text = truncateAlt(alt),
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+        )
     }
 }
 
@@ -475,6 +515,7 @@ private fun QuoteCard(
     if (viewRecord == null || viewRecord.author == null) return
 
     val quotedImages = viewRecord.embeds.firstNotNullOfOrNull { it.displayImages }
+    val quotedVideo = viewRecord.embeds.firstNotNullOfOrNull { it.displayVideo }
 
     Column(
         modifier = Modifier
@@ -526,6 +567,13 @@ private fun QuoteCard(
         if (!quotedImages.isNullOrEmpty()) {
             Spacer(modifier = Modifier.height(6.dp))
             ImageGrid(images = quotedImages)
+        }
+
+        // Quoted video — previously dropped, so a quote of a video-only post
+        // rendered as text alone.
+        if (quotedVideo != null) {
+            Spacer(modifier = Modifier.height(6.dp))
+            VideoEmbed(video = quotedVideo)
         }
     }
 }

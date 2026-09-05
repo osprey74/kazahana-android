@@ -297,6 +297,7 @@
     <string name="post_quote">Zitieren</string>
     <string name="post_quote_post">Beitrag zitieren</string>
     <string name="post_quotes_title">Zitate</string>
+    <string name="post_op_thread">Thread %1$d/%2$d</string>
     <string name="post_view_quotes">Zitate anzeigen</string>
 
     <!-- Profile extras -->

@@ -22,10 +22,10 @@ Kazahana is designed as a **lightweight companion app** — not a full-featured 
 
 ## Features
 
-- **Timeline** — Home timeline with pull-to-refresh, infinite scroll, and feed/list switching
+- **Timeline** — Home timeline with pull-to-refresh, infinite scroll, feed/list switching, and OP thread numbering badges (e.g. 2/3)
 - **Posting** — Text, images (with ALT text), reply, quote repost, thread gate / post gate
 - **Rich text** — Mentions, URLs, and hashtags with automatic facet generation
-- **Media** — Image grid, fullscreen lightbox with pinch-zoom, ALT text overlay, video playback (HLS)
+- **Media** — Image grid, fullscreen lightbox with pinch-zoom, ALT text for images and videos (badge + caption, shown in quotes and notifications too), video playback (HLS)
 - **Link cards** — OGP metadata preview for shared URLs, plus Standard Site extended cards (publication, author, reading time, publish date)
 - **Notifications** — Notification list with unread badge, background polling
 - **Profile** — User profile with tabs (posts / replies / media / likes / starter packs), follow / unfollow, and profile QR code sharing (copy / share / save)

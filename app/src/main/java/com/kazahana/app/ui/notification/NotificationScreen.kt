@@ -47,6 +47,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import com.kazahana.app.ui.timeline.truncateAlt
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -368,9 +369,9 @@ private fun NotificationPostContent(
 
     val postText = record?.text
     val images = subjectPost?.embed?.displayImages ?: subjectPost?.embed?.media?.displayImages
-    val videoThumbnail = subjectPost?.embed?.thumbnail
+    val video = subjectPost?.embed?.displayVideo
 
-    if (postText.isNullOrEmpty() && images.isNullOrEmpty() && videoThumbnail == null) return
+    if (postText.isNullOrEmpty() && images.isNullOrEmpty() && video == null) return
 
     Spacer(modifier = Modifier.height(6.dp))
 
@@ -413,7 +414,7 @@ private fun NotificationPostContent(
     }
 
     // Video thumbnail (square with play indicator)
-    if (videoThumbnail != null) {
+    if (video != null) {
         Spacer(modifier = Modifier.height(6.dp))
         Box(
             modifier = Modifier
@@ -421,8 +422,8 @@ private fun NotificationPostContent(
                 .clip(RoundedCornerShape(8.dp)),
         ) {
             AsyncImage(
-                model = videoThumbnail,
-                contentDescription = null,
+                model = video.thumbnail,
+                contentDescription = video.alt?.ifBlank { null },
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.matchParentSize(),
             )
@@ -439,6 +440,31 @@ private fun NotificationPostContent(
                         RoundedCornerShape(14.dp),
                     )
                     .padding(2.dp),
+            )
+            // ALT badge — marks that the video carries ALT text, shown below.
+            if (!video.alt.isNullOrBlank()) {
+                Text(
+                    text = "ALT",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = Color.White,
+                    modifier = Modifier
+                        .align(Alignment.BottomStart)
+                        .padding(3.dp)
+                        .clip(RoundedCornerShape(4.dp))
+                        .background(Color.Black.copy(alpha = 0.6f))
+                        .padding(horizontal = 4.dp),
+                )
+            }
+        }
+        val videoAlt = video.alt
+        if (!videoAlt.isNullOrBlank()) {
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = truncateAlt(videoAlt),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
             )
         }
     }

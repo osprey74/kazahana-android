@@ -297,6 +297,7 @@
     <string name="post_quote">引用</string>
     <string name="post_quote_post">引用貼文</string>
     <string name="post_quotes_title">引用</string>
+    <string name="post_op_thread">討論串 %1$d/%2$d</string>
     <string name="post_view_quotes">檢視引用</string>
 
     <!-- Profile extras -->

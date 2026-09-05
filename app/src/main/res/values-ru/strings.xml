@@ -297,6 +297,7 @@
     <string name="post_quote">Цитата</string>
     <string name="post_quote_post">Процитировать пост</string>
     <string name="post_quotes_title">Цитаты</string>
+    <string name="post_op_thread">Тред %1$d/%2$d</string>
     <string name="post_view_quotes">Просмотреть цитаты</string>
 
     <!-- Profile extras -->

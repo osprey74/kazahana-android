@@ -10,6 +10,7 @@
 - Phase 6 (iOS/Desktop パリティ): 20/20 ✅
 - Bluesky v1.123 対応 (gallery / 動画300MB / 投稿進捗UI): 12/15 ✅（残: getUploadLimits / Photo Picker 順序検証 / メモリ検証）
 - 不具合修正 + DM返信機能 (2026-06-20): OGP文字化け / 引用投稿表示 / 返信先表示 / DM返信(v1.125) / アカウント切替UI / キーボード自動クローズ ✅
+- Desktop パリティ (2026-09-05): 動画ALTテキスト表示（全表示面）/ OPスレッド番号付けバッジ 2/2 ✅
 
 ## Phase 1: 基盤構築
 
@@ -194,3 +195,24 @@
 
 - [ ] 引用投稿のうち feed/list/starterPack 引用は author 不在で未表示（通常引用は対応済）
 - [ ] 引用先が削除済み/ブロックの場合のプレースホルダ表示（デスクトップは「削除されました」表示あり）
+
+## Desktop パリティ (PLATFORM_MATRIX 差異是正) — 2026-09-05
+
+> 起票元: `../kazahana/docs/PLATFORM_MATRIX.md` の Android 列 `❓` / `⬜` 解消
+> 対象: 「動画 ALT テキスト表示」(2章) / 「OP スレッド番号付けバッジ」(2章)
+
+### 動画 ALT テキスト表示（全表示面で網羅）
+
+- [x] **`PostEmbedView.displayVideo` 追加** — `Post.kt`：`app.bsky.embed.video#view`（トップレベル）と `recordWithMedia#view` の `media` 側を `VideoEmbedView`（playlist / thumbnail / alt / aspectRatio）に正規化。従来 `post.embed?.playlist` 直参照だったため recordWithMedia の動画が描画されない不具合も同時に解消
+- [x] **動画サムネの ALT バッジ** — `VideoPlayer.kt`：`alt` パラメータ追加、左上に半透明「ALT」バッジ（`semantics { contentDescription }` に ALT 全文）。デスクトップ版パリティ
+- [x] **引用投稿内（QuoteCard）の動画描画 + ALT** — `PostCard.kt`：`viewRecord.embeds` から `displayVideo` を抽出して描画。従来は引用カード内で画像のみ表示し動画を破棄していた
+- [x] **通知画面の ALT バッジ + 本文** — `NotificationScreen.kt`：動画サムネ左下に ALT バッジ、直下に ALT 本文（128 文字トランケート）
+- [x] **描画の共通化** — `PostCard.VideoEmbed` にプレイヤー + ALT 本文 + モデレーション警告を集約し、本文・引用カードで共用。ALT トランケートは `truncateAlt`（`ImageGrid.kt`、`internal` 化）に統一
+- [x] **メディア一括保存の追随** — `hasMedia` / `onSaveMedia` を `displayVideo` 基準に変更し、recordWithMedia の動画も保存対象に
+
+### OP スレッド番号付けバッジ
+
+- [x] **`FeedViewPost.opThreadPostIndex` / `opThreadPostCount` 追加** — `Post.kt`。AppView が `CanonicalPostNumberingEnable` フラグ下で配信する暫定フィールド（social-app PR #11472・公式 v1.130 互換）。canonical lexicon 未反映のため optional
+- [x] **`opThreadNumbering` アクセサ** — `count >= 2` かつ `1 <= index <= count` のときのみバッジを出す（フィールド欠落・フラグ OFF・不整合値は null）。デスクトップ `src/lib/opThread.ts` と同一判定
+- [x] **バッジ描画** — `PostCard.kt` 著者行の時刻右に `FormatListNumbered` アイコン + `index/count`。`contentDescription` に `post_op_thread`
+- [x] **文字列 `post_op_thread` を全11ロケールに追加** — ja/en/pt/de/zh-TW/zh-CN/fr/ko/es/ru/id

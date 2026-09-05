@@ -28,6 +28,31 @@ data class FeedViewPost(
     val post: PostView,
     val reply: ReplyRef? = null,
     val reason: FeedReason? = null,
+    // OP (original poster) thread numbering. The AppView tags feedViewPost entries
+    // belonging to a contiguous same-author thread with these 1-based fields. They are
+    // served behind the server-side `CanonicalPostNumberingEnable` flag (social-app
+    // PR #11472 / official v1.130) and are not yet in the canonical lexicon, so they
+    // stay optional and are read through [opThreadNumbering].
+    val opThreadPostIndex: Int? = null,
+    val opThreadPostCount: Int? = null,
+) {
+    /**
+     * OP thread position, or null when this post is not part of a real multi-post OP
+     * thread (fields absent, flag off, or an inconsistent index/count pair).
+     */
+    val opThreadNumbering: OpThreadNumbering?
+        get() {
+            val index = opThreadPostIndex ?: return null
+            val count = opThreadPostCount ?: return null
+            if (count < 2 || index < 1 || index > count) return null
+            return OpThreadNumbering(index = index, count = count)
+        }
+}
+
+/** 1-based position of a post inside a contiguous same-author (OP) thread. */
+data class OpThreadNumbering(
+    val index: Int,
+    val count: Int,
 )
 
 @Serializable
@@ -213,6 +238,32 @@ data class PostEmbedView(
         }
 
     /**
+     * Unified video for rendering, sourced from either a top-level
+     * `app.bsky.embed.video#view` or the `media` of an
+     * `app.bsky.embed.recordWithMedia#view` (quote post + video). Returns null when
+     * the embed carries no video.
+     */
+    val displayVideo: VideoEmbedView?
+        get() {
+            playlist?.let {
+                return VideoEmbedView(
+                    playlist = it,
+                    thumbnail = thumbnail,
+                    alt = alt,
+                    aspectRatio = aspectRatio,
+                )
+            }
+            val m = media ?: return null
+            val mediaPlaylist = m.playlist ?: return null
+            return VideoEmbedView(
+                playlist = mediaPlaylist,
+                thumbnail = m.thumbnail,
+                alt = m.alt,
+                aspectRatio = m.aspectRatio,
+            )
+        }
+
+    /**
      * The quoted post (`app.bsky.embed.record#viewRecord`) as raw JSON, resolved
      * for both embed shapes:
      * - `app.bsky.embed.record#view`: [record] is the `#viewRecord` itself.
@@ -258,6 +309,17 @@ data class GalleryViewImage(
         return ImageView(thumb = thumbnail, fullsize = fullsize, alt = alt, aspectRatio = aspectRatio)
     }
 }
+
+/**
+ * A hydrated `app.bsky.embed.video#view`, flattened out of whichever embed shape
+ * carried it. [alt] is the video's ALT text (`#view.alt`).
+ */
+data class VideoEmbedView(
+    val playlist: String,
+    val thumbnail: String? = null,
+    val alt: String? = null,
+    val aspectRatio: AspectRatio? = null,
+)
 
 @Serializable
 data class AspectRatio(
