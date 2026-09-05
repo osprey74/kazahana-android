@@ -11,6 +11,7 @@
 - Bluesky v1.123 対応 (gallery / 動画300MB / 投稿進捗UI): 12/15 ✅（残: getUploadLimits / Photo Picker 順序検証 / メモリ検証）
 - 不具合修正 + DM返信機能 (2026-06-20): OGP文字化け / 引用投稿表示 / 返信先表示 / DM返信(v1.125) / アカウント切替UI / キーボード自動クローズ ✅
 - Desktop パリティ (2026-09-05): 動画ALTテキスト表示（全表示面）/ OPスレッド番号付けバッジ 2/2 ✅
+- Google Play 新品質要件 (2027-02/04 施行): メモリ・ビットマップ・DEX 実測クリア ✅ / Zero-Tap Sign-In 検討中 ⬜
 
 ## Phase 1: 基盤構築
 
@@ -216,3 +217,34 @@
 - [x] **`opThreadNumbering` アクセサ** — `count >= 2` かつ `1 <= index <= count` のときのみバッジを出す（フィールド欠落・フラグ OFF・不整合値は null）。デスクトップ `src/lib/opThread.ts` と同一判定
 - [x] **バッジ描画** — `PostCard.kt` 著者行の時刻右に `FormatListNumbered` アイコン + `index/count`。`contentDescription` に `post_op_thread`
 - [x] **文字列 `post_op_thread` を全11ロケールに追加** — ja/en/pt/de/zh-TW/zh-CN/fr/ko/es/ru/id
+
+## Google Play 新品質要件への対応 — 2026-09-05 起票
+
+> 一次情報: https://android-developers.googleblog.com/2026/08/app-quality-memory-optimization-secure-onboarding.html
+> しきい値の実数値: https://support.google.com/googleplay/android-developer/answer/17492799
+> 施行: メモリ / ビットマップ / DEX = 2027-02、Zero-Tap Sign-In = 2027-04
+> 非準拠時はアプリの表示（visibility）と公開機能に影響
+
+### 調査・実測（完了）
+
+- [x] **[Q-1] DEX コード最適化（≥25%、DEX 10MB 超のアプリに適用）** — 対応済みかつ適用対象外。`app/build.gradle.kts` で `isMinifyEnabled` / `isShrinkResources` + `proguard-android-optimize.txt`、`proguard-rules.pro` に `-dontobfuscate` / `-dontoptimize` / `-dontshrink` なし。リリース AAB の DEX 実測 **7.34 MB**（`base/dex/classes.dex` 7,698,468 バイト）で 10MB 閾値を下回る
+- [x] **[Q-2] 計測スクリプト作成** — `tools/measure-memory.sh`。`/proc/<pid>/status` の `RssAnon + VmSwap`（Android vitals の "Memory usage (Anonymous RSS + swap)" と同一定義）+ `dumpsys meminfo` の App Summary + `oom_score_adj` からのプロセス状態判定。`ADB` / `PKG` を環境変数で差し替え可能
+- [x] **[Q-3] 実機メモリ実測** — moto g66j 5G / Android 16 (API 36) / RAM 7.42GB（**8GB バケット**）/ `com.kazahana.app.debug` v3.6.0。**結論: 全項目クリア、対応不要**
+
+| 計測点 | 状態 | Anon RSS+Swap | しきい値 | 使用率 |
+|---|---|---:|---:|---:|
+| ベースライン | 前景 | 98.3 MB | 2.25 GB | 4.3% |
+| 150スワイプ後 | 前景 | 117.0 MB | 2.25 GB | 5.1% |
+| 350スワイプ後 | 前景 | 126.8 MB | 2.25 GB | 5.5% |
+| バックグラウンド30秒 | 背景 | 100.1 MB | 1.5 GB | 6.7% |
+| サイクル2 背景30秒 | 背景 | 104.8 MB | 1.5 GB | 7.0% |
+
+- [x] **[Q-4] ビットマップメモリ実測** — バックグラウンドで Native Heap **27.7 MB**（しきい値 200 MB / 13.9%）。Coil 3.0.2 の `AndroidSystemCallbacks.onTrimMemory` が `TRIM_MEMORY_BACKGROUND`(40) で `memoryCache.clear()` を実行することをバイトコードで確認し、実機でも解放を確認（Java Heap −50% / Graphics −39% / Anon RSS −18%）
+- [x] **[Q-5] メモリリーク判定** — 陰性。公式基準は「P90/P50 比 3.5倍超でリーク疑い」。2 サイクル計 350 スワイプで前景ピーク +8%、背景復帰値 +4.7% に留まり、セッション延長による蓄積なし。公式が名指しする最難シナリオ「media-heavy infinite scrolling」での結果
+
+> 計測は debug ビルド（R8 未適用）のため上限値。リリースビルドはこれを下回る。
+> 未検証: `FullscreenImageViewer` の連続表示 / ExoPlayer の連続再生 / user-perceived services 状態（いずれも UI 自動操作で到達不可）。公開後は Play Console の実データ（28日分 P50/P90/P99）で再確認すること
+
+### 未対応
+
+- [ ] **[Q-6] Zero-Tap Sign-In（Restore Credentials API）** — 施行 2027-04。kazahana は「サインインをサポートするアプリ」に該当し、免除条件（Block Store 統合を 2026-09-30 までに完了 / 完全非公開・企業端末管理 / 金融・医療の規制要件 / ゲーム）のいずれにも非該当。`androidx.credentials` 依存は未導入。Bluesky のアプリパスワード / セッショントークンを端末間移行の対象にするかというセキュリティ設計判断を含むため、要検討
