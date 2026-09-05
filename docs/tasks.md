@@ -11,7 +11,7 @@
 - Bluesky v1.123 対応 (gallery / 動画300MB / 投稿進捗UI): 12/15 ✅（残: getUploadLimits / Photo Picker 順序検証 / メモリ検証）
 - 不具合修正 + DM返信機能 (2026-06-20): OGP文字化け / 引用投稿表示 / 返信先表示 / DM返信(v1.125) / アカウント切替UI / キーボード自動クローズ ✅
 - Desktop パリティ (2026-09-05): 動画ALTテキスト表示（全表示面）/ OPスレッド番号付けバッジ 2/2 ✅
-- Google Play 新品質要件 (2027-02/04 施行): メモリ・ビットマップ・DEX 実測クリア ✅ / Zero-Tap Sign-In 検討中 ⬜
+- Google Play 新品質要件 (2027-02/04 施行): メモリ・ビットマップ・DEX 実測クリア ✅ / Zero-Tap Sign-In は当面対応せず様子見（2026-09-05 判断）
 
 ## Phase 1: 基盤構築
 
@@ -247,4 +247,34 @@
 
 ### 未対応
 
-- [ ] **[Q-6] Zero-Tap Sign-In（Restore Credentials API）** — 施行 2027-04。kazahana は「サインインをサポートするアプリ」に該当し、免除条件（Block Store 統合を 2026-09-30 までに完了 / 完全非公開・企業端末管理 / 金融・医療の規制要件 / ゲーム）のいずれにも非該当。`androidx.credentials` 依存は未導入。Bluesky のアプリパスワード / セッショントークンを端末間移行の対象にするかというセキュリティ設計判断を含むため、要検討
+- [ ] **[Q-6] Zero-Tap Sign-In（Restore Credentials API）** — 施行 2027-04。**当面対応しない方針（2026-09-05 判断）。様子見のうえ再検討する。**
+
+#### 要件の中身
+
+「機種変更してもサインイン状態を維持できるようにせよ」という要求。kazahana は「サインインをサポートするアプリ」に該当し、免除条件（Block Store 統合を 2026-09-30 までに本番投入 / 完全非公開・企業端末管理 / 金融・医療の規制要件 / ゲーム）のいずれにも非該当。
+
+#### 見送りの判断根拠
+
+1. **Restore Credentials API は FIDO 準拠バックエンド必須** — 実装ガイドに "Yes, a backend server is required. Use the same FIDO-compliant server implementation as passkeys" と明記。ペイロードは `PublicKeyCredentialCreationOptionsJSON`（WebAuthn）で、登録・認証の両方でサーバ検証が要る。kazahana は Bluesky PDS に直接認証する構成でサーバを持たず（`kazahana-push-backend` はプッシュ専用）、AT Protocol にサードパーティ向け FIDO エンドポイントも存在しない。実装するには Bluesky 認証情報をサーバ側で保持する構造への変更が必要で、「認証情報は端末内に留まる」という設計の放棄になる
+
+2. **OAuth 移行では対応不能** — AT Protocol OAuth 仕様が `"Tokens must not be shared or reused across client devices"` と端末間移動を明示的に禁止。DPoP 必須、パブリッククライアントのセッション/リフレッシュトークンは 2 週間上限・単回使用。**セキュリティ的に優れた OAuth へ移行するほど Play 要件を満たせなくなる**という構造的矛盾がある
+
+3. **セキュリティ的な後退を伴う** — 現行は `SessionStore.kt` の `EncryptedSharedPreferences` + Android Keystore `MasterKey`。Keystore 鍵はハードウェア束縛で端末外に持ち出せないため機種変更で復号不能になる（＝これが再ログインの理由）。要件充足には秘密を Keystore の保護外（Block Store / Restore Credentials）へ出す必要がある。Google 側も E2EE + 画面ロック必須で無防備ではないが、攻撃面が広がるのは事実。加えて現在 kazahana はアプリパスワード自体を保存していない（`Session` は did/handle/accessJwt/refreshJwt/email のみ）ため、Block Store 対応は「今は保存していない、より強い秘密を保存し始める」ことを意味する。refreshJwt を運ぶ案はローテーションで失効する窓が残る
+
+4. **制裁内容が未公表** — 公式は "may see reduced app visibility and publishing capabilities" とのみ述べ、"Additional details will be provided later this year"（2026年内に詳細提供）としている。既存の technical quality bar（2022-11 運用開始）の実績では、制裁は「発見面(recommendations)からの除外」と「ストア掲載への警告表示」で、**アプリ削除・更新公開停止・既存ユーザーへの影響は行われていない**。kazahana は指名検索中心のサードパーティクライアントで、おすすめ経由の新規流入依存度が低い
+
+5. **猶予が長い** — 施行 2027-04 まで約19か月。Block Store 免除（2026-09-30 期限）は意図的に見送る
+
+#### 再検討トリガー（いずれかが起きたら再評価する）
+
+- [ ] **Google が制裁の詳細を公表したとき**（2026年内予定）— 「publishing capabilities」の具体的制限内容が判明した時点で影響度を再評価
+- [ ] **Play Console の Android vitals 概要ページに警告が出たとき** — 公式が "we'll provide a warning directly on the Android vitals overview page" としており、これが実際の判定シグナル
+- [ ] **Bluesky がアプリパスワードを廃止 / kazahana が OAuth へ移行するとき** — 移行後は Zero-Tap 対応が仕様上不能になるため、Google への免除申請等の別対応が必要になる
+- [ ] **2027-04 の施行が近づいたとき**（目安 2027-01）— それまでに状況が変わっていなければ、非充足を受容するか再検討するかを最終判断
+
+#### 参照
+
+- https://developer.android.com/identity/sign-in/restore-credentials-implementation （バックエンド必須の記述）
+- https://atproto.com/specs/oauth （端末間移動の禁止）
+- https://developer.android.com/identity/block-store （免除経路・2026-09-30 期限）
+- https://support.google.com/googleplay/android-developer/answer/17492799#zero-tap_sign-in_restoration （免除条項）
