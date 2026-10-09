@@ -27,7 +27,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -123,9 +123,10 @@ fun ChatScreen(
 
     val group = uiState.convo?.groupInfo
     val isLocked = group?.isLocked == true
-    val members = uiState.convo?.members ?: emptyList()
-    val otherMember = uiState.convo?.members?.firstOrNull { it.did != myDid }
-        ?: uiState.convo?.members?.firstOrNull()
+    // Merged `convo.members` + `getConvoMembers`; see ChatUiState.members.
+    val members = uiState.members
+    val otherMember = members.firstOrNull { it.did != myDid } ?: members.firstOrNull()
+    val isGroup = uiState.convo?.isGroup == true
 
     var reactionTargetId by remember { mutableStateOf<String?>(null) }
     // Message to briefly flash blue after jumping to it from a reply preview.
@@ -226,22 +227,37 @@ fun ChatScreen(
                         modifier = Modifier.weight(1f).fillMaxWidth(),
                         reverseLayout = true,
                     ) {
-                        items(
+                        itemsIndexed(
                             items = uiState.messages,
-                            key = { it.id ?: it.hashCode().toString() },
-                        ) { message ->
+                            key = { _, item -> item.id ?: item.hashCode().toString() },
+                        ) { index, message ->
                             if (message.isSystem) {
                                 SystemMessageRow(message = message, members = members)
-                                return@items
+                                return@itemsIndexed
                             }
                             val replyRef = message.replyToRef
-                            val replyToSenderName = replyRef?.senderDid?.let { did ->
-                                members.firstOrNull { it.did == did }?.let { it.displayName ?: it.handle }
-                            }
+                            val replyToSenderName = replyRef?.senderDid?.let { memberLabel(it, members) }
+                            // Name the speaker in groups only — a 1:1 DM has just one
+                            // other person and the top bar already names them. The list
+                            // is newest-first under `reverseLayout`, so the next index is
+                            // the older message: label only the first bubble of a run.
+                            val senderDid = message.sender?.did
+                            val senderName = senderDid
+                                ?.takeIf {
+                                    isGroup && it != myDid &&
+                                        uiState.messages.getOrNull(index + 1)?.sender?.did != it
+                                }
+                                ?.let { memberLabel(it, members) }
                             MessageBubble(
                                 message = message,
                                 isMine = message.sender?.did == myDid,
                                 myDid = myDid,
+                                senderName = senderName,
+                                onSenderClick = {
+                                    senderDid?.let { did ->
+                                        onProfileClick(members.firstOrNull { it.did == did }?.handle ?: did)
+                                    }
+                                },
                                 onJoinLink = onJoinLink,
                                 showReactionPicker = reactionTargetId == message.id,
                                 replyRef = replyRef,
@@ -437,6 +453,9 @@ private fun MessageBubble(
     message: ChatMessageOrDeleted,
     isMine: Boolean,
     myDid: String,
+    /** Speaker label shown above the bubble; null in 1:1 DMs and within a sender run. */
+    senderName: String? = null,
+    onSenderClick: () -> Unit = {},
     onJoinLink: (String) -> Unit = {},
     showReactionPicker: Boolean = false,
     replyRef: ChatReplyRef? = null,
@@ -532,6 +551,22 @@ private fun MessageBubble(
                     }
                 }
             }
+        }
+
+        // Speaker label for group convos, above the bubble and tappable to the profile.
+        if (senderName != null) {
+            Text(
+                text = senderName,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier
+                    .widthIn(max = screenWidth * 0.75f)
+                    .clip(RoundedCornerShape(4.dp))
+                    .clickable { onSenderClick() }
+                    .padding(start = 6.dp, end = 6.dp, bottom = 2.dp),
+            )
         }
 
         // Message bubble

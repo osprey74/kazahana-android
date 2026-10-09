@@ -2,6 +2,7 @@ package com.kazahana.app.data.repository
 
 import com.kazahana.app.data.model.ChatDeclaration
 import com.kazahana.app.data.model.ConvoListResponse
+import com.kazahana.app.data.model.ConvoMembersResponse
 import com.kazahana.app.data.model.ConvoView
 import com.kazahana.app.data.model.DeclarationRecordResponse
 import com.kazahana.app.data.model.GetConvoResponse
@@ -54,6 +55,28 @@ class ChatRepository(
             if (response.status.isSuccess()) {
                 val body = response.body<GetConvoResponse>()
                 Result.success(body.convo)
+            } else {
+                Result.failure(Exception(response.atprotoError()))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    /**
+     * Full member listing for a convo. `ConvoView.members` can be a subset for large
+     * groups, so callers merge this over it before resolving sender names.
+     */
+    suspend fun getConvoMembers(convoId: String, cursor: String? = null): Result<ConvoMembersResponse> {
+        return try {
+            val params = buildMap {
+                put("convoId", convoId)
+                put("limit", "100")
+                if (cursor != null) put("cursor", cursor)
+            }
+            val response = client.getWithProxy("chat.bsky.convo.getConvoMembers", params)
+            if (response.status.isSuccess()) {
+                Result.success(response.body())
             } else {
                 Result.failure(Exception(response.atprotoError()))
             }

@@ -11,6 +11,7 @@
 - Bluesky v1.123 対応 (gallery / 動画300MB / 投稿進捗UI): 12/15 ✅（残: getUploadLimits / Photo Picker 順序検証 / メモリ検証）
 - 不具合修正 + DM返信機能 (2026-06-20): OGP文字化け / 引用投稿表示 / 返信先表示 / DM返信(v1.125) / アカウント切替UI / キーボード自動クローズ ✅
 - Desktop パリティ (2026-09-05): 動画ALTテキスト表示（全表示面）/ OPスレッド番号付けバッジ 2/2 ✅
+- Desktop パリティ (2026-10-09, v3.7.0): グループチャットの送信者名表示（getConvoMembers マージ）1/1 ✅
 - Google Play 新品質要件 (2027-02/04 施行): メモリ・ビットマップ・DEX 実測クリア ✅ / Zero-Tap Sign-In は当面対応せず様子見（2026-09-05 判断）
 
 ## Phase 1: 基盤構築
@@ -178,6 +179,18 @@
 - [x] **OGP 文字化け** — `OgpService.fetchHtml` を `bodyAsText()`（UTF-8 固定）から `readBytes()` + 文字コード自動判定に変更。HTTP `Content-Type` charset → 先頭4096バイトの `<meta charset>`/`http-equiv` → UTF-8 の順（HTML Living Standard 準拠）。Shift_JIS / EUC-JP 等の文字化けを解消
 - [x] **引用投稿が表示されない** — `PostEmbedView.quotedRecord` を追加し、`record#view`（1段）/`recordWithMedia#view`（2段）のネスト差を構造ベースで吸収。`PostCard` の引用抽出を差し替え（handoff の「media.record」説は誤りで、実際は通常引用が 2 段固定参照で落ちていた）
 - [x] **タイムラインで返信先が不明** — `PostCard` の返信インジケータを `feedPost.reply.parentPost?.author?.handle` で「@handle への返信」表示に変更（取得不可時は「返信」にフォールバック）。文字列 `post_reply_to` を EN/JA 追加
+
+### グループチャットの送信者名表示（v3.7.0 / Desktop v3.6.1 パリティ / kazahana#22）
+
+- [x] `chat.bsky.convo.getConvoMembers` を `ChatRepository` に追加（limit=100・cursor ページング）
+- [x] `convo.members` に `getConvoMembers` の結果をマージして `ChatUiState.members` に保持（`convo.members` は部分集合のことがあるため）
+- [x] グループ会話の他者メッセージに送信者名を吹き出し上に表示（連続投稿は先頭のみ。タップでプロフィールへ）
+- [x] 表示名 → ハンドル → 短縮 DID のフォールバック（`memberLabel` / `shortDid`）
+- [x] システムメッセージの名前解決に同じメンバーマップを使用し、空文字・DID 生表示を解消
+- [x] 1:1 DM は対象外（送信者名を表示せず、`getConvoMembers` も呼ばない）
+
+アバター表示および「同一送信者・5 分以内」の連続ブロック化は Desktop 実装にはあるが、
+受け入れ要件の緩和（2026-10-09）により本対応では見送り。
 
 ### DM / グループチャット 返信機能（Bluesky v1.125 互換）
 

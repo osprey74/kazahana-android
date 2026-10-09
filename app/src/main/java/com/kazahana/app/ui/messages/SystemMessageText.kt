@@ -7,18 +7,40 @@ import com.kazahana.app.data.model.ChatMember
 import com.kazahana.app.data.model.SystemMessageData
 import com.kazahana.app.data.model.SystemReferredUser
 
+/** Speaker label for [did]: display name, else handle, else a shortened DID. */
+fun memberLabel(did: String, members: List<ChatMember>): String {
+    val member = members.firstOrNull { it.did == did }
+    member?.displayName?.takeIf { it.isNotBlank() }?.let { return it }
+    member?.handle?.takeIf { it.isNotBlank() && it != "handle.invalid" }?.let { return it }
+    return shortDid(did)
+}
+
+/** `abcd…wxyz` — enough to tell two unresolved speakers apart. */
+fun shortDid(did: String): String {
+    if (!did.startsWith("did:")) return did
+    val tail = did.substringAfterLast(':')
+    return if (tail.length > 8) "${tail.take(4)}\u2026${tail.takeLast(4)}" else tail
+}
+
 /**
  * Localized human-readable text for a group system message
  * (chat.bsky.convo.defs#systemMessageData*). Resolves referred-user DIDs against
  * the convo [members] for display names, falling back to the name embedded in the
- * referred user, then to an empty string.
+ * referred user, then to a shortened DID — never to an empty string, which would
+ * leave the sentence without a subject.
  */
 @Composable
 fun systemMessageText(data: SystemMessageData, members: List<ChatMember>): String {
     fun nameOf(user: SystemReferredUser?): String {
         if (user == null) return ""
-        members.firstOrNull { it.did == user.did }?.let { return it.displayName ?: it.handle }
-        return user.displayName ?: user.handle ?: ""
+        // Prefer the convo member record, but fall through to the names embedded in
+        // the system message when that record carries neither a name nor a handle.
+        val member = members.firstOrNull { it.did == user.did }
+        member?.displayName?.takeIf { it.isNotBlank() }?.let { return it }
+        member?.handle?.takeIf { it.isNotBlank() && it != "handle.invalid" }?.let { return it }
+        user.displayName?.takeIf { it.isNotBlank() }?.let { return it }
+        user.handle?.takeIf { it.isNotBlank() && it != "handle.invalid" }?.let { return it }
+        return shortDid(user.did)
     }
 
     val t = data.type ?: ""

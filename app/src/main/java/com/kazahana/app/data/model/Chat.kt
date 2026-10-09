@@ -68,6 +68,18 @@ data class JoinLinkView(
     val isEnabled: Boolean get() = enabledStatus == "enabled"
 }
 
+/**
+ * chat.bsky.convo.getConvoMembers — the full member listing for a convo.
+ *
+ * `ConvoView.members` can be a subset for large groups, so sender-name resolution
+ * merges this listing over it.
+ */
+@Serializable
+data class ConvoMembersResponse(
+    val members: List<ChatMember> = emptyList(),
+    val cursor: String? = null,
+)
+
 @Serializable
 data class ChatMember(
     val did: String,

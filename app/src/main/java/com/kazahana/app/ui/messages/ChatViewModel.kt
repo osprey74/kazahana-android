@@ -3,6 +3,7 @@ package com.kazahana.app.ui.messages
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.kazahana.app.data.model.ChatMember
 import com.kazahana.app.data.model.ChatMessageOrDeleted
 import com.kazahana.app.data.model.ChatReaction
 import com.kazahana.app.data.model.ConvoView
@@ -30,6 +31,12 @@ data class ChatReplyTarget(
 
 data class ChatUiState(
     val convo: ConvoView? = null,
+    /**
+     * Members used to resolve sender names, seeded from `convo.members` and — for
+     * groups — completed with `chat.bsky.convo.getConvoMembers`, since
+     * `convo.members` can be a subset and would otherwise leave raw DIDs on screen.
+     */
+    val members: List<ChatMember> = emptyList(),
     val messages: List<ChatMessageOrDeleted> = emptyList(),
     val isLoading: Boolean = false,
     val isSending: Boolean = false,
@@ -95,9 +102,36 @@ class ChatViewModel @Inject constructor(
     private fun loadConvo() {
         viewModelScope.launch {
             chatRepository.getConvo(convoId).onSuccess { convo ->
-                _uiState.update { it.copy(convo = convo) }
+                _uiState.update { state ->
+                    state.copy(convo = convo, members = merged(convo.members, state.members))
+                }
+                // 1:1 DMs already carry both members, so only groups need the extra call.
+                if (convo.isGroup) loadConvoMembers()
             }
             chatRepository.updateRead(convoId)
+        }
+    }
+
+    /**
+     * Fill in members missing from `convo.members` so group messages and system
+     * messages show a name instead of a raw DID. Failures are non-fatal: the chat
+     * still renders with whatever `convo.members` provided.
+     */
+    private fun loadConvoMembers() {
+        viewModelScope.launch {
+            val fetched = mutableListOf<ChatMember>()
+            var cursor: String? = null
+            var pages = 0
+            do {
+                val page = chatRepository.getConvoMembers(convoId, cursor).getOrNull() ?: break
+                fetched += page.members
+                cursor = page.cursor
+                pages++
+            } while (cursor != null && pages < MAX_MEMBER_PAGES)
+
+            if (fetched.isNotEmpty()) {
+                _uiState.update { it.copy(members = merged(it.members, fetched)) }
+            }
         }
     }
 
@@ -279,6 +313,18 @@ class ChatViewModel @Inject constructor(
                     }
                 }
             chatRepository.updateRead(convoId)
+        }
+    }
+
+    companion object {
+        /** Safety stop for `getConvoMembers` paging (100 per page; groups cap well below). */
+        private const val MAX_MEMBER_PAGES = 10
+
+        /** Later entries win, so a fuller `getConvoMembers` record replaces a partial one. */
+        private fun merged(vararg sources: List<ChatMember>): List<ChatMember> {
+            val byDid = LinkedHashMap<String, ChatMember>()
+            sources.forEach { list -> list.forEach { byDid[it.did] = it } }
+            return byDid.values.toList()
         }
     }
 }
