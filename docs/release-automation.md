@@ -24,11 +24,29 @@
 4. 作成したサービスアカウント →「キー」→「鍵を追加」→「新しい鍵を作成」→ **JSON**
 5. ダウンロードした JSON を控える（後述の 2 か所で使う）
 
+ダウンロードした JSON の **`client_email`** の値が、次の手順で使うサービス
+アカウントのメールアドレスである。
+
+```json
+{
+  "type": "service_account",
+  "project_id": "kazahana-publisher-123456",
+  "client_email": "play-publisher@kazahana-publisher-123456.iam.gserviceaccount.com",
+  ...
+}
+```
+
 ### 2. Play Console 側：権限の付与
 
 1. [Play Console](https://play.google.com/console/) →「ユーザーとアクセス権」
-2. 「ユーザーを招待」でサービスアカウントのメールアドレス
-   （`play-publisher@<project>.iam.gserviceaccount.com`）を追加
+2. 「ユーザーを招待」でサービスアカウントのメールアドレスを追加する。
+   **手順 1-5 の JSON にある `client_email` の値をそのままコピーして貼り付けること。**
+
+   > `play-publisher@<project>.iam.gserviceaccount.com` のような表記を見かけたら、
+   > `<project>` は実際のプロジェクト ID に置き換える箇所を示すプレースホルダである。
+   > `<` `>` を含んだまま貼り付けると Play Console に
+   > 「`@` に続く文字列に記号「`<`」を使用しないでください」と弾かれる。
+   > 迷ったら JSON の `client_email` をコピーするのが確実。
 3. kazahana アプリに対して以下の権限を付与
    - **リリースを作成、編集、削除する**
    - **アプリへのアクセス権**（対象アプリに kazahana を指定）
