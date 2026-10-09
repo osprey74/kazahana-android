@@ -24,8 +24,13 @@
   - `app/build.gradle.kts` (versionName / versionCode)
 
 ## CI/CD
-- **cicd**: false
-- **cicd_note**: 将来的に GitHub Actions を導入予定
+- **cicd**: true
+- **workflow**: `.github/workflows/release.yml`（`v*` タグ push で起動）
+- **cicd_note**: 署名済み AAB をビルドし、Gradle Play Publisher で Google Play の
+  **内部テストトラック**へ自動アップロードする。製品版への昇格は Play Console で手動判断。
+- **setup_doc**: `docs/release-automation.md`（サービスアカウント作成・GitHub Secrets の登録手順）
+- **release_notes_files**: タグを打つ前に `app/src/main/play/release-notes/en-US/internal.txt`
+  と `ja-JP/internal.txt` を `RELEASE_NOTES_vX.Y.Z_store.md` の内容で更新すること
 
 ## Cross-Platform Management
 

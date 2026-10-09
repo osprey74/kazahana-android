@@ -8,6 +8,7 @@ plugins {
     alias(libs.plugins.hilt)
     alias(libs.plugins.ksp)
     alias(libs.plugins.google.services)
+    alias(libs.plugins.play.publisher)
 }
 
 android {
@@ -47,6 +48,13 @@ android {
         }
     }
 
+    // --- Google Play 自動アップロード (Gradle Play Publisher) ---
+    // ローカル: リポジトリ直下の play-service-account.json（.gitignore 済み）
+    // CI:       ANDROID_PUBLISHER_CREDENTIALS 環境変数（ファイル未指定時に GPP が読む）
+    //
+    // アップロード: ./gradlew publishReleaseBundle
+    // リリースノートは app/src/main/play/release-notes/<locale>/internal.txt を読む。
+    // 新しいバージョンを出すときは必ずこのファイルも更新すること。
     buildTypes {
         release {
             isMinifyEnabled = true
@@ -140,4 +148,17 @@ dependencies {
 
     // Testing
     testImplementation(libs.junit)
+}
+
+play {
+    // ローカルの資格情報ファイルがあれば使う。無ければ GPP が
+    // ANDROID_PUBLISHER_CREDENTIALS 環境変数にフォールバックする（CI 用）。
+    val credentials = rootProject.file("play-service-account.json")
+    if (credentials.exists()) {
+        serviceAccountCredentials.set(credentials)
+    }
+    // 内部テストトラックへ上げ、製品版への昇格は Play Console で判断する。
+    track.set("internal")
+    defaultToAppBundles.set(true)
+    releaseName.set(android.defaultConfig.versionName)
 }

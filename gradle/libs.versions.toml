@@ -34,6 +34,7 @@ hiltWork = "1.2.0"
 # Firebase
 firebaseMessaging = "24.1.0"
 googleServices = "4.4.2"
+playPublisher = "3.12.1"
 
 # Media
 media3 = "1.4.1"
@@ -118,3 +119,4 @@ compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "
 hilt = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 google-services = { id = "com.google.gms.google-services", version.ref = "googleServices" }
+play-publisher = { id = "com.github.triplet.play", version.ref = "playPublisher" }

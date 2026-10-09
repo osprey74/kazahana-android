@@ -39,3 +39,4 @@ secrets.properties
 
 # Firebase
 app/google-services.json
+play-service-account.json
