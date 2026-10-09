@@ -12,6 +12,7 @@
 - 不具合修正 + DM返信機能 (2026-06-20): OGP文字化け / 引用投稿表示 / 返信先表示 / DM返信(v1.125) / アカウント切替UI / キーボード自動クローズ ✅
 - Desktop パリティ (2026-09-05): 動画ALTテキスト表示（全表示面）/ OPスレッド番号付けバッジ 2/2 ✅
 - Desktop パリティ (2026-10-09, v3.7.0): グループチャットの送信者名表示（getConvoMembers マージ）1/1 ✅
+- Google Play 自動アップロード (2026-10-09): GPP + GitHub Actions 構築済み / 疎通確認は PERMISSION_DENIED のため 2026-10-10 以降に再実行
 - Google Play 新品質要件 (2027-02/04 施行): メモリ・ビットマップ・DEX 実測クリア ✅ / Zero-Tap Sign-In は当面対応せず様子見（2026-09-05 判断）
 
 ## Phase 1: 基盤構築
@@ -179,6 +180,37 @@
 - [x] **OGP 文字化け** — `OgpService.fetchHtml` を `bodyAsText()`（UTF-8 固定）から `readBytes()` + 文字コード自動判定に変更。HTTP `Content-Type` charset → 先頭4096バイトの `<meta charset>`/`http-equiv` → UTF-8 の順（HTML Living Standard 準拠）。Shift_JIS / EUC-JP 等の文字化けを解消
 - [x] **引用投稿が表示されない** — `PostEmbedView.quotedRecord` を追加し、`record#view`（1段）/`recordWithMedia#view`（2段）のネスト差を構造ベースで吸収。`PostCard` の引用抽出を差し替え（handoff の「media.record」説は誤りで、実際は通常引用が 2 段固定参照で落ちていた）
 - [x] **タイムラインで返信先が不明** — `PostCard` の返信インジケータを `feedPost.reply.parentPost?.author?.handle` で「@handle への返信」表示に変更（取得不可時は「返信」にフォールバック）。文字列 `post_reply_to` を EN/JA 追加
+
+### Google Play 自動アップロード（GPP + GitHub Actions）
+
+- [x] Gradle Play Publisher 3.12.1 導入、`play {}` ブロック（track=internal）
+- [x] `.github/workflows/release.yml`（`v*` タグ push / 手動実行）
+- [x] `app/src/main/play/release-notes/{en-US,ja-JP}/internal.txt`
+- [x] `docs/release-automation.md`（セットアップ手順）
+- [x] GitHub Secrets 7 件登録（2026-10-09）
+- [x] `gradlew` の実行権限ビット付与（Linux ランナーで exit 126 になっていた）
+- [ ] **疎通確認の完了** — 2026-10-09 時点で `PERMISSION_DENIED` のため保留
+
+#### 保留中の疎通確認について（2026-10-09）
+
+手動実行（run 37937664564）で、Secrets 復元・ユニットテスト・署名付き AAB
+ビルド・Play API 認証まで成功し、アップロード段階で `PERMISSION_DENIED`
+（The caller does not have permission）となった。認証自体は通っているため、
+Play Console 側のアプリ単位の権限が未反映と判断。権限変更の反映には最大
+24 時間かかる。
+
+**2026-10-10 以降に再実行して確認する。** 確認手順:
+
+1. Play Console →「ユーザーとアクセス権」でサービスアカウントの
+   「アプリの権限」に kazahana があり、「テスト版トラックとしての
+   アプリのリリース」が有効か確認
+2. Play Console →「設定」→「API アクセス」で GCP プロジェクトが
+   リンクされているか確認
+3. Actions → Release → Run workflow で再実行
+
+`versionCode 21` は審査提出済みのため、権限が解決すると次は
+`Version code 21 has already been used` で失敗する。**これが出れば構成は正常。**
+実アップロードの確認には versionCode を上げる必要がある。
 
 ### グループチャットの送信者名表示（v3.7.0 / Desktop v3.6.1 パリティ / kazahana#22）
 
