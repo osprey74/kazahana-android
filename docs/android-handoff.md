@@ -31,7 +31,7 @@
 | 言語 | Swift 5.9 / SwiftUI |
 | Bundle ID | `com.osprey74.kazahana-ios`（将来 `com.kazahana.app` に変更予定） |
 | 対応言語 | 11言語: ja / en / pt / de / zh-TW / zh-CN / fr / ko / es / ru / id |
-| Bluesky SNS | @app-kazahana.bsky.social |
+| Bluesky SNS | @kazahana.app |
 
 ---
 
