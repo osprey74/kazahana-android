@@ -13,7 +13,7 @@
 - Desktop パリティ (2026-09-05): 動画ALTテキスト表示（全表示面）/ OPスレッド番号付けバッジ 2/2 ✅
 - Desktop パリティ (2026-10-09, v3.7.0): グループチャットの送信者名表示（getConvoMembers マージ）1/1 ✅
 - Google Play 自動アップロード (2026-10-09): GPP + GitHub Actions 構築済み / 疎通確認は PERMISSION_DENIED のため 2026-10-10 以降に再実行
-- プッシュ通知 API シークレットの入れ替え (2026-11-16, v3.7.1): シークレット差し替え済み / リリースビルドと実機確認待ち
+- v3.7.1 メンテナンスリリース (2026-11-16): リリースビルドと実機確認待ち
 - Google Play 新品質要件 (2027-02/04 施行): メモリ・ビットマップ・DEX 実測クリア ✅ / Zero-Tap Sign-In は当面対応せず様子見（2026-09-05 判断）
 
 ## Phase 1: 基盤構築
@@ -325,14 +325,13 @@ Play Console 側のアプリ単位の権限が未反映と判断。権限変更�
 - https://developer.android.com/identity/block-store （免除経路・2026-09-30 期限）
 - https://support.google.com/googleplay/android-developer/answer/17492799#zero-tap_sign-in_restoration （免除条項）
 
-## プッシュ通知 API シークレットの入れ替え (v3.7.1) — 2026-11-16
+## v3.7.1 メンテナンスリリース — 2026-11-16
 
-kazahana-push-backend の `API_SECRET` を入れ替える作業の Android 側。iOS 版のソースに同じ値が直書きされ、公開リポジトリから読める状態だったため。全体の手順は `kazahana-ios/Documentation/HANDOFF-push-api-secret-rotation.md`。コードの変更はなく、ビルド時に埋め込む値だけが変わる。
+プッシュ通知バックエンドとの接続設定を更新するメンテナンスリリース。コードの変更はなく、ビルド時の設定値だけが変わる。
 
 - [x] バージョンを 3.7.1（versionCode 22）に更新
 - [x] リリースノート作成（`RELEASE_NOTES_v3.7.1.md` / `_store.md`、`play/release-notes/*/internal.txt`）
-- [x] ローカルの `secrets.properties` の `PUSH_API_SECRET` を新しい値に差し替え（本番バックエンドで HTTP 200 を確認）
-- [x] GitHub Actions のシークレット `PUSH_API_SECRET` を新しい値に更新（2026-11-16）
+- [x] ローカルと GitHub Actions のビルド設定を更新（2026-11-16）
 - [ ] タグ `v3.7.1` を push し、リリースビルドを作成
-- [ ] 実機でトークン登録が成功することを確認（Logcat に HTTP 401 が出ない）
+- [ ] 実機でプッシュ通知の登録が成功することを確認
 - [ ] Google Play で製品版へ昇格

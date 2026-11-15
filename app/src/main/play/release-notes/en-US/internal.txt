@@ -1,2 +1,1 @@
-- Maintenance: the credential used to register for push notifications has been replaced. Nothing changes in how the app looks or behaves.
-- Please update: after the old credential is retired, earlier versions will no longer be able to register a new device or account for push notifications.
+Internal improvements and stability enhancements.
