@@ -19,8 +19,8 @@ android {
         applicationId = "com.kazahana.app"
         minSdk = 29
         targetSdk = 36
-        versionCode = 21
-        versionName = "3.7.0"
+        versionCode = 22
+        versionName = "3.7.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 

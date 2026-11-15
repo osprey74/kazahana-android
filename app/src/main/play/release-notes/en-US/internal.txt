@@ -1,3 +1,2 @@
-- New: group chats now show who is speaking. The sender's name appears above the bubble, once per run of consecutive messages, and tapping it opens that person's profile.
-- New: the full member list is now fetched and merged, so senders that previously could not be identified are named.
-- Fixes: group system messages no longer lose their subject, and reply previews always name the sender.
+- Maintenance: the credential used to register for push notifications has been replaced. Nothing changes in how the app looks or behaves.
+- Please update: after the old credential is retired, earlier versions will no longer be able to register a new device or account for push notifications.
